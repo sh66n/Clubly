@@ -1,4 +1,4 @@
-import Ranking from "@/components/Ranking";
+import Leaderboard from "@/components/Leaderboard/Leaderboard";
 import axios from "axios";
 import React from "react";
 
@@ -14,7 +14,7 @@ const getLbRankings = async (clubId) => {
   }
 };
 
-export default async function Leaderboard({
+export default async function LeaderboardPage({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -23,9 +23,13 @@ export default async function Leaderboard({
   const data = await getLbRankings(clubId);
 
   return (
-    <div className="relative h-screen flex-grow pt-4 pr-4 pb-4">
-      <div className="h-full rounded-lg p-10 pb-4 border border-[#515151] relative bg-[url(/images/lb-bg.png)] bg-cover bg-top bg-no-repeat flex flex-col">
-        <Ranking users={data.topParticipants} />
+    <div className="h-full flex flex-col">
+      <h1 className="text-5xl font-semibold">Leaderboard</h1>
+      <div className="mt-2 text-[#717171]">
+        Your efforts, ranked and recognized.
+      </div>
+      <div className="grow">
+        <Leaderboard topUsers={data.topParticipants} />
       </div>
     </div>
   );
