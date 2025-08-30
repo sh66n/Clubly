@@ -55,11 +55,14 @@ export default function Sidebar({ points }) {
           ))}
         </ul>
       </div>
-
-      <div className="mt-auto w-full aspect-square bg-[url('/images/myPoints.png')] bg-cover bg-center bg-no-repeat rounded-md p-4 pt-8 text-3xl">
-        <span>My Points</span>
-        <div className="text-7xl text-center mt-6 font-semibold">{points}</div>
-      </div>
+      {points && (
+        <div className="mt-auto w-full aspect-square bg-[url('/images/myPoints.png')] bg-cover bg-center bg-no-repeat rounded-md p-4 pt-8 text-3xl">
+          <span>My Points</span>
+          <div className="text-7xl text-center mt-6 font-semibold">
+            {points}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

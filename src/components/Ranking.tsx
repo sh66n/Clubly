@@ -1,7 +1,9 @@
 import React from "react";
 
 export default function Ranking({ users }) {
-  return (
+  const enoughData = users.length >= 3;
+
+  return enoughData ? (
     <>
       <h1 className="text-5xl font-semibold">Leaderboard</h1>
       <div className="mt-2 text-[#717171]">
@@ -87,5 +89,7 @@ export default function Ranking({ users }) {
         </div>
       </div>
     </>
+  ) : (
+    <div>Not enough data</div>
   );
 }

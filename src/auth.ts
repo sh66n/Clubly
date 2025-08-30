@@ -3,19 +3,19 @@ import Google from "next-auth/providers/google";
 import { connectToDb } from "./lib/connectToDb";
 import { User } from "./models/user.model";
 
-// Google(
-//       {
-//       authorization: {
-//         params: {
-//           // Suggests login only from pvppcoe.ac.in
-//           hd: "pvppcoe.ac.in",
-//           prompt: "select_account",
-//         },
-//       },
-//     }),
-
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  providers: [Google],
+  providers: [
+    // Google({
+    //   authorization: {
+    //     params: {
+    //       // Suggests login only from pvppcoe.ac.in
+    //       hd: "pvppcoe.ac.in",
+    //       prompt: "select_account",
+    //     },
+    //   },
+    // }),
+    Google,
+  ],
   callbacks: {
     async signIn({ user }) {
       await connectToDb();
@@ -23,10 +23,29 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const existingUser = await User.findOne({ email: user.email });
 
       if (!existingUser) {
+        //uploads google pfp to cloudinary
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/api/upload-avatar`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              url: user.image,
+              publicId: user.email?.split("@")[0],
+            }),
+          }
+        );
+
+        const data = await res.json();
+
+        let imageUrl = user.image;
+        if (data.success) {
+          imageUrl = data.url;
+        }
         await User.create({
           name: user.name,
           email: user.email,
-          image: user.image,
+          image: imageUrl, // use Cloudinary instead of Google URL
           role: "user",
         });
       }
