@@ -8,7 +8,6 @@ export const GET = async (req: NextRequest) => {
   try {
     await connectToDb();
     const clubId = req.nextUrl.searchParams.get("clubId");
-    console.log(clubId);
     const limitString = req.nextUrl.searchParams.get("limit");
     const limit = parseInt(limitString);
 
@@ -28,8 +27,6 @@ export const GET = async (req: NextRequest) => {
       // Limit to top N users
       { $limit: limit },
     ]);
-
-    console.log(topParticipants);
 
     return NextResponse.json({ topParticipants }, { status: 200 });
   } catch (error) {

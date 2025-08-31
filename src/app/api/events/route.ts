@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const GET = async (req: NextRequest) => {
   try {
     await connectToDb();
-    const allEvents = await Event.find({});
+    const allEvents = await Event.find({}).populate("participants");
     return NextResponse.json(allEvents, { status: 200 });
   } catch (error) {
     return NextResponse.json(error, { status: 500 });

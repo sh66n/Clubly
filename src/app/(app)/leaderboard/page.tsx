@@ -23,14 +23,8 @@ export default async function LeaderboardPage({
   const data = await getLbRankings(clubId);
 
   return (
-    <div className="h-full flex flex-col">
-      <h1 className="text-5xl font-semibold">Leaderboard</h1>
-      <div className="mt-2 text-[#717171]">
-        Your efforts, ranked and recognized.
-      </div>
-      <div className="grow">
-        <Leaderboard topUsers={data.topParticipants} />
-      </div>
+    <div className="grow">
+      <Leaderboard topUsers={data.topParticipants} />
     </div>
   );
 }

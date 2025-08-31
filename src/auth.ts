@@ -59,7 +59,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const dbUser = await User.findOne({ email: user.email });
         if (dbUser) {
           token.id = dbUser._id.toString();
-          token.role = dbUser.role;
+          token.role = dbUser.role.toString();
+          token.image = dbUser.image.toString();
 
           const totalPoints = dbUser.points.reduce(
             (sum, entry) => sum + (entry.points || 0),
@@ -76,7 +77,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
-        session.user.points = token.points;
+        session.user.points = token.points as number;
+        session.user.image = token.image as string;
       }
       return session;
     },

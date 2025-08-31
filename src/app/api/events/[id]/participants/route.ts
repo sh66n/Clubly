@@ -3,6 +3,11 @@ import { Event } from "@/models/event.model";
 import { User } from "@/models/user.model";
 import { NextRequest, NextResponse } from "next/server";
 
+export const GET = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {};
+
 export const POST = async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

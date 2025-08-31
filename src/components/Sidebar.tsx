@@ -59,7 +59,10 @@ export default function Sidebar({ points }) {
             <li key={item} className="text-[#9F9F9F] mb-1">
               <Link href={"/dashboard"} className="flex gap-4 items-center">
                 <div
-                  className={`h-4 w-4 bg-[url(/icons/${item.toLowerCase()}.png)] bg-cover bg-center bg-no-repeat`}
+                  style={{
+                    backgroundImage: `url(/icons/${item.toLowerCase()}.png)`,
+                  }}
+                  className={`h-4 w-4 bg-cover bg-center bg-no-repeat`}
                 ></div>
                 <span className=" hover:text-white">{item}</span>
               </Link>
