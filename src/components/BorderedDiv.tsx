@@ -4,7 +4,7 @@ export default function BorderedDiv({
   children,
   className = "",
 }: Readonly<{
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
 }>) {
   return (
