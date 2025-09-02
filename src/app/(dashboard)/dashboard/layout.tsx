@@ -28,7 +28,7 @@ export default async function layout({
         </div>
       </BorderedDiv>
 
-      <BorderedDiv className="grow rounded-lg bg-[url(/images/lb-bg.png)] bg-cover bg-top bg-no-repeat p-8">
+      <BorderedDiv className="grow rounded-lg bg-[url(/images/lb-bg.png)] bg-cover bg-top bg-no-repeat p-8 pb-4">
         {children}
       </BorderedDiv>
     </div>
