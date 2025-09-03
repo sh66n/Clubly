@@ -1,14 +1,19 @@
 import cloudinary from "@/lib/cloudinary";
 import { connectToDb } from "@/lib/connectToDb";
-import { Event } from "@/models/event.model";
+import { Event } from "@/models";
 import { NextRequest, NextResponse } from "next/server";
 
 export const GET = async (req: NextRequest) => {
   try {
     await connectToDb();
-    const allEvents = await Event.find({}).populate("participants");
+
+    const allEvents = await Event.find({})
+      .populate("participants")
+      .populate("registrations")
+      .populate("organizingClub");
     return NextResponse.json(allEvents, { status: 200 });
   } catch (error) {
+    console.error(error);
     return NextResponse.json(error, { status: 500 });
   }
 };

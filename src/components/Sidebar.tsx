@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import React from "react";
+import React, { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
@@ -12,15 +12,17 @@ import {
   Info,
   LayoutDashboard,
   LogIn,
+  PanelLeft,
   Power,
   Users,
 } from "lucide-react";
 
 export default function Sidebar({ points }) {
   const pathname = usePathname().split("/")[1];
+
   return (
-    <div className="h-full rounded-lg p-4 flex flex-col border border-[#515151] relative">
-      <div className="mt-4">
+    <div className="hidden h-full rounded-lg p-4 lg:flex flex-col border border-[#515151] relative">
+      <div className="mt-4 flex items-center justify-between">
         <Image
           src="/images/logo.png"
           alt="Clubly Logo"
@@ -30,6 +32,8 @@ export default function Sidebar({ points }) {
           placeholder="empty"
           className="object-contain"
         />
+        {/* <img src="/images/logo-without-text.png" className="h-6 w-6" alt="" />
+        <PanelLeft className="" /> */}
       </div>
 
       <div className="mt-12">
@@ -157,9 +161,9 @@ export default function Sidebar({ points }) {
         </ul>
       </div>
       {points && (
-        <div className="mt-auto w-full aspect-square bg-[url('/images/myPoints.png')] bg-cover bg-center bg-no-repeat rounded-md p-4 pt-8 text-3xl">
+        <div className="mt-auto w-full aspect-square bg-[url('/images/myPoints.png')] bg-cover bg-center bg-no-repeat rounded-md p-4 pt-8 text-sm md:text-xl lg:text-3xl">
           <span>My Points</span>
-          <div className="text-7xl text-center mt-6 font-semibold">
+          <div className="text-sm md:text-3xl lg:text-7xl text-center mt-6 font-semibold">
             {points}
           </div>
         </div>

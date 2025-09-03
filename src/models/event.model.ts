@@ -5,6 +5,7 @@ const eventSchema = new Schema<IEvent>(
   {
     organizingClub: {
       type: Schema.Types.ObjectId,
+      ref: "Club",
       required: true,
     },
     name: {

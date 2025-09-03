@@ -13,6 +13,7 @@ const userSchema = new Schema<IUser>(
     },
     role: {
       type: String,
+      enum: ["user" , "club-admin"],
       required: true,
     },
     image: {
