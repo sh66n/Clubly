@@ -1,5 +1,4 @@
 import { auth } from "@/auth";
-import EventCard from "@/components/Events/EventCard";
 import EventGrid from "@/components/Events/EventGrid";
 import React from "react";
 

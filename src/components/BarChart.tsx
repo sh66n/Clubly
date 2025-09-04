@@ -42,8 +42,8 @@ export default function BarChart({ upcomingEvents }: BarChartProps) {
     datasets: [
       {
         label: "Events",
-        data: [1, 4, 2, 4, 5, 1, 2],
-        // data: upcomingEvents,
+        // data: [1, 4, 2, 4, 5, 1, 2],
+        data: upcomingEvents,
         backgroundColor: [
           "#000F57",
           "#24306D",

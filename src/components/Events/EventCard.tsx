@@ -81,7 +81,7 @@ export default function EventCard({ event, user }: EventCardProps) {
 
         <div className="flex items-center gap-1 text-xs text-gray-300 mt-1">
           <Users size={14} />
-          <span>31</span>
+          <span>{event.registrations.length}</span>
         </div>
         <button onClick={handleRegister}>Register</button>
       </div>
