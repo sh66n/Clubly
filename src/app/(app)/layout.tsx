@@ -15,9 +15,9 @@ export default function layout({
           style: {
             background: "black",
             color: "white",
-            border: "none",
           },
         }}
+        visibleToasts={8}
       />
 
       <div className="relative min-h-screen h-full flex-grow pt-4 pr-4 pb-4">

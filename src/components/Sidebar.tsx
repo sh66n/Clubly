@@ -1,10 +1,9 @@
 "use client";
 import Image from "next/image";
-import React, { useState } from "react";
+import React from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
-import LoginButton from "./LoginButton";
 import {
   Bolt,
   Calendar,
@@ -12,7 +11,6 @@ import {
   Info,
   LayoutDashboard,
   LogIn,
-  PanelLeft,
   Power,
   Users,
 } from "lucide-react";
@@ -21,153 +19,101 @@ export default function Sidebar({ points }) {
   const pathname = usePathname().split("/")[1];
 
   return (
-    <div className="hidden h-full rounded-lg p-4 lg:flex flex-col border border-[#515151] relative">
-      <div className="mt-4 flex items-center justify-between">
-        <Image
-          src="/images/logo.png"
-          alt="Clubly Logo"
-          width={160}
-          height={160}
-          priority
-          placeholder="empty"
-          className="object-contain"
-        />
-        {/* <img src="/images/logo-without-text.png" className="h-6 w-6" alt="" />
-        <PanelLeft className="" /> */}
-      </div>
+    <div className="fixed top-0 left-0 h-screen w-64 p-4 overflow-y-auto">
+      <div className="flex flex-col h-full rounded-lg border border-[#515151] p-4">
+        {/* Logo */}
+        <div className="flex items-center justify-center mb-8">
+          <Image
+            src="/images/logo.png"
+            alt="Clubly Logo"
+            width={160}
+            height={160}
+            priority
+            placeholder="empty"
+            className="object-contain"
+          />
+        </div>
 
-      <div className="mt-12">
-        <div className="heading text-[#626262] mb-2 text-xl">Menu</div>
-        <ul>
-          {/* Dashboard */}
+        {/* Menu */}
+        <div className="flex-1">
+          <div className="heading text-[#626262] mb-2 text-xl">Menu</div>
+          <ul>
+            {[
+              {
+                name: "Dashboard",
+                icon: <LayoutDashboard />,
+                href: "/dashboard",
+              },
+              { name: "Events", icon: <Calendar />, href: "/events" },
+              { name: "Clubs", icon: <Users />, href: "/clubs" },
+              { name: "Leaderboard", icon: <Goal />, href: "/leaderboard" },
+            ].map((item) => (
+              <li
+                key={item.name}
+                className={`mb-2 ${
+                  pathname.includes(item.href.split("/")[1])
+                    ? "text-white font-semibold"
+                    : "text-[#9F9F9F]"
+                }`}
+              >
+                <Link href={item.href}>
+                  <div className="flex gap-4 items-center hover:text-white cursor-pointer">
+                    {item.icon}
+                    <span>{item.name}</span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
 
-          <li
-            className={`mb-1 ${
-              pathname.includes("dashboard") ? "text-white" : "text-[#9F9F9F]"
-            }`}
-          >
-            <Link href={"/dashboard"}>
-              <span className="flex gap-4 items-center hover:text-white hover:cursor-pointer">
-                <LayoutDashboard />
-                Dashboard
-              </span>
-            </Link>
-          </li>
-
-          {/* Events */}
-
-          <li
-            className={`mb-1 ${
-              pathname.includes("events") ? "text-white" : "text-[#9F9F9F]"
-            }`}
-          >
-            <Link href={"/events"}>
-              <span className="flex gap-4 items-center hover:text-white hover:cursor-pointer">
-                <Calendar />
-                Events
-              </span>
-            </Link>
-          </li>
-
-          {/* Clubs */}
-
-          <li
-            className={`mb-1 ${
-              pathname.includes("clubs") ? "text-white" : "text-[#9F9F9F]"
-            }`}
-          >
-            <Link href={"/clubs"}>
-              <span className="flex gap-4 items-center hover:text-white hover:cursor-pointer">
-                <Users />
-                Clubs
-              </span>
-            </Link>
-          </li>
-
-          {/* Leaderboard */}
-
-          <li
-            className={`mb-1 ${
-              pathname.includes("leaderboard") ? "text-white" : "text-[#9F9F9F]"
-            }`}
-          >
-            <Link href={"/leaderboard"}>
-              <span className="flex gap-4 items-center hover:text-white hover:cursor-pointer">
-                <Goal />
-                Leaderboard
-              </span>
-            </Link>
-          </li>
-
-          {/* {["dashboard", "events", "clubs", "leaderboard"].map((item) => (
-            <li
-              key={item}
-              className={`mb-1 ${
-                pathname.includes(item)
-                  ? "text-white font-semibold"
-                  : "text-[#9F9F9F]"
-              }`}
-            >
-              <Link href={`/${item}`}>
-                <div className="flex gap-4">
-                  <Image
-                    src={`/icons/${item}.svg`}
-                    width={20}
-                    height={20}
-                    alt="image"
-                  ></Image>
-                  <span className="hover:text-white">
-                    {item.charAt(0).toUpperCase() + item.slice(1)}
-                  </span>
-                </div>
-              </Link>
+          {/* General */}
+          <div className="heading text-[#626262] mb-2 mt-6 text-xl">
+            General
+          </div>
+          <ul>
+            <li className="mb-2 flex items-center gap-4 text-[#9F9F9F] hover:text-white cursor-pointer">
+              <Bolt />
+              Settings
             </li>
-          ))} */}
-        </ul>
-      </div>
-
-      <div className="mt-4 text-[#626262]">
-        <div className="heading mb-2 text-xl">General</div>
-        <ul className="">
-          <li className="text-[#9F9F9F] mb-1 flex gap-4 items-center hover:text-white hover:cursor-pointer">
-            <Bolt />
-            Settings
-          </li>
-          <li className="text-[#9F9F9F] mb-1">
-            <span className="flex gap-4 items-center hover:text-white hover:cursor-pointer">
-              <Info className="" />
+            <li className="mb-2 flex items-center gap-4 text-[#9F9F9F] hover:text-white cursor-pointer">
+              <Info />
               Help
-            </span>
-          </li>
-          {/* if points is defined, that means a user IS logged in*/}
-          {points ? (
-            <li className="text-[#9F9F9F] mb-1">
-              <span className="flex gap-4 items-center hover:text-white hover:cursor-pointer">
+            </li>
+            {points != null ? (
+              <li className="mb-2 flex items-center gap-4 text-[#9F9F9F] hover:text-white cursor-pointer">
                 <Power />
                 <LogoutButton />
-              </span>
-            </li>
-          ) : (
-            <li className="mb-1">
-              <Link
-                href={"/login"}
-                className="text-[#9F9F9F] hover:text-white flex gap-4 items-center"
-              >
-                <LogIn className="" />
-                Login
-              </Link>
-            </li>
-          )}
-        </ul>
-      </div>
-      {points && (
-        <div className="mt-auto w-full aspect-square bg-[url('/images/myPoints.png')] bg-cover bg-center bg-no-repeat rounded-md p-4 pt-8 text-sm md:text-xl lg:text-3xl">
-          <span>My Points</span>
-          <div className="text-sm md:text-3xl lg:text-7xl text-center mt-6 font-semibold">
-            {points}
-          </div>
+              </li>
+            ) : (
+              <li className="mb-2">
+                <Link
+                  href="/login"
+                  className="flex items-center gap-4 text-[#9F9F9F] hover:text-white"
+                >
+                  <LogIn />
+                  Login
+                </Link>
+              </li>
+            )}
+          </ul>
         </div>
-      )}
+
+        {/* My Points */}
+        {points != null && (
+          <div className="mt-4 flex-shrink-0 w-full">
+            <div className="w-full relative pb-[100%] bg-[url('/images/myPoints.png')] bg-cover bg-center rounded-md">
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                <span className="text-sm md:text-xl lg:text-2xl">
+                  My Points
+                </span>
+                <div className="mt-4 text-lg md:text-4xl lg:text-6xl font-semibold">
+                  {points}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

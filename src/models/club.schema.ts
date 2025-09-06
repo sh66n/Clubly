@@ -15,6 +15,7 @@ export const zClub = z.object({
 });
 
 export interface IClub {
+  _id: Types.ObjectId;
   name: string;
   department: string;
   coreMembers: Types.ObjectId[]; // refs User

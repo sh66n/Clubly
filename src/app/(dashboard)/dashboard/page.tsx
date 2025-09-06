@@ -62,7 +62,7 @@ export default async function Dashboard() {
           <BorderedDiv className="flex-1">
             <div className="text-2xl font-semibold">Leaderboard</div>
             <div className="text-[#5E77F5] font-bold text-5xl my-4">
-              #{leaderboardData.rank}
+              {leaderboardData.rank !== -1 ? `#${leaderboardData.rank}` : "N/A"}
             </div>
             <div className="text-xs text-[#717171]">
               out of {leaderboardData.totalUsers} users

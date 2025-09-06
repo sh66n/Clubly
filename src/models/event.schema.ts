@@ -23,6 +23,7 @@ export const zEvent = z.object({
 });
 
 export interface IEvent {
+  _id: Types.ObjectId;
   organizingClub: Types.ObjectId;
   name: string;
   description?: string;

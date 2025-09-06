@@ -1,3 +1,4 @@
+import ClubGrid from "@/components/Clubs/ClubGrid";
 import React from "react";
 
 const getAllClubs = async () => {
@@ -12,5 +13,13 @@ const getAllClubs = async () => {
 
 export default async function Clubs() {
   const allClubs = await getAllClubs();
-  return <div>Clubs</div>;
+  return (
+    <div>
+      <h1 className="text-5xl font-semibold">Clubs</h1>
+      <div className="my-2 text-[#717171]">
+        Explore club activities and upcoming opportunities.
+      </div>
+      <ClubGrid clubs={allClubs} />
+    </div>
+  );
 }

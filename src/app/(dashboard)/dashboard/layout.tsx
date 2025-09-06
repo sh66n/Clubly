@@ -10,7 +10,7 @@ export default async function layout({
 }>) {
   const session = await auth();
   return (
-    <div className="min-h-screen h-full flex flex-col pt-4 pr-4 pb-4 gap-4">
+    <div className="min-h-screen h-full flex flex-col pt-4 pr-4 pb-4 gap-2">
       <BorderedDiv className="h-[10%] rounded-lg flex items-center p-4 gap-1">
         <div className="text-3xl">
           <span>Welcome back,</span>{" "}

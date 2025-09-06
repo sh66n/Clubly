@@ -1,5 +1,8 @@
 import { auth } from "@/auth";
 import EventGrid from "@/components/Events/EventGrid";
+import ScheduleEventButton from "@/components/Events/ScheduleEventButton";
+import { Plus } from "lucide-react";
+import Link from "next/link";
 import React from "react";
 import { toast } from "sonner";
 
@@ -23,8 +26,15 @@ export default async function Events() {
       <div className="my-2 text-[#717171]">
         Explore club activities and upcoming opportunities.
       </div>
-      <div className="grow">
-        <EventGrid events={allEvents} user={session?.user} />
+      <div className="grow mt-8">
+        {session?.user?.role === "club-admin" && (
+          <div className="flex justify-end mb-4">
+            <ScheduleEventButton />
+          </div>
+        )}
+        <div className="flex justify-center">
+          <EventGrid events={allEvents} user={session?.user} />
+        </div>
       </div>
     </div>
   );

@@ -66,8 +66,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             (sum, entry) => sum + (entry.points || 0),
             0
           );
-
           token.points = totalPoints;
+
+          // ✅ Add adminClub if present
+          if (dbUser.adminClub) {
+            token.adminClub = dbUser.adminClub.toString();
+          }
         }
       }
       return token;
@@ -79,6 +83,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.role = token.role as string;
         session.user.points = token.points as number;
         session.user.image = token.image as string;
+
+        // ✅ Expose adminClub in session
+        if (token.adminClub) {
+          session.user.adminClub = token.adminClub as string;
+        }
       }
       return session;
     },

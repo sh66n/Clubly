@@ -18,8 +18,8 @@ export const GET = async (
       "points.clubId": clubObjectId,
     });
 
-    // Get user rank in this club
-    const result = await User.aggregate([
+    // Aggregate to get rank
+    const rankedUsers = await User.aggregate([
       { $unwind: "$points" },
       { $match: { "points.clubId": clubObjectId } },
       {
@@ -28,25 +28,38 @@ export const GET = async (
           output: { rank: { $rank: {} } },
         },
       },
-      { $match: { _id: userObjectId } },
       {
         $project: {
           _id: 1,
-          rank: 1,
           points: "$points.points",
+          rank: 1,
         },
       },
     ]);
 
-    if (!result.length) {
-      return NextResponse.json(
-        { message: "User not found in this club" },
-        { status: 404 }
-      );
+    // Find this specific user
+    const userRankData = rankedUsers.find((u) => u._id.equals(userObjectId));
+
+    // If user has no points for this club, rank = -1
+    if (!userRankData) {
+      const user = await User.findById(userObjectId);
+      if (!user) {
+        return NextResponse.json(
+          { message: "User not found" },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json({
+        _id: user._id,
+        points:
+          user.points?.find((p) => p.clubId.equals(clubObjectId))?.points || 0,
+        rank: -1,
+        totalUsers,
+      });
     }
 
     return NextResponse.json({
-      ...result[0],
+      ...userRankData,
       totalUsers,
     });
   } catch (error) {
