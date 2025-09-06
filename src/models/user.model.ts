@@ -13,7 +13,7 @@ const userSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ["user" , "club-admin"],
+      enum: ["user", "club-admin"],
       required: true,
     },
     image: {
@@ -26,6 +26,10 @@ const userSchema = new Schema<IUser>(
         points: { type: Number, default: 0 },
       },
     ],
+    adminClub: {
+      type: Schema.Types.ObjectId,
+      ref: "Club",
+    },
   },
   { timestamps: true }
 );

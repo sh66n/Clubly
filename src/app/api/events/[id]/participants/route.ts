@@ -1,12 +1,27 @@
 import { connectToDb } from "@/lib/connectToDb";
-import { Event } from "@/models/event.model";
-import { User } from "@/models/user.model";
+import { Event } from "@/models";
+import { User } from "@/models";
+import { IEvent } from "@/models/event.schema";
 import { NextRequest, NextResponse } from "next/server";
 
 export const GET = async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) => {};
+) => {
+  const { id } = await params;
+
+  try {
+    await connectToDb();
+    const event = await Event.findById(id).populate("participants");
+    if (!event) {
+      return NextResponse.json({ message: "Event not found" }, { status: 400 });
+    }
+    const participants = event.participants;
+    return NextResponse.json({ participants }, { status: 200 });
+  } catch (error) {
+    return NextResponse.json({ error }, { status: 500 });
+  }
+};
 
 export const POST = async (
   req: NextRequest,

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import UserCard from "./UserCard";
-import { assignPoints } from "@/services/assignPoints";
+import AttendanceToggle from "./AttendanceToggle";
 
 export default function AttendanceMarker({
   present: initialPresent,
@@ -30,9 +30,6 @@ export default function AttendanceMarker({
   };
 
   const handleSubmit = async () => {
-    console.log("Present:", present);
-    console.log("Absent:", absent);
-    // send present/absent arrays to API here
     try {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/events/${eventId}/attendance`,
@@ -44,7 +41,6 @@ export default function AttendanceMarker({
       );
       if (!res.ok) throw new Error("Failed to update attendance");
       const updatedEvent = await res.json();
-
       console.log("✅ Attendance updated:", updatedEvent);
     } catch (error) {
       console.error("❌ Error submitting attendance:", error);
@@ -54,26 +50,38 @@ export default function AttendanceMarker({
   return (
     <div className="grow flex flex-col">
       <div className="flex-1">
-        <div className="min-h-1/2 h-fit p-4 space-y-2">
+        <div className="min-h-20 h-fit p-4 space-y-2">
           Present
           {present.map((user) => (
             <UserCard
               key={user._id}
               user={user}
-              isPresent={true}
-              onToggle={handleToggle}
+              action={
+                <AttendanceToggle
+                  isPresent={true}
+                  onChange={(makePresent) =>
+                    handleToggle(user._id, makePresent)
+                  }
+                />
+              }
             />
           ))}
         </div>
 
-        <div className="min-h-1/2 h-fit p-4 space-y-2 ">
+        <div className="min-h-30 h-fit p-4 space-y-2">
           Absent
           {absent.map((user) => (
             <UserCard
               key={user._id}
               user={user}
-              isPresent={false}
-              onToggle={handleToggle}
+              action={
+                <AttendanceToggle
+                  isPresent={false}
+                  onChange={(makePresent) =>
+                    handleToggle(user._id, makePresent)
+                  }
+                />
+              }
             />
           ))}
         </div>

@@ -2,6 +2,8 @@
 
 import { IEvent } from "@/models/event.schema";
 import { Heart, Users } from "lucide-react";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 interface EventCardProps {
   event: IEvent;
@@ -28,7 +30,10 @@ export default function EventCard({ event, user }: EventCardProps) {
     console.log(updatedEvent);
   };
   return (
-    <div className="bg-black text-white rounded-xl overflow-hidden shadow-md w-64 border border-[#515151]">
+    <div
+      className="bg-black text-white rounded-xl overflow-hidden shadow-md w-64 border border-[#515151]"
+      onClick={() => toast.success("yo")}
+    >
       {/* Image Section */}
       <div className="relative">
         <img

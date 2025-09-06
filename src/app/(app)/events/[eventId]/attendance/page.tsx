@@ -1,5 +1,5 @@
 import AttendanceMarker from "@/components/Events/AttendanceMarker";
-import UserCard from "@/components/Events/UserCard";
+import UserCard from "@/components/Events/AttendanceUserCard";
 import { getAttendance } from "@/services/getAttendance";
 import { getParticipants } from "@/services/getParticipants";
 import { getPendingRegistrations } from "@/services/getPendingRegistrations";

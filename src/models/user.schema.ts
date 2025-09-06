@@ -10,20 +10,27 @@ export const zUser = z.object({
       })
     )
     .default([]),
+  _id: z.string().optional(),
   name: z.string(),
-  email: z.string(),
+  email: z.string().email(),
   role: z.enum(["user", "club-admin"]),
-  image: z.string(),
+  image: z.string().url(),
+  adminClub: z.string().length(24).optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
 });
 
 export interface IUser {
-  _id?: string;
-  points: {
-    clubId: Types.ObjectId;
-    points: number;
-  }[];
+  _id?: Types.ObjectId;
   name: string;
   email: string;
   role: "user" | "club-admin";
   image: string;
+  points?: {
+    clubId: Types.ObjectId;
+    points: number;
+  }[];
+  adminClub?: Types.ObjectId;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

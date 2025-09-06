@@ -1,29 +1,100 @@
 import { connectToDb } from "@/lib/connectToDb";
-import { Event } from "@/models/event.model";
-import { User } from "@/models/user.model";
+import { Event, User } from "@/models";
 import { NextRequest, NextResponse } from "next/server";
 
-export const POST = async (
+// PUT /api/events/:id/winners
+export const PUT = async (
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) => {
-  const eventId = await params;
-  const { users } = await req.json();
   try {
     await connectToDb();
-    const event = await Event.findById(eventId);
-    event.winners.push(...users);
-    await event.save();
-    for (const user of users) {
-      const dbUser = await User.findById(user._id);
-      const userPoints = dbUser.points.find(
-        (pointCard) => pointCard.clubId === event.organizingClub
+
+    const { winnerIds } = await req.json();
+    const eventId = params.id;
+
+    if (!winnerIds || !Array.isArray(winnerIds)) {
+      return NextResponse.json(
+        { error: "winnerIds must be an array of user IDs" },
+        { status: 400 }
       );
-      userPoints.points += event.points.winner;
-      await dbUser.save();
     }
-    return NextResponse.json({ message: "success" }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ error }, { status: 500 });
+
+    // Fetch event
+    const event = await Event.findById(eventId).populate("participants");
+    if (!event) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    const winnerPoints = event.points?.winner ?? 50; // default to 50
+    const clubId = event.organizingClub;
+
+    // Validate winners exist
+    const users = await User.find({ _id: { $in: winnerIds } });
+    if (users.length !== winnerIds.length) {
+      return NextResponse.json(
+        { error: "Some winnerIds are invalid" },
+        { status: 400 }
+      );
+    }
+
+    // Ensure winners are participants
+    const participantIds = event.participants.map((p: any) => p._id.toString());
+    const invalidWinners = winnerIds.filter(
+      (id: string) => !participantIds.includes(id)
+    );
+
+    if (invalidWinners.length > 0) {
+      return NextResponse.json(
+        {
+          error: "All winners must be participants of the event",
+          invalidWinners,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Update winners list
+    event.winners = winnerIds;
+    await event.save();
+
+    // ✅ Award points per club
+    for (const winnerId of winnerIds) {
+      const winner = await User.findById(winnerId);
+
+      if (!winner) continue;
+
+      const existing = winner.points.find(
+        (p: any) => p.clubId.toString() === clubId.toString()
+      );
+
+      if (existing) {
+        // ✅ Increment points
+        await User.updateOne(
+          { _id: winnerId, "points.clubId": clubId },
+          { $inc: { "points.$.points": 50 } }
+        );
+      } else {
+        // ✅ Add a new club entry
+        await User.updateOne(
+          { _id: winnerId },
+          { $push: { points: { clubId, points: 50 } } }
+        );
+      }
+    }
+
+    return NextResponse.json(
+      {
+        message: `Winners assigned and rewarded +${winnerPoints} points each`,
+        event,
+      },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error("Error assigning winners:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 };

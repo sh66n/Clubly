@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import EventGrid from "@/components/Events/EventGrid";
 import React from "react";
+import { toast } from "sonner";
 
 const getAllEvents = async () => {
   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/events`, {
