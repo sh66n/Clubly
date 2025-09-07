@@ -1,6 +1,26 @@
 import { connectToDb } from "@/lib/connectToDb";
-import { Event } from "@/models/event.model";
+import { Event } from "@/models";
 import { NextRequest, NextResponse } from "next/server";
+
+export const GET = async (
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  try {
+    await connectToDb();
+    const { id } = await params;
+    const event = await Event.findById(id)
+      .populate("registrations")
+      .populate("participants")
+      .populate("contact")
+      .populate("organizingClub")
+      .populate("winners");
+    return NextResponse.json({ event }, { status: 200 });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error }, { status: 500 });
+  }
+};
 
 export const PATCH = async (
   req: NextRequest,

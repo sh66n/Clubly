@@ -1,6 +1,6 @@
 import cloudinary from "@/lib/cloudinary";
 import { connectToDb } from "@/lib/connectToDb";
-import { Event } from "@/models";
+import { Event, Club } from "@/models";
 import { NextRequest, NextResponse } from "next/server";
 
 export const GET = async (req: NextRequest) => {
@@ -52,17 +52,23 @@ export const POST = async (req: NextRequest) => {
       imageUrl = uploadResult.secure_url;
     }
 
+    // Create the event (default teamSize = 1 if not provided)
     const event = await Event.create({
       organizingClub,
       name,
       description,
       date,
       eventType,
-      teamSize: teamSize ? Number(teamSize) : undefined,
+      teamSize: teamSize ? Number(teamSize) : 1,
       prize: prize ? Number(prize) : undefined,
       providesCertificate,
       registrationFee: registrationFee ? Number(registrationFee) : undefined,
       image: imageUrl,
+    });
+
+    // Update club's events array
+    await Club.findByIdAndUpdate(organizingClub, {
+      $push: { events: event._id },
     });
 
     return NextResponse.json(event, { status: 201 });

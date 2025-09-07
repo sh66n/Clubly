@@ -57,7 +57,7 @@ export default function NewEventForm({ user }: NewEventFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-4 p-6 bg-gray-900 rounded-2xl shadow-lg text-gray-100"
+      className="flex flex-col gap-4 p-6 bg-black border border-[#515151] text-white rounded-2xl"
     >
       {/* Event Name */}
       <div className="flex flex-col gap-1">

@@ -1,3 +1,4 @@
+import { Award } from "lucide-react";
 import React from "react";
 
 export default function Table({ topUsers }) {
@@ -23,8 +24,9 @@ export default function Table({ topUsers }) {
                   />
                 </td>
                 <td className="p-2">{user.name}</td>
-                <td className="p-2 font-semibold ml-auto mr-20">
+                <td className="p-2 font-semibold ml-auto mr-20 flex">
                   {user.points}
+                  <Award />
                 </td>
               </tr>
             ))}
