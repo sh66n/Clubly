@@ -14,12 +14,15 @@ import {
   Users,
 } from "lucide-react";
 import BorderedDiv from "../BorderedDiv";
+import Link from "next/link";
+import UserCard from "./UserCard";
 
 interface EventDetailsProps {
   event: IEvent;
+  group: any;
 }
 
-export default function EventDetails({ event }: EventDetailsProps) {
+export default function EventDetails({ event, group }: EventDetailsProps) {
   const today = new Date();
   const eventDate = new Date(event.date); // assuming event.date is the registration deadline
   const daysLeft = Math.max(differenceInCalendarDays(eventDate, today), 0);
@@ -145,9 +148,27 @@ export default function EventDetails({ event }: EventDetailsProps) {
                 </div>
               </div>
             </BorderedDiv>
-            <BorderedDiv>
-              <h2 className="font-semibold text-2xl mb-2">My group</h2>
-            </BorderedDiv>
+            {group ? (
+              <BorderedDiv>
+                <h2 className="font-semibold text-2xl mb-2">My Group</h2>
+                {group.members.map((member, idx) => (
+                  <UserCard user={member} key={member._id} />
+                ))}
+              </BorderedDiv>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <Link href={`/events/${event._id}/groups/new`}>
+                  <BorderedDiv className="rounded-full text-center ">
+                    Create group
+                  </BorderedDiv>
+                </Link>
+                <Link href={`/events/${event._id}/groups`}>
+                  <BorderedDiv className="rounded-full text-center ">
+                    Join public groups
+                  </BorderedDiv>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -8,7 +8,10 @@ import "./user.model";
 import "./club.model";
 import "./event.model";
 
+import "./group.model";
+
 // Export all models
 export { User } from "./user.model";
 export { Club } from "./club.model";
 export { Event } from "./event.model";
+export { Group } from "./group.model";

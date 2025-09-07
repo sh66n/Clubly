@@ -62,16 +62,34 @@ const eventSchema = new Schema<IEvent>(
         ref: "User",
       },
     ],
+    groupRegistrations: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Group",
+      },
+    ],
     participants: [
       {
         type: Schema.Types.ObjectId,
         ref: "User",
       },
     ],
+    participantGroups: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Group",
+      },
+    ],
     winners: [
       {
         type: Schema.Types.ObjectId,
         ref: "User",
+      },
+    ],
+    winnerGroup: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Group",
       },
     ],
     image: {

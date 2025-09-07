@@ -1,5 +1,6 @@
+import { auth } from "@/auth";
 import { connectToDb } from "@/lib/connectToDb";
-import { Event } from "@/models";
+import { Event, Group } from "@/models";
 import { NextRequest, NextResponse } from "next/server";
 
 export const GET = async (
@@ -7,6 +8,7 @@ export const GET = async (
   { params }: { params: Promise<{ id: string }> }
 ) => {
   try {
+    const session = await auth();
     await connectToDb();
     const { id } = await params;
     const event = await Event.findById(id)
@@ -15,7 +17,20 @@ export const GET = async (
       .populate("contact")
       .populate("organizingClub")
       .populate("winners");
-    return NextResponse.json({ event }, { status: 200 });
+
+    // Check if user has a group for this event
+    let myGroup = null;
+    if (event.eventType === "team" && session?.user.id) {
+      // Only check groups if it's a team event
+      myGroup = await Group.findOne({
+        event: event._id,
+        members: session.user.id,
+      })
+        .populate("members", "name email image")
+        .populate("leader", "name email image");
+    }
+
+    return NextResponse.json({ event, myGroup }, { status: 200 });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error }, { status: 500 });

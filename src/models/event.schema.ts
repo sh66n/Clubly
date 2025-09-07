@@ -39,7 +39,10 @@ export interface IEvent {
     winner: number;
   };
   registrations: Types.ObjectId[];
+  groupRegistrations: Types.ObjectId[];
   participants: Types.ObjectId[];
+  participantGroups: Types.ObjectId[];
   winners: Types.ObjectId[];
+  winnerGroup: Types.ObjectId[];
   image: string;
 }
