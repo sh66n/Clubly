@@ -16,6 +16,7 @@ import {
 import BorderedDiv from "../BorderedDiv";
 import Link from "next/link";
 import UserCard from "./UserCard";
+import GroupCard from "../Groups/GroupCard";
 
 interface EventDetailsProps {
   event: IEvent;
@@ -150,10 +151,8 @@ export default function EventDetails({ event, group }: EventDetailsProps) {
             </BorderedDiv>
             {group ? (
               <BorderedDiv>
-                <h2 className="font-semibold text-2xl mb-2">My Group</h2>
-                {group.members.map((member, idx) => (
-                  <UserCard user={member} key={member._id} />
-                ))}
+                <GroupCard group={group} />
+                Code: {group.joinCode}
               </BorderedDiv>
             ) : (
               <div className="flex flex-col gap-2">
@@ -164,7 +163,7 @@ export default function EventDetails({ event, group }: EventDetailsProps) {
                 </Link>
                 <Link href={`/events/${event._id}/groups`}>
                   <BorderedDiv className="rounded-full text-center ">
-                    Join public groups
+                    Join group
                   </BorderedDiv>
                 </Link>
               </div>

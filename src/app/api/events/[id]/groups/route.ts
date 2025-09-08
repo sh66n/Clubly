@@ -20,9 +20,9 @@ export async function GET(
     }
 
     // ✅ fetch only public groups for this event
-    const groups = await Group.find({ event: event._id, isPublic: true })
-      .populate("members", "name email")
-      .populate("leader", "name email");
+    const groups = await Group.find({ event: event._id })
+      .populate("members", "name email image")
+      .populate("leader", "name email image");
 
     return NextResponse.json(groups, { status: 200 });
   } catch (err: any) {
