@@ -1,6 +1,6 @@
 // src/app/api/events/[id]/attendance/route.ts
+import { assignPointsForEvent } from "@/services/assignPoints";
 import { NextResponse } from "next/server";
-import { assignPoints } from "@/services/assignPoints";
 
 export async function POST(
   req: Request,
@@ -8,7 +8,7 @@ export async function POST(
 ) {
   try {
     const { present, absent } = await req.json();
-    const updatedEvent = await assignPoints(params.id, present, absent);
+    const updatedEvent = await assignPointsForEvent(params.id, present, absent);
     return NextResponse.json(updatedEvent);
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
