@@ -1,11 +1,10 @@
-import { Event } from "@/models";
-import { User } from "@/models";
+import { Event, User, Group } from "@/models";
 import mongoose from "mongoose";
 
-export async function assignPoints(
+export async function assignPointsForEvent(
   eventId: string,
-  present: { _id: string }[],
-  absent: { _id: string }[]
+  present: { _id: string; members?: { _id: string }[] }[],
+  absent: { _id: string; members?: { _id: string }[] }[]
 ) {
   const event = await Event.findById(eventId);
   if (!event) throw new Error("Event not found");
@@ -20,49 +19,57 @@ export async function assignPoints(
     );
   }
 
-  // ✅ Handle present users
-  for (const user of present) {
-    const alreadyParticipant = event.participants.some(
-      (p) => p.toString() === user._id
-    );
-
-    if (!alreadyParticipant) {
-      // Add to participants
-      event.participants.push(new mongoose.Types.ObjectId(user._id));
-
-      // Ensure user has a points record for this club
-      await ensureClubPoints(user._id);
-
-      // Increment user's points
+  // Helper to process a list of user IDs
+  async function processUsers(users: string[], addPoints: number) {
+    for (const userId of users) {
+      await ensureClubPoints(userId);
       await User.findByIdAndUpdate(
-        user._id,
-        { $inc: { "points.$[elem].points": 10 } },
+        userId,
+        { $inc: { "points.$[elem].points": addPoints } },
         { arrayFilters: [{ "elem.clubId": clubId }] }
       );
     }
   }
 
-  // ✅ Handle absent users
-  for (const user of absent) {
-    const isParticipant = event.participants.some(
-      (p) => p.toString() === user._id
-    );
+  // ✅ Handle present
+  for (const item of present) {
+    if (event.eventType === "team" && item.members) {
+      // Add group to participantGroups if not already
+      if (!event.participantGroups.includes(item._id as any)) {
+        event.participantGroups.push(new mongoose.Types.ObjectId(item._id));
+      }
+      // Award points to each member
+      await processUsers(
+        item.members.map((m) => m._id),
+        10
+      );
+    } else {
+      // Individual
+      if (!event.participants.includes(item._id as any)) {
+        event.participants.push(new mongoose.Types.ObjectId(item._id));
+      }
+      await processUsers([item._id], 10);
+    }
+  }
 
-    if (isParticipant) {
-      // Remove from participants
+  // ✅ Handle absent
+  for (const item of absent) {
+    if (event.eventType === "team" && item.members) {
+      // Remove group from participantGroups
+      event.participantGroups = event.participantGroups.filter(
+        (g) => g.toString() !== item._id
+      );
+      // Deduct points from each member
+      await processUsers(
+        item.members.map((m) => m._id),
+        -10
+      );
+    } else {
+      // Individual
       event.participants = event.participants.filter(
-        (p) => p.toString() !== user._id
+        (p) => p.toString() !== item._id
       );
-
-      // Ensure user has a points record for this club
-      await ensureClubPoints(user._id);
-
-      // Deduct user's points
-      await User.findByIdAndUpdate(
-        user._id,
-        { $inc: { "points.$[elem].points": -10 } },
-        { arrayFilters: [{ "elem.clubId": clubId }] }
-      );
+      await processUsers([item._id], -10);
     }
   }
 

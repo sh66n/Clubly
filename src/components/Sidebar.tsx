@@ -33,7 +33,7 @@ export default function Sidebar({ points }) {
     <>
       {/* Mobile menu button */}
       <button
-        className="md:hidden absolute top-4 left-4 z-50 p-2 rounded-md bg-gray-800 text-white"
+        className="md:hidden absolute top-4 left-4 z-50 p-2 rounded-md bg-black border border-[#515151] text-white"
         onClick={() => setIsOpen(true)}
       >
         <PanelLeft />
