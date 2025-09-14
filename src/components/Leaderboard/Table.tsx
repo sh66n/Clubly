@@ -4,35 +4,40 @@ import React from "react";
 export default function Table({ topUsers }) {
   return (
     <div className="bg-black h-[40%] flex flex-col rounded-lg border border-[#515151] relative z-10">
-      <div className="p-4 border-b border-b-[#515151] text-2xl font-semibold">
+      {/* Header */}
+      <div className="p-3 sm:p-4 border-b border-b-[#515151] text-lg sm:text-2xl font-semibold">
         All Time
       </div>
-      <div className="overflow-y-auto scrollbar-hide">
-        <table className="bg-black w-full">
+
+      {/* Table body with scroll */}
+      <div className="overflow-y-auto flex-1 scrollbar-hide">
+        <table className="w-full">
           <tbody>
             {topUsers.map((user, index) => (
               <tr
                 key={user._id}
                 className="border-b border-[#515151] flex items-center"
               >
-                <td className="p-2">#{index + 1}</td>
+                <td className="p-2 text-sm sm:text-base">#{index + 1}</td>
                 <td className="p-2">
                   <img
                     src={user.image}
                     alt={user.name}
-                    className="w-8 h-8 rounded-full"
+                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover"
                   />
                 </td>
-                <td className="p-2">{user.name}</td>
-                <td className="p-2 font-semibold ml-auto mr-20 flex">
+                <td className="p-2 text-sm sm:text-base">{user.name}</td>
+                <td className="p-2 font-semibold ml-auto mr-8 flex items-center text-sm sm:text-base">
                   {user.points}
-                  <Award />
+                  <Award className="ml-1 w-4 h-4" />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Bottom gradient overlay */}
       <div className="pointer-events-none absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-black to-transparent z-20 rounded-b-lg" />
     </div>
   );

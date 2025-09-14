@@ -1,11 +1,12 @@
-import { LoaderCircle } from "lucide-react";
+import PodiumSkeleton from "@/components/Leaderboard/PodiumSkeleton";
+import TableSkeleton from "@/components/Leaderboard/TableSkeleton";
 import React from "react";
 
-export default function loading() {
+export default function Loading() {
   return (
-    <div className="h-full w-full flex justify-center items-center">
-      <LoaderCircle className="h-20 w-20 animate-spin" />
-      {/* <div className="h-20 w-20 bg-[url(/icons/loading.png)] bg-cover bg-center bg-no-repeat animate-spin"></div> */}
+    <div className="w-full h-full grow">
+      <PodiumSkeleton />
+      <TableSkeleton />
     </div>
   );
 }

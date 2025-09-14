@@ -42,8 +42,11 @@ export default async function RootLayout({
       <body
         className={`${jakarta.variable} ${silkscreen.variable} antialiased flex`}
       >
+        {/* Sidebar */}
         <Sidebar points={session?.user.points} />
-        <div className="ml-62 flex-1">{children}</div>
+
+        {/* Main content */}
+        <div className="flex-1">{children}</div>
       </body>
     </html>
   );

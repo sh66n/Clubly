@@ -43,15 +43,25 @@ export default async function Dashboard() {
 
   return (
     <div className="h-full flex flex-col">
-      <h1 className="text-5xl font-semibold">Dashboard</h1>
-      <div className="mt-2 text-[#717171]">
-        Track, explore, and make the most of your club journey.
+      {/* Header Section */}
+      <div className="mb-6 lg:mb-8">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold mb-2">
+          Dashboard
+        </h1>
+        <div className="text-sm sm:text-base text-[#717171]">
+          Track, explore, and make the most of your club journey.
+        </div>
       </div>
-      <div className="flex flex-col grow">
-        <div className="my-4 flex gap-4">
-          <BorderedDiv className="flex-1">
-            <div className="text-2xl font-semibold">Events attended</div>
-            <div className="text-[#5E77F5] font-bold text-5xl my-4">
+
+      {/* Main Content */}
+      <div className="flex flex-col grow space-y-4 lg:space-y-6">
+        {/* Stats Cards Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <BorderedDiv className="w-full">
+            <div className="text-lg sm:text-xl lg:text-2xl font-semibold">
+              Events attended
+            </div>
+            <div className="text-[#5E77F5] font-bold text-3xl sm:text-4xl lg:text-5xl my-3 lg:my-4">
               {eventsAttended}
             </div>
             <div className="text-xs text-[#717171]">
@@ -59,9 +69,11 @@ export default async function Dashboard() {
             </div>
           </BorderedDiv>
 
-          <BorderedDiv className="flex-1">
-            <div className="text-2xl font-semibold">Leaderboard</div>
-            <div className="text-[#5E77F5] font-bold text-5xl my-4">
+          <BorderedDiv className="w-full">
+            <div className="text-lg sm:text-xl lg:text-2xl font-semibold">
+              Leaderboard
+            </div>
+            <div className="text-[#5E77F5] font-bold text-3xl sm:text-4xl lg:text-5xl my-3 lg:my-4">
               {leaderboardData.rank !== -1 ? `#${leaderboardData.rank}` : "N/A"}
             </div>
             <div className="text-xs text-[#717171]">
@@ -69,9 +81,11 @@ export default async function Dashboard() {
             </div>
           </BorderedDiv>
 
-          <BorderedDiv className="flex-1">
-            <div className="text-2xl font-semibold">Applied Events</div>
-            <div className="text-[#5E77F5] font-bold text-5xl my-4">
+          <BorderedDiv className="w-full sm:col-span-2 lg:col-span-1">
+            <div className="text-lg sm:text-xl lg:text-2xl font-semibold">
+              Applied Events
+            </div>
+            <div className="text-[#5E77F5] font-bold text-3xl sm:text-4xl lg:text-5xl my-3 lg:my-4">
               {eventsRegistered}
             </div>
             <div className="text-xs text-[#717171]">
@@ -79,27 +93,48 @@ export default async function Dashboard() {
             </div>
           </BorderedDiv>
         </div>
-        <div className="grow flex gap-4">
-          <BorderedDiv className="flex-1 flex flex-col">
-            <div className="text-2xl font-semibold mb-2">Events this week</div>
+
+        {/* Charts and Clubs Row */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 flex-1">
+          {/* Events Chart */}
+          <BorderedDiv className="flex flex-col">
+            <div className="text-lg sm:text-xl lg:text-2xl font-semibold mb-2">
+              Events this week
+            </div>
             <div className="text-xs text-[#717171] mb-2">
               Keep an eye out for upcoming ones.
             </div>
             <BarChart upcomingEvents={upcomingEvents} />
           </BorderedDiv>
 
-          <BorderedDiv className="flex-1 flex flex-col">
-            <div className="text-2xl font-semibold mb-2">Explore Clubs</div>
+          {/* Clubs Section */}
+          <BorderedDiv className="flex flex-col">
+            <div className="text-lg sm:text-xl lg:text-2xl font-semibold mb-2">
+              Explore Clubs
+            </div>
             <div className="text-xs text-[#717171] mb-2">
               Clubs you might be interested in
             </div>
+
+            {/* Clubs Grid - Responsive Layout */}
             <div className="grow flex justify-evenly items-center">
-              {anyFourClubs.map((club, idx) => (
-                <div key={club._id} className="flex flex-col p-2 rounded-lg">
-                  <img src={club.logo} className="h-30 w-30" alt="" />
-                  <div className="text-center mt-2">{club.name}</div>
-                </div>
-              ))}
+              <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4 gap-4 w-full">
+                {anyFourClubs.map((club, idx) => (
+                  <div
+                    key={club._id}
+                    className="flex flex-col items-center p-2 rounded-lg"
+                  >
+                    <img
+                      src={club.logo}
+                      className="h-20 w-20 sm:h-24 sm:w-24 object-contain"
+                      alt={`${club.name} logo`}
+                    />
+                    <div className="text-center mt-2 text-sm sm:text-base">
+                      {club.name}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </BorderedDiv>
         </div>

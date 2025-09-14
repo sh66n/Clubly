@@ -20,8 +20,8 @@ const getEventDetails = async (eventId) => {
   );
   if (!res.ok) return null;
 
-  const { event, myGroup } = await res.json();
-  return { event, myGroup };
+  const { event, myGroup, alreadyRegistered } = await res.json();
+  return { event, myGroup, alreadyRegistered };
 };
 
 export default async function EventDetailsPage({
@@ -31,12 +31,12 @@ export default async function EventDetailsPage({
 }) {
   const session = await auth();
   const { eventId } = await params;
-  const { event, myGroup } = await getEventDetails(eventId);
+  const { event, myGroup, alreadyRegistered } = await getEventDetails(eventId);
 
   return (
     <>
       <div className="h-full">
-        <EventDetails event={event} group={myGroup} />
+        <EventDetails event={event} group={myGroup} user={session?.user} />
         {session?.user.role === "club-admin" &&
           session?.user.adminClub?.toString() ===
             event.organizingClub._id.toString() && (

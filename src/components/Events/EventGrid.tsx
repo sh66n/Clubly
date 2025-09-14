@@ -12,7 +12,7 @@ interface EventGridProps {
 
 export default function EventGrid({ events, user }: EventGridProps) {
   return (
-    <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 p-6">
+    <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 p-6">
       {events.map((event, idx) => (
         <EventCard key={event._id} event={event} user={user} />
       ))}
