@@ -11,7 +11,7 @@ export const PUT = async (
     await connectToDb();
 
     const { winnerIds } = await req.json();
-    const eventId = params.id;
+    const { id } = await params;
 
     if (!winnerIds || !Array.isArray(winnerIds)) {
       return NextResponse.json(
@@ -21,7 +21,7 @@ export const PUT = async (
     }
 
     // Fetch event
-    const event = await Event.findById(eventId).populate("participants");
+    const event = await Event.findById(id).populate("participants");
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
@@ -38,21 +38,21 @@ export const PUT = async (
       );
     }
 
-    // Ensure winners are participants
-    const participantIds = event.participants.map((p: any) => p._id.toString());
-    const invalidWinners = winnerIds.filter(
-      (id: string) => !participantIds.includes(id)
-    );
+    // // Ensure winners are participants
+    // const participantIds = event.participants.map((p: any) => p._id.toString());
+    // const invalidWinners = winnerIds.filter(
+    //   (id: string) => !participantIds.includes(id)
+    // );
 
-    if (invalidWinners.length > 0) {
-      return NextResponse.json(
-        {
-          error: "All winners must be participants of the event",
-          invalidWinners,
-        },
-        { status: 400 }
-      );
-    }
+    // if (invalidWinners.length > 0) {
+    //   return NextResponse.json(
+    //     {
+    //       error: "All winners must be participants of the event",
+    //       invalidWinners,
+    //     },
+    //     { status: 400 }
+    //   );
+    // }
 
     // Update winners list
     event.winners = winnerIds;
