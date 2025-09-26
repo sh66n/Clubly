@@ -23,12 +23,16 @@ interface Group {
   }[];
 }
 
-interface AnimatedGroupCardProps {
+interface GroupCardProps {
   group: Group;
+  isExpanded?: Boolean;
 }
 
-export default function GroupCard({ group }: AnimatedGroupCardProps) {
-  const [expanded, setExpanded] = useState(false);
+export default function GroupCard({
+  group,
+  isExpanded = false,
+}: GroupCardProps) {
+  const [expanded, setExpanded] = useState(isExpanded);
 
   const toggleExpand = () => setExpanded(!expanded);
 
