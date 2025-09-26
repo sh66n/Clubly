@@ -2,29 +2,32 @@
 import React, { useState } from "react";
 import UserCard from "./UserCard";
 import AttendanceToggle from "./AttendanceToggle";
+import GroupCard from "../Groups/GroupCard";
+import BorderedDiv from "../BorderedDiv";
 
 export default function AttendanceMarker({
   present: initialPresent,
   absent: initialAbsent,
   eventId,
+  eventType,
 }) {
   const [present, setPresent] = useState(initialPresent);
   const [absent, setAbsent] = useState(initialAbsent);
 
-  const handleToggle = (userId: string, makePresent: boolean) => {
+  const handleToggle = (id: string, makePresent: boolean) => {
     if (makePresent) {
       // Move from absent → present
-      const user = absent.find((u) => u._id === userId);
-      if (user) {
-        setAbsent(absent.filter((u) => u._id !== userId));
-        setPresent([...present, user]);
+      const item = absent.find((a) => a._id === id);
+      if (item) {
+        setAbsent(absent.filter((a) => a._id !== id));
+        setPresent([...present, item]);
       }
     } else {
       // Move from present → absent
-      const user = present.find((u) => u._id === userId);
-      if (user) {
-        setPresent(present.filter((u) => u._id !== userId));
-        setAbsent([...absent, user]);
+      const item = present.find((a) => a._id === id);
+      if (item) {
+        setPresent(present.filter((a) => a._id !== id));
+        setAbsent([...absent, item]);
       }
     }
   };
@@ -50,40 +53,74 @@ export default function AttendanceMarker({
   return (
     <div className="grow flex flex-col">
       <div className="flex-1">
+        {/* PRESENT */}
         <div className="min-h-20 h-fit p-4 space-y-2">
-          Present
-          {present.map((user) => (
-            <UserCard
-              key={user._id}
-              user={user}
-              action={
-                <AttendanceToggle
-                  isPresent={true}
-                  onChange={(makePresent) =>
-                    handleToggle(user._id, makePresent)
-                  }
-                />
-              }
-            />
-          ))}
+          <h3 className="font-semibold">Present</h3>
+          {present.map((entity) =>
+            eventType === "individual" ? (
+              <UserCard
+                key={entity._id}
+                user={entity}
+                action={
+                  <AttendanceToggle
+                    isPresent={true}
+                    onChange={(makePresent) =>
+                      handleToggle(entity._id, makePresent)
+                    }
+                  />
+                }
+              />
+            ) : (
+              <BorderedDiv key={entity._id} className="">
+                <GroupCard group={entity} />
+                <div className="mt-2 flex justify-center">
+                  <span>
+                    <AttendanceToggle
+                      isPresent={true}
+                      onChange={(makePresent) =>
+                        handleToggle(entity._id, makePresent)
+                      }
+                    />
+                  </span>
+                </div>
+              </BorderedDiv>
+            )
+          )}
         </div>
 
+        {/* ABSENT */}
         <div className="min-h-30 h-fit p-4 space-y-2">
-          Absent
-          {absent.map((user) => (
-            <UserCard
-              key={user._id}
-              user={user}
-              action={
-                <AttendanceToggle
-                  isPresent={false}
-                  onChange={(makePresent) =>
-                    handleToggle(user._id, makePresent)
-                  }
-                />
-              }
-            />
-          ))}
+          <h3 className="font-semibold">Absent</h3>
+          {absent.map((entity) =>
+            eventType === "individual" ? (
+              <UserCard
+                key={entity._id}
+                user={entity}
+                action={
+                  <AttendanceToggle
+                    isPresent={false}
+                    onChange={(makePresent) =>
+                      handleToggle(entity._id, makePresent)
+                    }
+                  />
+                }
+              />
+            ) : (
+              <BorderedDiv key={entity._id}>
+                <GroupCard group={entity} />
+                <div className="mt-2 flex justify-center">
+                  <span>
+                    <AttendanceToggle
+                      isPresent={false}
+                      onChange={(makePresent) =>
+                        handleToggle(entity._id, makePresent)
+                      }
+                    />
+                  </span>
+                </div>
+              </BorderedDiv>
+            )
+          )}
         </div>
       </div>
 

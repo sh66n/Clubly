@@ -77,7 +77,11 @@ export default function EventCard({ event, user }: EventCardProps) {
 
         <div className="flex items-center gap-1 text-xs text-gray-300 mt-auto">
           <Users size={14} />
-          <span>{event.registrations.length}</span>
+          <span>
+            {event.eventType === "team"
+              ? event.groupRegistrations.length
+              : event.registrations.length}
+          </span>
         </div>
       </div>
     </Link>
