@@ -202,7 +202,7 @@ export default function EventDetails({
             <>
               {group ? (
                 <BorderedDiv>
-                  <GroupCard group={group} />
+                  <GroupCard group={group} isExpanded={true} />
                   {!group.isPublic && <div>Code: {group.joinCode}</div>}
                 </BorderedDiv>
               ) : (
