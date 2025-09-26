@@ -25,7 +25,7 @@ interface Group {
 
 interface GroupCardProps {
   group: Group;
-  isExpanded?: Boolean;
+  isExpanded?: boolean;
 }
 
 export default function GroupCard({
