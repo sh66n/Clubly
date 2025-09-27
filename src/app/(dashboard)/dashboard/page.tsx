@@ -31,7 +31,6 @@ const getInsights = async (userId) => {
 
 export default async function Dashboard() {
   const session = await auth();
-  if (!session?.user) redirect("/login");
 
   const {
     eventsAttended,

@@ -71,10 +71,17 @@ export default function EventDetails({
   };
 
   // ✅ Check if already registered
-  const isAlreadyRegistered =
-    event.eventType === "individual"
-      ? event.registrations?.some((u: any) => u._id === user.id)
-      : event.groupRegistrations?.some((g: any) => g._id === group?._id);
+  const isAlreadyRegistered = (() => {
+    if (!user) return false;
+    if (event.eventType === "individual") {
+      return event.registrations?.some((u: any) => u._id === user.id) ?? false;
+    } else {
+      return (
+        event.groupRegistrations?.some((g: any) => g._id === group?._id) ??
+        false
+      );
+    }
+  })();
 
   // ✅ Check if event has passed
   const hasEventPassed = differenceInCalendarDays(today, eventDate) > 0;
@@ -195,7 +202,7 @@ export default function EventDetails({
               {isAlreadyRegistered
                 ? "Registered"
                 : hasEventPassed
-                ? "Registration Closed"
+                ? "Registrations Closed"
                 : isLoading
                 ? "Registering..."
                 : "Register"}
