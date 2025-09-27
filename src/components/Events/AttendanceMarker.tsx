@@ -145,7 +145,10 @@ export default function AttendanceMarker({
           }`}
         >
           {loading ? (
-            <LoaderCircle className="animate-spin" />
+            <div className="flex gap-2">
+              <LoaderCircle className="animate-spin" />
+              <div>Submitting</div>
+            </div>
           ) : (
             "Submit Attendance"
           )}

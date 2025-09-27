@@ -46,7 +46,7 @@ export default async function RootLayout({
         <Sidebar points={session?.user.points} />
 
         {/* Main content */}
-        <div className="flex-1">{children}</div>
+        <div className="flex-1 pl-2">{children}</div>
       </body>
     </html>
   );
