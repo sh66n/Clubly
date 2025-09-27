@@ -50,7 +50,7 @@ export default function Sidebar({ points }) {
       {/* Sidebar */}
       <div
         className={`
-          fixed top-0 left-0 h-screen w-64 p-4 overflow-y-auto z-50 bg-black text-white transform transition-transform duration-300
+          fixed top-0 left-0 h-screen w-64 p-4 pr-2 overflow-y-auto z-50 bg-black text-white transform transition-transform duration-300
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
           md:translate-x-0 md:static md:flex
         `}

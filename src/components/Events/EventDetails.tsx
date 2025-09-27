@@ -77,12 +77,13 @@ export default function EventDetails({
       : event.groupRegistrations?.some((g: any) => g._id === group?._id);
 
   // ✅ Check if event has passed
-  const hasEventPassed = new Date(event.date) < new Date();
+  const hasEventPassed = differenceInCalendarDays(today, eventDate) > 0;
 
   // ⛔ Disable register logic
   const isRegisterDisabled =
     isAlreadyRegistered ||
     hasEventPassed ||
+    isLoading ||
     (event.eventType === "team" &&
       (!group || // No group
         user.id !== group.leader._id || // Not leader
@@ -184,7 +185,7 @@ export default function EventDetails({
 
             <button
               onClick={handleRegister}
-              disabled={isRegisterDisabled || isAlreadyRegistered}
+              disabled={isRegisterDisabled}
               className={`w-full py-2 rounded-lg font-semibold mb-2 ${
                 isRegisterDisabled
                   ? "bg-[#000F57] opacity-50 cursor-not-allowed"
