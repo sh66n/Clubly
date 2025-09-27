@@ -1,5 +1,5 @@
 import { connectToDb } from "@/lib/connectToDb";
-import { Event, User } from "@/models";
+import { Event, User, Group } from "@/models";
 import { NextRequest, NextResponse } from "next/server";
 
 // PUT /api/events/:id/winners
@@ -10,82 +10,71 @@ export const PUT = async (
   try {
     await connectToDb();
 
-    const { winnerIds } = await req.json();
-    const { id } = await params;
+    const { winnerId } = await req.json(); // winnerId can be a user or group ID
+    const { id } = params;
 
-    if (!winnerIds || !Array.isArray(winnerIds)) {
+    if (!winnerId || typeof winnerId !== "string") {
       return NextResponse.json(
-        { error: "winnerIds must be an array of user IDs" },
+        { error: "winnerId must be a valid ID" },
         { status: 400 }
       );
     }
 
-    // Fetch event
-    const event = await Event.findById(id).populate("participants");
-    if (!event) {
+    const event = await Event.findById(id);
+    if (!event)
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
-    }
 
-    const winnerPoints = event.points?.winner ?? 50; // default to 50
+    const winnerPoints = event.points?.winner ?? 50;
     const clubId = event.organizingClub;
 
-    // Validate winners exist
-    const users = await User.find({ _id: { $in: winnerIds } });
-    if (users.length !== winnerIds.length) {
-      return NextResponse.json(
-        { error: "Some winnerIds are invalid" },
-        { status: 400 }
-      );
-    }
+    if (event.eventType === "individual") {
+      // Deduct points from old winner
+      if (event.winner && event.winner.toString() !== winnerId) {
+        await awardPointsToUser(event.winner, clubId, -winnerPoints);
+      }
 
-    // // Ensure winners are participants
-    // const participantIds = event.participants.map((p: any) => p._id.toString());
-    // const invalidWinners = winnerIds.filter(
-    //   (id: string) => !participantIds.includes(id)
-    // );
+      // Assign new winner
+      event.winner = winnerId;
+      event.winnerGroup = null;
+      await event.save();
 
-    // if (invalidWinners.length > 0) {
-    //   return NextResponse.json(
-    //     {
-    //       error: "All winners must be participants of the event",
-    //       invalidWinners,
-    //     },
-    //     { status: 400 }
-    //   );
-    // }
-
-    // Update winners list
-    event.winners = winnerIds;
-    await event.save();
-
-    // ✅ Award points per club
-    for (const winnerId of winnerIds) {
-      const winner = await User.findById(winnerId);
-
-      if (!winner) continue;
-
-      const existing = winner.points.find(
-        (p: any) => p.clubId.toString() === clubId.toString()
-      );
-
-      if (existing) {
-        // ✅ Increment points
-        await User.updateOne(
-          { _id: winnerId, "points.clubId": clubId },
-          { $inc: { "points.$.points": 50 } }
+      // Award points
+      await awardPointsToUser(winnerId, clubId, winnerPoints);
+    } else if (event.eventType === "team") {
+      const group = await Group.findById(winnerId).populate("members");
+      if (!group || group.event.toString() !== event._id.toString()) {
+        return NextResponse.json(
+          { error: "Invalid winner group" },
+          { status: 400 }
         );
-      } else {
-        // ✅ Add a new club entry
-        await User.updateOne(
-          { _id: winnerId },
-          { $push: { points: { clubId, points: 50 } } }
+      }
+
+      // Deduct points from previous winner group if different
+      if (event.winnerGroup && event.winnerGroup.toString() !== winnerId) {
+        const oldGroup = await Group.findById(event.winnerGroup).populate(
+          "members"
         );
+        if (oldGroup) {
+          for (const member of oldGroup.members) {
+            await awardPointsToUser(member._id, clubId, -winnerPoints);
+          }
+        }
+      }
+
+      // Assign new winner group
+      event.winnerGroup = group._id;
+      event.winner = null;
+      await event.save();
+
+      // Award points to new winner group
+      for (const member of group.members) {
+        await awardPointsToUser(member._id, clubId, winnerPoints);
       }
     }
 
     return NextResponse.json(
       {
-        message: `Winners assigned and rewarded +${winnerPoints} points each`,
+        message: `Winner assigned and points updated (+/-${winnerPoints})`,
         event,
       },
       { status: 200 }
@@ -98,3 +87,25 @@ export const PUT = async (
     );
   }
 };
+
+// Helper to award points (+/-)
+async function awardPointsToUser(userId: string, clubId: any, points: number) {
+  const user = await User.findById(userId);
+  if (!user) return;
+
+  const existing = user.points.find(
+    (p) => p.clubId.toString() === clubId.toString()
+  );
+  if (existing) {
+    await User.updateOne(
+      { _id: userId, "points.clubId": clubId },
+      { $inc: { "points.$.points": points } }
+    );
+  } else if (points > 0) {
+    // Only push if awarding positive points
+    await User.updateOne(
+      { _id: userId },
+      { $push: { points: { clubId, points } } }
+    );
+  }
+}

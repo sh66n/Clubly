@@ -4,6 +4,9 @@ import UserCard from "./UserCard";
 import AttendanceToggle from "./AttendanceToggle";
 import GroupCard from "../Groups/GroupCard";
 import BorderedDiv from "../BorderedDiv";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { LoaderCircle } from "lucide-react";
 
 export default function AttendanceMarker({
   present: initialPresent,
@@ -13,6 +16,9 @@ export default function AttendanceMarker({
 }) {
   const [present, setPresent] = useState(initialPresent);
   const [absent, setAbsent] = useState(initialAbsent);
+  const [loading, setLoading] = useState(false);
+
+  const router = useRouter();
 
   const handleToggle = (id: string, makePresent: boolean) => {
     if (makePresent) {
@@ -34,6 +40,7 @@ export default function AttendanceMarker({
 
   const handleSubmit = async () => {
     try {
+      setLoading(true);
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/api/events/${eventId}/attendance`,
         {
@@ -44,9 +51,12 @@ export default function AttendanceMarker({
       );
       if (!res.ok) throw new Error("Failed to update attendance");
       const updatedEvent = await res.json();
-      console.log("✅ Attendance updated:", updatedEvent);
+      toast.success("Attendance updated");
+      router.push(`/events/${eventId}`);
     } catch (error) {
-      console.error("❌ Error submitting attendance:", error);
+      toast.error("Error submitting attendance");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -126,10 +136,19 @@ export default function AttendanceMarker({
 
       <div className="flex justify-center">
         <button
+          disabled={loading}
           onClick={handleSubmit}
-          className="bg-green-600 text-white px-4 py-2 rounded-lg"
+          className={`px-4 py-2 rounded-lg ${
+            loading
+              ? "bg-green-600 opacity-50 cursor-not-allowed"
+              : "bg-green-600 hover:opacity-50 hover:cursor-pointer"
+          }`}
         >
-          Submit Attendance
+          {loading ? (
+            <LoaderCircle className="animate-spin" />
+          ) : (
+            "Submit Attendance"
+          )}
         </button>
       </div>
     </div>

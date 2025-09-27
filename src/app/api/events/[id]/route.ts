@@ -16,7 +16,7 @@ export const GET = async (
       .populate("participants")
       .populate("contact")
       .populate("organizingClub")
-      .populate("winners")
+      .populate("winner")
       .populate({
         path: "groupRegistrations",
         populate: [

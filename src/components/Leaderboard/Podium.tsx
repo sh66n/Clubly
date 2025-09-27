@@ -2,7 +2,7 @@ import React from "react";
 
 export default function Podium({ topThree }) {
   return (
-    <div className="h-[60%] flex justify-center">
+    <div className="h-[60%] flex justify-center gap-4">
       {/* 2nd place */}
       <div className="w-20 md:w-40">
         <div className="h-3/4 flex flex-col justify-end">

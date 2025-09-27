@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { format, differenceInCalendarDays } from "date-fns";
 import { IEvent } from "@/models/event.schema";
 import {
@@ -17,6 +17,7 @@ import Link from "next/link";
 import GroupCard from "../Groups/GroupCard";
 import { useRouter } from "next/navigation";
 import { IUser } from "@/models/user.schema";
+import { toast } from "sonner";
 
 interface EventDetailsProps {
   event: IEvent;
@@ -33,15 +34,19 @@ export default function EventDetails({
   const eventDate = new Date(event.date);
   const daysLeft = Math.max(differenceInCalendarDays(eventDate, today), 0);
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleRegister = async () => {
     try {
+      setIsLoading(true);
+
       const payload: any = { eventId: event._id };
       if (event.eventType === "individual") {
         payload.userId = user.id;
       } else if (event.eventType === "team") {
         if (!group) {
-          alert("You must join or create a group first.");
+          toast.error("You must join or create a group first.");
+          setIsLoading(false);
           return;
         }
         payload.groupId = group._id;
@@ -53,21 +58,35 @@ export default function EventDetails({
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Registration failed");
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error);
 
-      alert("Registered successfully!");
+      toast.success("Registered successfully");
       router.refresh();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  // ✅ Check if already registered
+  const isAlreadyRegistered =
+    event.eventType === "individual"
+      ? event.registrations?.some((u: any) => u._id === user.id)
+      : event.groupRegistrations?.some((g: any) => g._id === group?._id);
+
+  // ✅ Check if event has passed
+  const hasEventPassed = new Date(event.date) < new Date();
+
   // ⛔ Disable register logic
   const isRegisterDisabled =
-    event.eventType === "team" &&
-    (!group || // No group
-      user.id !== group.leader._id || // Not leader
-      group.members.length < event.teamSize); // Team too small
+    isAlreadyRegistered ||
+    hasEventPassed ||
+    (event.eventType === "team" &&
+      (!group || // No group
+        user.id !== group.leader._id || // Not leader
+        group.members.length < event.teamSize)); // Team too small
 
   return (
     <div className="flex relative">
@@ -165,14 +184,20 @@ export default function EventDetails({
 
             <button
               onClick={handleRegister}
-              disabled={isRegisterDisabled}
+              disabled={isRegisterDisabled || isAlreadyRegistered}
               className={`w-full py-2 rounded-lg font-semibold mb-2 ${
                 isRegisterDisabled
                   ? "bg-[#000F57] opacity-50 cursor-not-allowed"
                   : "bg-[#000F57] text-white"
               }`}
             >
-              Register
+              {isAlreadyRegistered
+                ? "Registered"
+                : hasEventPassed
+                ? "Registration Closed"
+                : isLoading
+                ? "Registering..."
+                : "Register"}
             </button>
 
             <div className="flex ml-auto items-center gap-2 text-[#717171] my-2">

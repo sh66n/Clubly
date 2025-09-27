@@ -49,7 +49,9 @@ export default function EventInsights({ event }: EventInsightsProps) {
               {isTeam ? (
                 event.groupRegistrations?.length > 0 ? (
                   event.groupRegistrations.map((g) => (
-                    <GroupCard group={g} key={g._id} />
+                    <BorderedDiv key={g._id}>
+                      <GroupCard group={g} />
+                    </BorderedDiv>
                   ))
                 ) : (
                   <div className="text-sm text-[#717171]">None yet</div>
@@ -71,7 +73,9 @@ export default function EventInsights({ event }: EventInsightsProps) {
               {isTeam ? (
                 event.participantGroups?.length > 0 ? (
                   event.participantGroups.map((g) => (
-                    <GroupCard group={g} key={g._id} />
+                    <BorderedDiv key={g._id}>
+                      <GroupCard group={g} />
+                    </BorderedDiv>
                   ))
                 ) : (
                   <div className="text-sm text-[#717171]">None yet</div>
@@ -89,15 +93,15 @@ export default function EventInsights({ event }: EventInsightsProps) {
             <div className="text-lg mb-4">Winners</div>
             <div className="flex flex-col gap-2">
               {isTeam ? (
-                event.winnerGroup?.length > 0 ? (
-                  event.winnerGroup.map((g) => (
-                    <GroupCard group={g} key={g._id} />
-                  ))
+                event.winnerGroup ? (
+                  <BorderedDiv key={event.winnerGroup._id}>
+                    <GroupCard group={event.winnerGroup} />
+                  </BorderedDiv>
                 ) : (
                   <div className="text-sm text-[#717171]">None yet</div>
                 )
-              ) : event.winners?.length > 0 ? (
-                event.winners.map((u) => <UserCard user={u} key={u._id} />)
+              ) : event.winner ? (
+                <UserCard user={event.winner} key={event.winner._id} />
               ) : (
                 <div className="text-sm text-[#717171]">None yet</div>
               )}

@@ -1,18 +1,18 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
+import { toast } from "sonner";
 
 export default function JoinGroupForm({ eventId, group }) {
   const [joinCode, setJoinCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
-    setSuccess(false);
 
     try {
       const res = await fetch(
@@ -30,10 +30,10 @@ export default function JoinGroupForm({ eventId, group }) {
         const data = await res.json();
         throw new Error(data.error || "Failed to join group");
       }
-
-      setSuccess(true);
+      toast.success(`Successfully joined ${group.name}`);
+      router.push(`/events/${eventId}`);
     } catch (err: any) {
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -62,9 +62,6 @@ export default function JoinGroupForm({ eventId, group }) {
           {loading ? "Joining..." : "Join Group"}
         </button>
       </div>
-
-      {error && <p className="text-red-500 mt-2">{error}</p>}
-      {success && <p className="text-green-600 mt-2">Successfully joined!</p>}
     </form>
   );
 }
