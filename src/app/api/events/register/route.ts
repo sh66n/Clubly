@@ -34,6 +34,14 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
 
+      // Check if already registered
+      if (event.registrations.includes(userId)) {
+        return NextResponse.json(
+          { error: "Already registered for this event" },
+          { status: 400 }
+        );
+      }
+
       // Register user
       const updatedEvent = await Event.findByIdAndUpdate(
         eventId,
@@ -66,6 +74,14 @@ export async function POST(req: Request) {
         );
       }
 
+      // Check if already registered
+      if (event.groupRegistrations.includes(groupId)) {
+        return NextResponse.json(
+          { error: "Already registered for this event" },
+          { status: 400 }
+        );
+      }
+
       // Register group
       const updatedEvent = await Event.findByIdAndUpdate(
         eventId,
@@ -79,10 +95,7 @@ export async function POST(req: Request) {
       return NextResponse.json(updatedEvent, { status: 200 });
     }
 
-    return NextResponse.json(
-      { error: "Unknown event type" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Unknown event type" }, { status: 400 });
   } catch (err: any) {
     console.error(err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

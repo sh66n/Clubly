@@ -80,18 +80,14 @@ const eventSchema = new Schema<IEvent>(
         ref: "Group",
       },
     ],
-    winners: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
-    winnerGroup: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Group",
-      },
-    ],
+    winner: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    winnerGroup: {
+      type: Schema.Types.ObjectId,
+      ref: "Group",
+    },
     image: {
       type: String,
       required: false,

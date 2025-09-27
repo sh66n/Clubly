@@ -62,6 +62,18 @@ export async function POST(
       );
     }
 
+    const existingGroup = await Group.findOne({
+      event: event._id,
+      members: userId,
+    });
+
+    if (existingGroup) {
+      return NextResponse.json(
+        { error: "You are already part of a group for this event" },
+        { status: 400 }
+      );
+    }
+
     //  create joinCode for private groups
     let joinCode: string | undefined;
     if (!isPublic) {

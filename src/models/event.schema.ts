@@ -18,7 +18,7 @@ export const zEvent = z.object({
   }),
   registrations: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/)),
   participants: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/)),
-  winners: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/)),
+  winner: z.string().regex(/^[0-9a-fA-F]{24}$/),
   image: z.optional(z.string()),
 });
 
@@ -42,7 +42,7 @@ export interface IEvent {
   groupRegistrations: Types.ObjectId[];
   participants: Types.ObjectId[];
   participantGroups: Types.ObjectId[];
-  winners: Types.ObjectId[];
-  winnerGroup: Types.ObjectId[];
+  winner: Types.ObjectId;
+  winnerGroup: Types.ObjectId;
   image: string;
 }

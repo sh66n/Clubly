@@ -1,17 +1,19 @@
 "use client";
 
 import React, { useState } from "react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function NewGroupForm({ eventId }: { eventId: string }) {
   const [name, setName] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMessage("");
 
     try {
       const res = await fetch(`/api/events/${eventId}/groups`, {
@@ -23,10 +25,10 @@ export default function NewGroupForm({ eventId }: { eventId: string }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create group");
 
-      setMessage(`✅ Group created: ${data.name}`);
-      setName("");
+      toast.success(`Group created: ${data.name}`);
+      router.push(`/events/${eventId}`);
     } catch (err: any) {
-      setMessage(`❌ ${err.message}`);
+      toast.error(`${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -73,9 +75,6 @@ export default function NewGroupForm({ eventId }: { eventId: string }) {
         >
           {loading ? "Creating..." : "Create Group"}
         </button>
-
-        {/* Feedback */}
-        {message && <p className="text-sm mt-2">{message}</p>}
       </form>
     </div>
   );

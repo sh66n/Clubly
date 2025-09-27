@@ -5,16 +5,16 @@ import { User } from "./models/user.model";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
-    Google({
-      authorization: {
-        params: {
-          // Suggests login only from pvppcoe.ac.in
-          hd: "pvppcoe.ac.in",
-          prompt: "select_account",
-        },
-      },
-    }),
-    // Google,
+    // Google({
+    //   authorization: {
+    //     params: {
+    //       // Suggests login only from pvppcoe.ac.in
+    //       hd: "pvppcoe.ac.in",
+    //       prompt: "select_account",
+    //     },
+    //   },
+    // }),
+    Google,
   ],
   callbacks: {
     async signIn({ user }) {
