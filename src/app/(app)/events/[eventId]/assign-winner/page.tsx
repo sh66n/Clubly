@@ -12,7 +12,7 @@ export default async function AssignWinner({
   const { eventId } = await params;
 
   const eventType = await getEventType(eventId);
-  let rawParticipants = await getParticipants(eventId, eventType);
+  const rawParticipants = await getParticipants(eventId, eventType);
   const event = await getEvent(eventId);
 
   // Convert current winner to plain object
