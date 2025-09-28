@@ -8,6 +8,10 @@ export async function getEvent(eventId: string) {
   // Fetch the event
   const event = await Event.findById(eventId)
     .populate({
+      path: "organizingClub",
+      select: "_id name", // only fields you need
+    })
+    .populate({
       path: "winner", // individual winner
       select: "_id name email image",
     })

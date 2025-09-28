@@ -37,14 +37,12 @@ export default async function EventDetailsPage({
     notFound();
   }
 
+  const { event, myGroup, alreadyRegistered } = data;
+
   return (
     <>
       <div className="h-full">
-        <EventDetails
-          event={data.event}
-          group={data.myGroup}
-          user={session?.user}
-        />
+        <EventDetails event={event} group={myGroup} user={session?.user} />
         {session?.user.role === "club-admin" &&
           session?.user.adminClub?.toString() ===
             event.organizingClub._id.toString() && (
