@@ -5,6 +5,10 @@
   --foreground: #ffffff;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: var(--font-jakarta), sans-serif;
   background: var(--background);
