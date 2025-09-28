@@ -1,30 +1,19 @@
-import React from "react";
-import { Toaster } from "sonner";
+import { auth } from "@/auth";
+import Sidebar from "@/components/Sidebar";
 
-export default function layout({
+export default async function layout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
   return (
-    <>
-      <Toaster
-        position="bottom-right"
-        expand={false}
-        toastOptions={{
-          style: {
-            background: "black",
-            color: "white",
-          },
-        }}
-        visibleToasts={8}
-      />
+    <div className="flex">
+      {/* Sidebar */}
+      <Sidebar points={session?.user.points} />
 
-      <div className="relative min-h-screen h-full flex-grow pt-4 pr-4 pb-4">
-        <div className="h-full rounded-lg p-10 pb-4 border border-[#515151] relative bg-[url(/images/lb-bg.png)] bg-cover bg-top bg-no-repeat">
-          {children}
-        </div>
-      </div>
-    </>
+      {/* Main content */}
+      <div className="flex-1 pl-2">{children}</div>
+    </div>
   );
 }
