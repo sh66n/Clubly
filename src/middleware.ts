@@ -9,9 +9,7 @@ export default auth((req) => {
 
   if (pathname.startsWith("/dashboard")) {
     if (!req.auth) {
-      // user not logged in → redirect to login
       return NextResponse.redirect(new URL("/login", req.url));
-      // logged in → allow
     }
   }
 

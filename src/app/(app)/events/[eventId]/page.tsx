@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import EventDetails from "@/components/Events/EventDetails";
 import EventInsights from "@/components/Events/EventInsights";
 import { headers } from "next/headers";
+import { notFound } from "next/navigation";
 import React from "react";
 
 const getEventDetails = async (eventId) => {
@@ -31,12 +32,19 @@ export default async function EventDetailsPage({
 }) {
   const session = await auth();
   const { eventId } = await params;
-  const { event, myGroup, alreadyRegistered } = await getEventDetails(eventId);
+  const data = await getEventDetails(eventId);
+  if (!data?.event) {
+    notFound();
+  }
 
   return (
     <>
       <div className="h-full">
-        <EventDetails event={event} group={myGroup} user={session?.user} />
+        <EventDetails
+          event={data.event}
+          group={data.myGroup}
+          user={session?.user}
+        />
         {session?.user.role === "club-admin" &&
           session?.user.adminClub?.toString() ===
             event.organizingClub._id.toString() && (
