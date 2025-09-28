@@ -40,6 +40,11 @@ export default function EventDetails({
     try {
       setIsLoading(true);
 
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+
       const payload: any = { eventId: event._id };
       if (event.eventType === "individual") {
         payload.userId = user.id;
