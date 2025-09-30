@@ -40,7 +40,7 @@ const eventSchema = new Schema<IEvent>(
     },
     registrationFee: {
       type: Number,
-      required: false,
+      required: true,
     },
     contact: [
       {
