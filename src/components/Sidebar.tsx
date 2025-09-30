@@ -104,14 +104,20 @@ export default function Sidebar({ points }) {
               General
             </div>
             <ul>
-              <li className="mb-2 flex items-center gap-4 text-[#9F9F9F] hover:text-white cursor-pointer">
+              <Link
+                href={"/settings"}
+                className="mb-2 flex items-center gap-4 text-[#9F9F9F] hover:text-white cursor-pointer"
+              >
                 <Bolt />
                 Settings
-              </li>
-              <li className="mb-2 flex items-center gap-4 text-[#9F9F9F] hover:text-white cursor-pointer">
+              </Link>
+              <Link
+                href={"/help"}
+                className="mb-2 flex items-center gap-4 text-[#9F9F9F] hover:text-white cursor-pointer"
+              >
                 <Info />
                 Help
-              </li>
+              </Link>
               {points != null ? (
                 <li className="mb-2 flex items-center gap-4 text-[#9F9F9F] hover:text-white cursor-pointer">
                   <Power />

@@ -40,7 +40,7 @@ const clubs = [
   {
     name: "SPORTS",
     email: "sports@pvppcoe.ac.in",
-    admin: "Siddarth Tiwari",
+    admin: "Siddharth Tiwari",
     phone: "+91 9001234567",
     timing: "Mon-Fri: 8:00 AM - 2:00 PM",
   },
@@ -54,14 +54,14 @@ const clubs = [
   {
     name: "AISAC",
     email: "aisac@pvppcoe.ac.in",
-    admin: "Prof. veda Gupta",
+    admin: "Prof. Vedant Kulkarni",
     phone: "+91 9098765432",
     timing: "Mon-Fri: 9:00 AM - 1:00 PM",
   },
   {
     name: "ECS",
     email: "ecs@pvppcoe.ac.in",
-    admin: "Dr. Lulla",
+    admin: "Dr. Rajeshwari Patil",
     phone: "+91 9012345678",
     timing: "Mon-Fri: 11:00 AM - 5:00 PM",
   },
@@ -70,7 +70,9 @@ const clubs = [
 const HelpPage = () => {
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold text-center mb-8 text-white">Help & Support</h1>
+      <h1 className="text-3xl font-bold text-center mb-8 text-white">
+        Help & Support
+      </h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {clubs.map((club, index) => (
           <div
@@ -80,13 +82,16 @@ const HelpPage = () => {
           >
             <h2 className="text-2xl font-bold text-white mb-2">{club.name}</h2>
             <p className="text-gray-300">
-              <span className="font-semibold text-white">Admin:</span> {club.admin}
+              <span className="font-semibold text-white">Admin:</span>{" "}
+              {club.admin}
             </p>
             <p className="text-gray-300">
-              <span className="font-semibold text-white">Phone:</span> {club.phone}
+              <span className="font-semibold text-white">Phone:</span>{" "}
+              {club.phone}
             </p>
             <p className="text-gray-300">
-              <span className="font-semibold text-white">Email:</span> {club.email}
+              <span className="font-semibold text-white">Email:</span>{" "}
+              {club.email}
             </p>
             <p className="text-gray-300 mt-2">{club.timing}</p>
           </div>
