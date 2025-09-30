@@ -18,6 +18,7 @@ import GroupCard from "../Groups/GroupCard";
 import { useRouter } from "next/navigation";
 import { IUser } from "@/models/user.schema";
 import { toast } from "sonner";
+import Payment from "../Payment/Payment";
 
 interface EventDetailsProps {
   event: IEvent;
@@ -192,26 +193,45 @@ export default function EventDetails({
         <div className="flex flex-col gap-4 sticky top-2">
           <BorderedDiv className="rounded-xl shadow-md p-4">
             <h2 className="font-semibold text-3xl mb-2">
-              {event.registrationFee ? `₹${event.registrationFee}` : "Free"}
+              {event.registrationFee > 0 ? `₹${event.registrationFee}` : "Free"}
             </h2>
 
-            <button
-              onClick={handleRegister}
-              disabled={isRegisterDisabled}
-              className={`w-full py-2 rounded-lg font-semibold mb-2 ${
-                isRegisterDisabled
-                  ? "bg-[#000F57] opacity-50 cursor-not-allowed"
-                  : "bg-[#000F57] text-white"
-              }`}
-            >
-              {isAlreadyRegistered
-                ? "Registered"
-                : hasEventPassed
-                ? "Registrations Closed"
-                : isLoading
-                ? "Registering..."
-                : "Register"}
-            </button>
+            {event.registrationFee < 0 ? (
+              <button
+                onClick={handleRegister}
+                disabled={isRegisterDisabled}
+                className={`w-full py-2 rounded-lg font-semibold mb-2 ${
+                  isRegisterDisabled
+                    ? "bg-[#000F57] opacity-50 cursor-not-allowed"
+                    : "bg-[#000F57] text-white"
+                }`}
+              >
+                {isAlreadyRegistered
+                  ? "Registered"
+                  : hasEventPassed
+                  ? "Registrations Closed"
+                  : isLoading
+                  ? "Registering..."
+                  : "Register"}
+              </button>
+            ) : (
+              <Payment
+                amount={event.registrationFee || 0}
+                text={isAlreadyRegistered ? "Registered" : "Pay Now"}
+                disabled={
+                  isRegisterDisabled ||
+                  isAlreadyRegistered ||
+                  hasEventPassed ||
+                  isLoading
+                }
+                className={`w-full py-2 rounded-lg font-semibold mb-2 ${
+                  isRegisterDisabled
+                    ? "bg-[#000F57] opacity-50 cursor-not-allowed"
+                    : "bg-[#000F57] text-white"
+                }`}
+                onSuccess={handleRegister}
+              />
+            )}
 
             <div className="flex ml-auto items-center gap-2 text-[#717171] my-2">
               <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">

@@ -32,7 +32,7 @@ export interface IEvent {
   teamSize?: number;
   prize?: number;
   providesCertificate: boolean;
-  registrationFee?: number;
+  registrationFee: number;
   contact: Types.ObjectId[]; // references User
   points: {
     participation: number;
