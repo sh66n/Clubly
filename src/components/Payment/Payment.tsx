@@ -68,8 +68,8 @@ export default function Payment({
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: "TurfTime",
-        description: "Turf Booking Payment",
+        name: "Clubly",
+        description: "Campus Club Management System",
         order_id: orderData.id,
         handler: async function (response: any) {
           const verificationResponse = await fetch(
