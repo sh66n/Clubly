@@ -107,7 +107,7 @@ export const POST = async (req: NextRequest) => {
             </tr>
             <tr>
               <td><b>🏛️ Organized by:</b></td>
-              <td>${organizingClub}</td>
+              <td>${organizingClub.name}</td>
             </tr>
             <tr>
               <td><b>🏆 Prize:</b></td>
