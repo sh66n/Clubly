@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import BorderedDiv from "@/components/BorderedDiv";
 import Image from "next/image";
+import Link from "next/link";
 import React from "react";
 
 export default async function layout({
@@ -22,20 +23,21 @@ export default async function layout({
         {/* User Profile Section */}
         <div className="w-full sm:w-auto sm:ml-auto flex items-center gap-2 hover:cursor-pointer">
           {/* Avatar */}
-          <div
-            style={{ backgroundImage: `url(${session?.user?.image})` }}
-            className="h-8 w-8 sm:h-10 sm:w-10 bg-cover bg-center bg-no-repeat bg-red-100 rounded-full flex-shrink-0"
-          />
-
-          {/* User Info */}
-          <div className="flex flex-col min-w-0">
-            <div className="text-sm sm:text-base truncate font-medium">
-              {session?.user?.name}
+          <Link href={`/profiles/${session?.user?.id}`} className="flex gap-2">
+            <div
+              style={{ backgroundImage: `url(${session?.user?.image})` }}
+              className="h-8 w-8 sm:h-10 sm:w-10 bg-cover bg-center bg-no-repeat bg-red-100 rounded-full flex-shrink-0"
+            />
+            {/* User Info */}
+            <div className="flex flex-col min-w-0">
+              <div className="text-sm sm:text-base truncate font-medium">
+                {session?.user?.name}
+              </div>
+              <div className="text-xs text-[#626262] truncate">
+                {session?.user?.email}
+              </div>
             </div>
-            <div className="text-xs text-[#626262] truncate">
-              {session?.user?.email}
-            </div>
-          </div>
+          </Link>
         </div>
       </BorderedDiv>
 
