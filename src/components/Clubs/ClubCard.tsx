@@ -10,8 +10,8 @@ interface ClubCardProps {
 
 export default function ClubCard({ club }: ClubCardProps) {
   return (
-    <Link
-      href={`/clubs/${club._id}`}
+    <div
+      // href={`/clubs/${club._id}`}
       className="rounded-2xl border border-[#515151] bg-black shadow-sm hover:shadow-md transition p-6 text-center flex flex-col"
     >
       {/* Logo */}
@@ -34,6 +34,6 @@ export default function ClubCard({ club }: ClubCardProps) {
         <span>{club.coreMembers?.length || 0} Core</span>
         <span>{club.volunteers?.length || 0} Vols</span>
       </div>
-    </Link>
+    </div>
   );
 }
