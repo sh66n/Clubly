@@ -11,6 +11,8 @@ interface EventGridProps {
 }
 
 export default function EventGrid({ events, user }: EventGridProps) {
+  if (!events || events.length === 0)
+    return <div>No events found. Try adjusting filters.</div>;
   return (
     <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 p-6">
       {events.map((event, idx) => (

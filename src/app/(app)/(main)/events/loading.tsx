@@ -1,4 +1,5 @@
 import EventCardSkeleton from "@/components/Events/EventSkeleton";
+import SearchBar from "@/components/Events/SearchBar";
 import React from "react";
 
 export default function Loading() {
@@ -8,6 +9,16 @@ export default function Loading() {
       <div className="my-2 text-[#717171]">
         Explore club activities and upcoming opportunities.
       </div>
+      <SearchBar clubs={[]} />
+      <div className="flex gap-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="bg-gray-800 rounded-full h-8 w-24 animate-pulse"
+          />
+        ))}
+      </div>
+
       <div className="grow mt-8">
         <div className="flex justify-center">
           <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 p-6">
