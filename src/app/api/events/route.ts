@@ -2,17 +2,39 @@ import cloudinary from "@/lib/cloudinary";
 import { connectToDb } from "@/lib/connectToDb";
 import { Event, Club, User } from "@/models";
 import { sendMail } from "@/services/sendMail";
+import { Types } from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
 export const GET = async (req: NextRequest) => {
   try {
     await connectToDb();
 
+    //first fetch all events
     const allEvents = await Event.find({})
       .populate("participants")
       .populate("registrations")
       .populate("organizingClub");
-    return NextResponse.json(allEvents, { status: 200 });
+
+    const q = req.nextUrl.searchParams.get("q")?.trim().toLowerCase() || "";
+    const clubId = req.nextUrl.searchParams.get("club");
+
+    // Filter by name if search query exists
+    let filteredEvents = allEvents;
+    if (q) {
+      filteredEvents = filteredEvents.filter((event) =>
+        event.name.toLowerCase().includes(q)
+      );
+    }
+
+    // Filter by club if clubId exists
+    if (clubId && Types.ObjectId.isValid(clubId)) {
+      filteredEvents = filteredEvents.filter(
+        (event) =>
+          event.organizingClub && event.organizingClub._id.toString() === clubId
+      );
+    }
+
+    return NextResponse.json(filteredEvents, { status: 200 });
   } catch (error) {
     console.error(error);
     return NextResponse.json(error, { status: 500 });
