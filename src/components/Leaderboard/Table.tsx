@@ -1,4 +1,5 @@
 import { Award } from "lucide-react";
+import Link from "next/link";
 import React from "react";
 
 export default function Table({ topUsers }) {
@@ -20,11 +21,13 @@ export default function Table({ topUsers }) {
               >
                 <td className="p-2 text-sm sm:text-base">#{index + 1}</td>
                 <td className="p-2">
-                  <img
-                    src={user.image}
-                    alt={user.name}
-                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover"
-                  />
+                  <Link href={`/profiles/${user._id}`}>
+                    <img
+                      src={user.image}
+                      alt={user.name}
+                      className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover"
+                    />
+                  </Link>
                 </td>
                 <td className="p-2 text-sm sm:text-base">{user.name}</td>
                 <td className="p-2 font-semibold ml-auto mr-8 flex items-center text-sm sm:text-base">

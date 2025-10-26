@@ -21,7 +21,7 @@ export default function SearchBar({ clubs }: SearchBarProps) {
           name="q"
           defaultValue={query}
           placeholder="Search events..."
-          className="bg-[#191919] rounded-full px-4 w-1/2 text-white"
+          className="bg-[#191919] rounded-full px-4 w-full md:w-1/2 text-white"
         />
         {/* Keep currently selected club when searching */}
         {selectedClub && (
