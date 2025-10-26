@@ -8,6 +8,12 @@ export default auth(async (req) => {
   const user = req.auth?.user;
   const { pathname } = req.nextUrl;
 
+  if (pathname === "/login") {
+    if (req.auth) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+  }
+
   if (pathname.startsWith("/dashboard")) {
     if (!req.auth) {
       return NextResponse.redirect(new URL("/login", req.url));
@@ -69,5 +75,5 @@ export default auth(async (req) => {
 });
 
 export const config = {
-  matcher: ["/dashboard", "/events/:path*"],
+  matcher: ["/dashboard", "/events/:path*", "/login"],
 };
