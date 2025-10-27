@@ -9,16 +9,17 @@ interface UserCardProps {
 
 export default function UserCard({ user, action }: UserCardProps) {
   return (
-    <Link href={`/profiles/${user._id}`}>
-      <div className="bg-gray-900 flex gap-2 items-center p-2 rounded-lg">
+    <div className="bg-gray-900 flex gap-2 items-center p-2 rounded-lg">
+      <Link href={`/profiles/${user._id}`}>
         <img
           src={user.image}
           className="h-8 w-8 rounded-full"
           alt={user.name}
         />
-        <span className="text-white">{user.name}</span>
-        <div className="ml-auto">{action}</div>
-      </div>
-    </Link>
+      </Link>
+
+      <span className="text-white">{user.name}</span>
+      <div className="ml-auto">{action}</div>
+    </div>
   );
 }
