@@ -28,8 +28,7 @@ export default async function Events({
 }) {
   const session = await auth();
   const query = (await searchParams).q || "";
-  const club = (await searchParams).club;
-  console.log(club);
+  const club = (await searchParams).club || "";
   const allEvents = await getAllEvents(query, club);
   const allClubs = await getAllClubs();
   return (
