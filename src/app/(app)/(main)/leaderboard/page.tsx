@@ -23,7 +23,7 @@ export default async function LeaderboardPage({
   const data = await getLbRankings(clubId);
 
   return (
-    <div className="grow">
+    <div className="grow ">
       <Leaderboard topUsers={data.topParticipants} />
     </div>
   );

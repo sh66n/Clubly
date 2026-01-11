@@ -1,34 +1,40 @@
 import React from "react";
 
-export default function TableSkeleton() {
+export default function TableSkeleton({ rows = 6 }) {
   return (
-    <div className="bg-black h-[40%] flex flex-col rounded-lg border border-[#515151] animate-pulse">
+    <div className="bg-black h-[40%] flex flex-col rounded-lg border border-[#515151] relative z-10 animate-pulse">
       {/* Header */}
-      <div className="p-4 border-b border-b-[#515151] text-2xl font-semibold">
-        <div className="h-6 w-24 bg-gray-800 rounded" />
+      <div className="p-3 sm:p-4 border-b border-b-[#515151]">
+        <div className="h-5 sm:h-7 w-24 bg-gray-800 rounded" />
       </div>
 
-      {/* Rows */}
-      <div className="overflow-y-auto scrollbar-hide">
-        <table className="bg-black w-full">
+      {/* Table body */}
+      <div className="overflow-y-auto flex-1">
+        <table className="w-full">
           <tbody>
-            {[...Array(6)].map((_, i) => (
+            {Array.from({ length: rows }).map((_, index) => (
               <tr
-                key={i}
+                key={index}
                 className="border-b border-[#515151] flex items-center"
               >
-                <td className="p-2 w-10">
-                  <div className="h-4 w-6 bg-gray-800 rounded" />
-                </td>
+                {/* Rank */}
                 <td className="p-2">
-                  <div className="w-8 h-8 rounded-full bg-gray-800" />
+                  <div className="h-4 w-8 bg-gray-800 rounded" />
                 </td>
+
+                {/* Avatar */}
+                <td className="p-2">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-800 rounded-full" />
+                </td>
+
+                {/* Name */}
                 <td className="p-2 flex-1">
-                  <div className="h-4 w-32 bg-gray-800 rounded" />
+                  <div className="h-4 sm:h-5 w-32 bg-gray-800 rounded" />
                 </td>
-                <td className="p-2 ml-auto mr-20 flex items-center gap-1">
-                  <div className="h-4 w-10 bg-gray-800 rounded" />
-                  <div className="h-4 w-4 bg-gray-800 rounded" />
+
+                {/* Points */}
+                <td className="p-2 ml-auto mr-8 flex items-center">
+                  <div className="h-4 sm:h-5 w-12 bg-gray-800 rounded" />
                 </td>
               </tr>
             ))}
@@ -36,7 +42,7 @@ export default function TableSkeleton() {
         </table>
       </div>
 
-      {/* Gradient Fade Bottom */}
+      {/* Bottom gradient overlay */}
       <div className="pointer-events-none absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-black to-transparent z-20 rounded-b-lg" />
     </div>
   );

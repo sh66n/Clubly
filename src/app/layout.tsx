@@ -5,6 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Silkscreen } from "next/font/google";
 import { auth } from "@/auth";
+import MobileNavbar from "@/components/MobileNavbar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
