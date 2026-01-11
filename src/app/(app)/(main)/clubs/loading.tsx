@@ -1,4 +1,4 @@
-import ClubCardSkeleton from "@/components/Clubs/ClubSkeleton";
+import ClubCardSkeleton from "@/components/Clubs/ClubCardSkeleton";
 import React from "react";
 
 export default function loading() {

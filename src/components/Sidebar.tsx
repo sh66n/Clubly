@@ -32,12 +32,12 @@ export default function Sidebar({ points }) {
   return (
     <>
       {/* Mobile menu button */}
-      <button
+      {/* <button
         className="md:hidden absolute top-4 left-4 z-50 p-2 rounded-md bg-black border border-[#515151] text-white"
         onClick={() => setIsOpen(true)}
       >
         <PanelLeft />
-      </button>
+      </button> */}
 
       {/* Sidebar overlay */}
       {isOpen && (
@@ -52,7 +52,7 @@ export default function Sidebar({ points }) {
         className={`
           fixed top-0 left-0 h-screen w-64 p-4 pr-2 overflow-y-auto z-50 bg-black text-white transform transition-transform duration-300
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0 md:static md:flex
+          md:translate-x-0 md:static md:flex hidden
         `}
       >
         <div className="flex flex-col h-full w-full rounded-lg md:border md:border-[#515151] p-4">

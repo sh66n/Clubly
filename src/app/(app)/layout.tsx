@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import MobileNavbar from "@/components/MobileNavbar";
 import Sidebar from "@/components/Sidebar";
 
 export default async function layout({
@@ -11,9 +12,9 @@ export default async function layout({
     <div className="flex">
       {/* Sidebar */}
       <Sidebar points={session?.user.points} />
-
+      <MobileNavbar />
       {/* Main content */}
-      <div className="flex-1 pl-2">{children}</div>
+      <div className="flex-1 pl-2 pr-2 pb-20 md:pb-0">{children}</div>
     </div>
   );
 }

@@ -34,7 +34,7 @@ export default function EventCard({ event, user }: EventCardProps) {
   // };
   return (
     <Link
-      className="bg-black text-white rounded-xl overflow-hidden shadow-md w-60 border border-[#515151] mb-2 flex flex-col"
+      className="bg-black text-white rounded-xl overflow-hidden shadow-md w-full md:w-60 border border-[#515151] mb-2 flex flex-col"
       href={`/events/${event._id}`}
     >
       {/* Image Section */}
