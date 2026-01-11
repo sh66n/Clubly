@@ -38,6 +38,7 @@ export default function SearchBar({ clubs }: SearchBarProps) {
         {query && <input type="hidden" name="q" value={query} />}
         {clubs.map((club) => {
           const isSelected = selectedClub === club._id.toString();
+
           return (
             <button
               key={club._id}
@@ -47,7 +48,7 @@ export default function SearchBar({ clubs }: SearchBarProps) {
               className={`hover:cursor-pointer px-4 py-1.5 rounded-full transition-all ${
                 isSelected
                   ? "bg-white text-black border border-black"
-                  : "bg-black text-white hover:bg-white hover:text-black"
+                  : "bg-black text-white border border-gray-800 hover:bg-white hover:text-black"
               }`}
             >
               {club.name}

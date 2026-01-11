@@ -1,5 +1,6 @@
 "use client";
 
+import { getColorFromString } from "@/lib/utils";
 import { IEvent } from "@/models/event.schema";
 import { Heart, Users } from "lucide-react";
 import Link from "next/link";
@@ -11,6 +12,7 @@ interface EventCardProps {
 
 export default function EventCard({ event, user }: EventCardProps) {
   const eventDate = new Date(event.date);
+  const colorClass = getColorFromString(event.organizingClub._id.toString());
   // const handleRegister = async () => {
   //   const res = await fetch(
   //     `${process.env.NEXT_PUBLIC_BASE_URL}/api/events/register`,
@@ -40,9 +42,10 @@ export default function EventCard({ event, user }: EventCardProps) {
           alt="Event"
           className="w-full h-40 object-cover"
         />
-
         {/* Top Right - Tag */}
-        <span className="absolute top-2 right-2 bg-red-500 text-xs font-semibold px-2 py-1 rounded-full">
+        <span
+          className={`absolute top-2 right-2 ${colorClass} text-xs font-semibold px-2 py-1 rounded-full border border-white`}
+        >
           {event.organizingClub.name}
         </span>
       </div>
