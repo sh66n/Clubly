@@ -12,7 +12,9 @@ interface EventCardProps {
 
 export default function EventCard({ event, user }: EventCardProps) {
   const eventDate = new Date(event.date);
-  const colorClass = getColorFromString(event.organizingClub._id.toString());
+  const colorClass = event.organizingClub._id
+    ? getColorFromString(event.organizingClub._id.toString())
+    : getColorFromString(event.organizingClub.toString());
   // const handleRegister = async () => {
   //   const res = await fetch(
   //     `${process.env.NEXT_PUBLIC_BASE_URL}/api/events/register`,
@@ -38,16 +40,18 @@ export default function EventCard({ event, user }: EventCardProps) {
       {/* Image Section */}
       <div className="relative">
         <img
-          src={event.image ? event.image : event.organizingClub.logo}
+          src={event.image ? event.image : "/images/default.png"}
           alt="Event"
           className="w-full h-40 object-cover"
         />
         {/* Top Right - Tag */}
-        <span
-          className={`absolute top-2 right-2 ${colorClass} text-xs font-semibold px-2 py-1 rounded-full border border-white`}
-        >
-          {event.organizingClub.name}
-        </span>
+        {event.organizingClub.name && (
+          <span
+            className={`absolute top-2 right-2 ${colorClass} text-xs font-semibold px-2 py-1 rounded-full border border-white`}
+          >
+            {event.organizingClub.name}
+          </span>
+        )}
       </div>
 
       {/* Content Section */}
@@ -55,9 +59,6 @@ export default function EventCard({ event, user }: EventCardProps) {
         {/* Title */}
         <div className="flex justify-between">
           <h3 className="font-semibold text-base line-clamp-1">{event.name}</h3>
-          <span className="bg-orange-500 text-black font-semibold px-2 py-0.5 rounded-full text-[10px] h-fit">
-            Competition
-          </span>
         </div>
 
         {/* Bottom Row */}
