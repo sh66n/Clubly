@@ -3,6 +3,10 @@ import { IClub } from "./club.schema";
 
 const clubSchema = new Schema<IClub>(
   {
+    fullName: {
+      type: String,
+      required: true,
+    },
     name: {
       type: String,
       required: true,

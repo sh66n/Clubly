@@ -4,6 +4,7 @@ import { z } from "zod";
 const objectId = z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId");
 
 export const zClub = z.object({
+  fullName: z.string(),
   name: z.string(),
   department: z.string(),
   coreMembers: z.array(objectId).default([]),
@@ -16,6 +17,7 @@ export const zClub = z.object({
 
 export interface IClub {
   _id: Types.ObjectId;
+  fullName: string;
   name: string;
   department: string;
   coreMembers: Types.ObjectId[]; // refs User
