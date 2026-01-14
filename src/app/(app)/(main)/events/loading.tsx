@@ -24,7 +24,7 @@ export default function Loading() {
 
       <div className="mt-8">
         <div className="flex justify-center">
-          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 p-6">
+          <div className="grid gap-5 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 py-6 px-2">
             {Array.from({ length: 8 }).map((_, i) => (
               <EventCardSkeleton key={i} />
             ))}

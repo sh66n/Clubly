@@ -17,8 +17,14 @@ import {
   Menu,
   PanelLeft,
 } from "lucide-react";
+import Points from "./Points";
 
-export default function Sidebar({ points }) {
+interface SidebarProps {
+  isLoggedIn: boolean;
+  points: Number;
+}
+
+export default function Sidebar({ isLoggedIn, points }: SidebarProps) {
   const pathname = usePathname().split("/")[1];
   const [isOpen, setIsOpen] = useState(false);
 
@@ -50,7 +56,7 @@ export default function Sidebar({ points }) {
       {/* Sidebar */}
       <div
         className={`
-          fixed top-0 left-0 h-screen w-64 p-4 pr-2 overflow-y-auto z-50 bg-black text-white transform transition-transform duration-300
+          fixed top-0 left-0 h-screen w-64 p-4 pr-2  z-50 bg-black text-white transform transition-transform duration-300
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
           md:translate-x-0 md:static md:flex hidden
         `}
@@ -62,7 +68,6 @@ export default function Sidebar({ points }) {
               <X />
             </button>
           </div>
-
           {/* Logo */}
           <div className="flex items-center justify-center mb-8">
             <Image
@@ -75,7 +80,6 @@ export default function Sidebar({ points }) {
               className="object-contain"
             />
           </div>
-
           {/* Menu */}
           <div className="flex-1">
             <div className="heading text-[#626262] mb-2 text-xl">Menu</div>
@@ -118,7 +122,7 @@ export default function Sidebar({ points }) {
                 <Info />
                 Help
               </Link>
-              {points != null ? (
+              {isLoggedIn ? (
                 <li className="mb-2 flex items-center gap-4 text-[#9F9F9F] hover:text-white cursor-pointer">
                   <Power />
                   <LogoutButton />
@@ -138,18 +142,9 @@ export default function Sidebar({ points }) {
           </div>
 
           {/* My Points */}
-          {points != null && (
-            <div className="mt-4 flex-shrink-0 w-full">
-              <div className="w-full relative pb-[100%] bg-[url('/images/myPoints.png')] bg-cover bg-center rounded-md">
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
-                  <span className="text-2xl md:text-xl lg:text-2xl">
-                    My Points
-                  </span>
-                  <div className="mt-4 text-5xl md:text-4xl lg:text-6xl font-semibold">
-                    {points}
-                  </div>
-                </div>
-              </div>
+          {isLoggedIn && (
+            <div className="justify-center hidden [@media(min-height:660px)]:flex">
+              <Points points={points} />
             </div>
           )}
         </div>
