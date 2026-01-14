@@ -69,7 +69,7 @@ export default function Sidebar({ isLoggedIn, points }: SidebarProps) {
             </button>
           </div>
           {/* Logo */}
-          <div className="flex items-center justify-center mb-8">
+          <Link className="flex items-center justify-center mb-8" href={"/"}>
             <Image
               src="/images/logo.png"
               alt="Clubly Logo"
@@ -79,7 +79,7 @@ export default function Sidebar({ isLoggedIn, points }: SidebarProps) {
               placeholder="empty"
               className="object-contain"
             />
-          </div>
+          </Link>
           {/* Menu */}
           <div className="flex-1">
             <div className="heading text-[#626262] mb-2 text-xl">Menu</div>
