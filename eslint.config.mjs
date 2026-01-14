@@ -1,28 +1,34 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+export default defineConfig([
+  // ✅ Next.js Core Web Vitals rules
+  ...nextVitals,
 
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
+  // ✅ TypeScript rules
+  ...nextTs,
 
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  // 🔧 Your overrides
   {
-    ignores: [
-      "node_modules/**",
-      ".next/**",
-      "out/**",
-      "build/**",
-      "next-env.d.ts",
-    ],
     rules: {
+      // Disable unused vars warnings (Vercel noise)
+      "@typescript-eslint/no-unused-vars": "off",
+
+      // Allow <img> instead of next/image
+      "@next/next/no-img-element": "off",
+
+      // Allow explicit `any`
       "@typescript-eslint/no-explicit-any": "off",
     },
   },
-];
 
-export default eslintConfig;
+  // ✅ Ignore build artifacts (override defaults cleanly)
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "build/**",
+    "node_modules/**",
+    "next-env.d.ts",
+  ]),
+]);
