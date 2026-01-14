@@ -1,27 +1,25 @@
-import { Schema, model, models, Types } from "mongoose";
+import { Schema, model, models } from "mongoose";
 
 const groupSchema = new Schema(
   {
     name: { type: String },
     members: [
       {
-        type: Types.ObjectId,
+        // Change from Types.ObjectId to Schema.Types.ObjectId
+        type: Schema.Types.ObjectId,
         ref: "User",
         required: true,
       },
     ],
-    leader: { type: Types.ObjectId, ref: "User", required: true }, // group admin
-    event: { type: Types.ObjectId, ref: "Event", required: true },
+    leader: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    event: { type: Schema.Types.ObjectId, ref: "Event", required: true },
 
-    // 🔹 Visibility & Joining
-    isPublic: { type: Boolean, default: false }, // false = private
-    joinCode: { type: String }, // only for private groups, randomly generated
-    maxSize: { type: Number }, // inherit from event by default
-
-    // For public groups
-    // allowRequests: { type: Boolean, default: true }, // if true, anyone can directly join
+    isPublic: { type: Boolean, default: false },
+    joinCode: { type: String },
+    maxSize: { type: Number },
   },
   { timestamps: true }
 );
 
-export const Group = models.Group || model("Group", groupSchema);
+// Use the safety check we discussed earlier
+export const Group = models?.Group || model("Group", groupSchema);

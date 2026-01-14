@@ -2,7 +2,7 @@ import React from "react";
 
 export default function EventCardSkeleton() {
   return (
-    <div className="bg-black text-white rounded-xl overflow-hidden shadow-md w-60 border border-[#515151] mb-2 flex flex-col animate-pulse">
+    <div className="bg-black text-white rounded-xl overflow-hidden shadow-md w-full md:w-55 border border-[#515151] mb-2 flex flex-col animate-pulse">
       {/* Image Section */}
       <div className="relative">
         <div className="w-full h-40 bg-gray-800" />

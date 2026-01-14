@@ -1,4 +1,4 @@
-import mongoose, { Schema, model } from "mongoose";
+import mongoose, { Schema, model, models } from "mongoose";
 import { IEvent } from "./event.schema";
 
 const eventSchema = new Schema<IEvent>(
@@ -96,5 +96,4 @@ const eventSchema = new Schema<IEvent>(
   { timestamps: true }
 );
 
-export const Event =
-  mongoose.models.Event || model<IEvent>("Event", eventSchema);
+export const Event = models?.Event || model<IEvent>("Event", eventSchema);

@@ -1,9 +1,7 @@
 import React from "react";
-
 interface PointsProps {
-  points: Number;
+  points: Number | null;
 }
-
 export default function Points({ points }: PointsProps) {
   return (
     <div className="mt-4 flex-shrink-0 w-full">
