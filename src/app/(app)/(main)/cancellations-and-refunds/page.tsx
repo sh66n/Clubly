@@ -3,7 +3,9 @@ import React from "react";
 export default function CancellationsAndRefunds() {
   return (
     <div>
-      <h1 className="text-5xl font-semibold mb-8">Cancellations and Refunds</h1>
+      <h1 className="text-5xl font-semibold mb-8">
+        Cancellations and Refunds Policy
+      </h1>
 
       <div>
         SHAAN SAMEER EDROOS believes in helping its customers as far as
