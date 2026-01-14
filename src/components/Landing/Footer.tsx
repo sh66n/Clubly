@@ -38,15 +38,15 @@ export default function Footer() {
               <li>
                 <a href="/terms-and-conditions">Terms and Conditions</a>
               </li>
-              <li>
-                <a href="/cancellations-and-refunds">
-                  Cancellations and Refunds
-                </a>
-              </li>
             </ul>
             <ul className="space-y-2 text-sm">
               <li>
                 <a href="/contact-us">Contact Us</a>
+              </li>
+              <li>
+                <a href="/cancellations-and-refunds">
+                  Cancellations and Refunds
+                </a>
               </li>
             </ul>
           </div>
