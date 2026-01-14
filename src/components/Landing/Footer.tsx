@@ -31,6 +31,24 @@ export default function Footer() {
                 <a href="#">Get a demo</a>
               </li>
             </ul>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <a href="/privacy-policy">Privacy Policy</a>
+              </li>
+              <li>
+                <a href="/terms-and-conditions">Terms and Conditions</a>
+              </li>
+              <li>
+                <a href="/cancellations-and-refunds">
+                  Cancellations and Refunds
+                </a>
+              </li>
+            </ul>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <a href="/contact-us">Contact Us</a>
+              </li>
+            </ul>
           </div>
 
           {/* Social icons */}
