@@ -45,7 +45,7 @@ export default function Footer() {
               </li>
               <li>
                 <a href="/cancellations-and-refunds">
-                  Cancellations and Refunds
+                  Cancellations and Refunds Policy
                 </a>
               </li>
             </ul>
