@@ -5,9 +5,9 @@ import React from "react";
 
 export default function Loading() {
   return (
-    <div className="flex relative animate-pulse">
+    <div className="xl:flex relative animate-pulse">
       {/* LEFT SECTION (70%) */}
-      <div className="w-[70%] space-y-6">
+      <div className="xl:w-[70%] space-y-6">
         {/* Event Header */}
         <BorderedDiv className="p-4">
           <div className="flex flex-col gap-4">
@@ -71,7 +71,7 @@ export default function Loading() {
       </div>
 
       {/* RIGHT STICKY CARD */}
-      <div className="grow ml-4 pb-4">
+      <div className="grow ml-0 xl:ml-4 pb-4">
         <div className="flex flex-col gap-4 sticky top-2">
           <BorderedDiv className="rounded-xl shadow-md p-4 space-y-4">
             <div className="h-8 w-1/2 bg-gray-800 rounded" />

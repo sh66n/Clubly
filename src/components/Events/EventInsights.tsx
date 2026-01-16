@@ -41,7 +41,7 @@ export default function EventInsights({ event }: EventInsightsProps) {
           </Link>
         </div>
 
-        <div className="flex gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {/* Registrations */}
           <div className="flex-1">
             <div className="text-lg mb-4">Registrations</div>

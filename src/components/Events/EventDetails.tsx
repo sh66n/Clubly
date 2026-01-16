@@ -102,9 +102,39 @@ export default function EventDetails({
         user.id !== group.leader._id || // Not leader
         group.members.length < event.teamSize)); // Team too small
 
+  // ✅ Dynamic CTA text for TEAM events only
+  const getTeamCTA = () => {
+    if (event.eventType !== "team") return null;
+
+    if (!group) {
+      return "Create or join a group to continue";
+    }
+
+    const required = event.teamSize;
+    const current = group.members.length;
+
+    if (current < required) {
+      return "Complete group to proceeed";
+    }
+
+    if (hasEventPassed) {
+      return "Registrations closed";
+    }
+
+    if (user.id !== group.leader._id) {
+      return "Only group leader can register";
+    }
+  };
+
+  const ctaText = isAlreadyRegistered
+    ? "Registered"
+    : event.eventType === "team"
+    ? getTeamCTA()
+    : "Pay Now";
+
   return (
-    <div className="flex relative">
-      <div className="w-[70%]">
+    <div className="xl:flex relative">
+      <div className="xl:w-[70%]">
         {/* Event Header */}
         <BorderedDiv className="p-4 mb-8">
           <div>
@@ -189,7 +219,7 @@ export default function EventDetails({
       </div>
 
       {/* Right side sticky card */}
-      <div className="grow ml-4 pb-4">
+      <div className="grow ml-0 xl:ml-4 pb-4">
         <div className="flex flex-col gap-4 sticky top-2">
           <BorderedDiv className="rounded-xl shadow-md p-4">
             <h2 className="font-semibold text-3xl mb-2">
@@ -217,7 +247,7 @@ export default function EventDetails({
             ) : (
               <Payment
                 amount={event.registrationFee || 0}
-                text={isAlreadyRegistered ? "Registered" : "Pay Now"}
+                text={ctaText}
                 disabled={
                   isRegisterDisabled ||
                   isAlreadyRegistered ||
@@ -261,7 +291,9 @@ export default function EventDetails({
               {group ? (
                 <BorderedDiv>
                   <GroupCard group={group} isExpanded={true} />
-                  {!group.isPublic && <div>Code: {group.joinCode}</div>}
+                  {!group.isPublic && (
+                    <div className="mt-4">Code: {group.joinCode}</div>
+                  )}
                 </BorderedDiv>
               ) : (
                 <div className="flex flex-col gap-2">
