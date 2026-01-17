@@ -8,6 +8,7 @@ import {
   Building,
   Calendar,
   FileBadge,
+  Pencil,
   Trophy,
   User,
   Users,
@@ -89,22 +90,35 @@ export default function EventDetails({
     }
   })();
 
-  // ✅ Check if event has passed
+  //  Check if event has passed
   const hasEventPassed = differenceInCalendarDays(today, eventDate) > 0;
 
-  // ⛔ Disable register logic
+  const registrationsFull =
+    event.registrations.length >= event.maxRegistrations ||
+    event.groupRegistrations.length >= event.maxRegistrations;
+
+  //  Disable register logic
   const isRegisterDisabled =
     isAlreadyRegistered ||
     hasEventPassed ||
     isLoading ||
+    registrationsFull ||
     (event.eventType === "team" &&
       (!group || // No group
         user.id !== group.leader._id || // Not leader
         group.members.length < event.teamSize)); // Team too small
 
-  // ✅ Dynamic CTA text for TEAM events only
+  //  Dynamic CTA text for TEAM events only
   const getTeamCTA = () => {
     if (event.eventType !== "team") return null;
+
+    if (isAlreadyRegistered) {
+      return "Registered";
+    }
+
+    if (registrationsFull) {
+      return "Registrations are full";
+    }
 
     if (!group) {
       return "Create or join a group to continue";
@@ -124,13 +138,11 @@ export default function EventDetails({
     if (user.id !== group.leader._id) {
       return "Only group leader can register";
     }
+
+    return "Pay Now";
   };
 
-  const ctaText = isAlreadyRegistered
-    ? "Registered"
-    : event.eventType === "team"
-    ? getTeamCTA()
-    : "Pay Now";
+  const ctaText = getTeamCTA();
 
   return (
     <div className="xl:flex relative">
@@ -176,6 +188,14 @@ export default function EventDetails({
           </BorderedDiv>
         </div>
 
+        {/* Details */}
+        <div className="mb-4">
+          <h2 className="text-xl mb-2">Details</h2>
+          <BorderedDiv className="flex-1 p-4 whitespace-pre-line">
+            <p>{event.description}</p>
+          </BorderedDiv>
+        </div>
+
         {/* Registration Deadline */}
         <div className="mb-4">
           <h2 className="text-xl mb-2">Registration Deadline</h2>
@@ -189,11 +209,16 @@ export default function EventDetails({
           </BorderedDiv>
         </div>
 
-        {/* Details */}
+        {/* Event Capacity */}
         <div className="mb-4">
-          <h2 className="text-xl mb-2">Details</h2>
-          <BorderedDiv className="flex-1 p-4 whitespace-pre-line">
-            <p>{event.description}</p>
+          <h2 className="text-xl mb-2">Registration Limit</h2>
+          <BorderedDiv className="flex-1 p-4">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
+                <Users />
+              </div>
+              <p>Up to {event.maxRegistrations} participants</p>
+            </div>
           </BorderedDiv>
         </div>
 
@@ -310,6 +335,19 @@ export default function EventDetails({
                 </div>
               )}
             </>
+          )}
+
+          {user.role === "club-admin" && (
+            <Link href={`${event._id}/edit`}>
+              <BorderedDiv>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
+                    <Pencil />
+                  </div>
+                  <p>Edit Event</p>
+                </div>
+              </BorderedDiv>
+            </Link>
           )}
         </div>
       </div>

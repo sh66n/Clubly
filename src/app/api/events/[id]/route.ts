@@ -75,18 +75,88 @@ export const GET = async (
   }
 };
 
+// export const PATCH = async (
+//   req: NextRequest,
+//   { params }: { params: Promise<{ id: string }> }
+// ) => {
+//   try {
+//     await connectToDb();
+//     const { id } = await params;
+//     const body = await req.json();
+//     const updatedEvent = await Event.findByIdAndUpdate(id, body, { new: true });
+//     return NextResponse.json({ updatedEvent }, { status: 200 });
+//   } catch (error) {
+//     return NextResponse.json({ error }, { status: 500 });
+//   }
+// };
+
 export const PATCH = async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     await connectToDb();
     const { id } = await params;
-    const body = await req.json();
-    const updatedEvent = await Event.findByIdAndUpdate(id, body, { new: true });
-    return NextResponse.json({ updatedEvent }, { status: 200 });
+
+    // ✅ Read FormData instead of JSON
+    const formData = await req.formData();
+
+    // ✅ Convert FormData → plain object
+    const body: any = {};
+    for (const [key, value] of formData.entries()) {
+      if (value === "") {
+        continue;
+      }
+
+      if (key === "providesCertificate") {
+        body[key] = value === "true";
+      } else if (
+        ["teamSize", "prize", "registrationFee", "maxRegistrations"].includes(
+          key
+        )
+      ) {
+        body[key] = Number(value);
+      } else {
+        body[key] = value;
+      }
+    }
+
+    // ✅ Validate maxRegistrations
+    if (body.maxRegistrations !== undefined && body.maxRegistrations < 1) {
+      return NextResponse.json(
+        { error: "maxRegistrations must be at least 1" },
+        { status: 400 }
+      );
+    }
+
+    const event = await Event.findById(id);
+    if (!event) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    // Optional permission check
+    // if (event.createdBy.toString() !== session.user.id) {
+    //   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // }
+
+    const updatedEvent = await Event.findByIdAndUpdate(
+      id,
+      { $set: body },
+      { new: true, runValidators: true }
+    );
+
+    return NextResponse.json({ event: updatedEvent }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ error }, { status: 500 });
+    console.error(error);
+    return NextResponse.json(
+      { error: "Failed to update event" },
+      { status: 500 }
+    );
   }
 };
 

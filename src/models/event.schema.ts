@@ -20,6 +20,7 @@ export const zEvent = z.object({
   participants: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/)),
   winner: z.string().regex(/^[0-9a-fA-F]{24}$/),
   image: z.optional(z.string()),
+  maxRegistrations: z.number(),
 });
 
 export interface IEvent {
@@ -45,4 +46,5 @@ export interface IEvent {
   winner: Types.ObjectId;
   winnerGroup: Types.ObjectId;
   image: string;
+  maxRegistrations: number;
 }

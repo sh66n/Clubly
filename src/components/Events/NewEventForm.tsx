@@ -79,7 +79,7 @@ export default function NewEventForm({ user }: NewEventFormProps) {
           name="description"
           id="description"
           placeholder="Write about the event..."
-          className="w-full rounded-xl border border-gray-700 px-4 py-2 bg-gray-800 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full rounded-xl border border-gray-700 px-4 py-2 bg-gray-800 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 h-40"
         />
       </div>
 
@@ -184,6 +184,23 @@ export default function NewEventForm({ user }: NewEventFormProps) {
           name="registrationFee"
           id="registrationFee"
           placeholder="Enter fee"
+          className="max-w-xs"
+        />
+      </div>
+
+      {/* Max registrations */}
+      <div className="flex flex-col gap-1">
+        <label
+          htmlFor="maxRegistrations"
+          className="text-sm font-medium text-gray-300"
+        >
+          Max Registrations
+        </label>
+        <Input
+          type="number"
+          name="maxRegistrations"
+          id="maxRegistrations"
+          placeholder="Enter limit"
           className="max-w-xs"
         />
       </div>

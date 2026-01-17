@@ -55,6 +55,7 @@ export const POST = async (req: NextRequest) => {
     const prize = formData.get("prize") as string | null;
     const providesCertificate = formData.get("providesCertificate") === "true";
     const registrationFee = formData.get("registrationFee") as string | null;
+    const maxRegistrations = formData.get("maxRegistrations") as string | null;
 
     const file = formData.get("image") as unknown as File | null;
     let imageUrl = "";
@@ -87,6 +88,7 @@ export const POST = async (req: NextRequest) => {
       providesCertificate,
       registrationFee: registrationFee ? Number(registrationFee) : 0,
       image: imageUrl,
+      maxRegistrations,
     });
 
     // Update club's events array

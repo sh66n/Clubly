@@ -92,6 +92,9 @@ const eventSchema = new Schema<IEvent>(
       type: String,
       required: false,
     },
+    maxRegistrations: {
+      type: Number,
+    },
   },
   { timestamps: true }
 );
