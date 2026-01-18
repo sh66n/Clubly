@@ -8,15 +8,17 @@ export default function Features() {
       className="min-h-screen flex justify-center items-center relative"
     >
       <div className="flex flex-col items-center justify-center">
-        <div className="heading text-[#5E77F5]">{"{ Features }"}</div>
-        <div className="text-3xl mt-2">
+        <div className="heading text-[#5E77F5] text-xs md:text-base">
+          {"{ Features }"}
+        </div>
+        <div className="xs:text-xl sm:text-2xl md:text-3xl xl:text-4xl mt-2">
           Everything your club needs, in{" "}
           <span className="italic text-[#3B5CFF]">one</span> platform.
         </div>
-        <div className="text-[#717171] mt-1 text-center">
+        <div className="text-[#717171] mt-1 text-center text-xs md:text-base">
           Plan, manage, and grow your club with tools built for real engagement.
         </div>
-        <div className="flex gap-6 mt-8 px-32">
+        <div className="grid grid-cols-1 lg:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 mt-8 px-8 sm:px-12 lg:px-16 md:px-24 xl:px-32">
           <FeatureCard>
             <Number>{"{ 01 }"}</Number>
             <Title>Event Management</Title>
