@@ -8,13 +8,17 @@ export default function HowItWorks() {
       className="min-h-screen flex justify-center items-center font-light"
     >
       <div className="flex flex-col mb-32 items-center justify-center">
-        <div className="heading text-[#5E77F5]">{"{ How It Works }"}</div>
-        <div className="text-3xl mt-2">How Clubly Works </div>
-        <div className="text-[#717171] mt-1 text-center mb-12">
+        <div className="heading text-[#5E77F5] text-xs md:text-base">
+          {"{ How It Works }"}
+        </div>
+        <div className="xs:text-xl sm:text-2xl md:text-3xl xl:text-4xl mt-2">
+          How Clubly Works{" "}
+        </div>
+        <div className="text-[#717171] mt-1 text-center mb-12 text-xs md:text-base">
           Three easy steps to set up, engage, and grow your college club
           community.
         </div>
-        <div className="flex gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <WorkingCard>
             <Number>{"{ 1 }"}</Number>
             <Working>Create your club space</Working>
