@@ -38,13 +38,25 @@ export default function EventGrid({
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 flex flex-col gap-14">
+    <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 flex flex-col gap-8">
       {/* Upcoming Events */}
       {upcomingEvents.length > 0 && (
         <section>
-          <h2 className="text-2xl font-semibold mb-6">Upcoming</h2>
+          <h2 className="text-2xl font-semibold mb-4">Upcoming</h2>
           <div className={gridClasses}>
             {upcomingEvents.map((event) => (
+              <EventCard key={event._id} event={event} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Completed Events */}
+      {completedEvents.length > 0 && (
+        <section>
+          <h2 className="text-2xl font-semibold mb-4">Completed</h2>
+          <div className={gridClasses}>
+            {completedEvents.map((event) => (
               <EventCard key={event._id} event={event} />
             ))}
           </div>
@@ -54,22 +66,10 @@ export default function EventGrid({
       {/* Super Events */}
       {superEvents && superEvents.length > 0 && (
         <section>
-          <h2 className="text-2xl font-semibold mb-6">Super Events</h2>
+          <h2 className="text-2xl font-semibold mb-4">Super Events</h2>
           <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
             {superEvents.map((superEvent) => (
               <SuperEventCard key={superEvent._id} superEvent={superEvent} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Completed Events */}
-      {completedEvents.length > 0 && (
-        <section>
-          <h2 className="text-2xl font-semibold mb-6">Completed</h2>
-          <div className={gridClasses}>
-            {completedEvents.map((event) => (
-              <EventCard key={event._id} event={event} />
             ))}
           </div>
         </section>
