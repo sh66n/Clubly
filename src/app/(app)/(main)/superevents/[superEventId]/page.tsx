@@ -38,9 +38,6 @@ export default async function SuperEventPage({
         superEvent={superEvent}
         eventsInSuperEvent={eventsInSuperEvent}
       />
-
-      <h3 className="mb-4 text-2xl">Events</h3>
-      <EventGrid events={eventsInSuperEvent} detailed={false} />
     </div>
   );
 }
