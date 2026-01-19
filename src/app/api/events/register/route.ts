@@ -20,11 +20,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
+    // Check registration limit
+    if (event.eventType === "individual") {
+      if (event.registrations.length >= event.maxRegistrations) {
+        return (
+          NextResponse.json({ error: "Registration limit exceeded!" }),
+          { status: 400 }
+        );
+      }
+    } else {
+      if (event.groupRegistrations.length >= event.maxRegistrations) {
+        return (
+          NextResponse.json({ error: "Registration limit exceeded!" }),
+          { status: 400 }
+        );
+      }
+    }
+
     if (event.eventType === "individual") {
       if (!userId) {
         return NextResponse.json(
           { error: "userId is required for individual events" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -38,7 +55,7 @@ export async function POST(req: Request) {
       if (event.registrations.includes(userId)) {
         return NextResponse.json(
           { error: "Already registered for this event" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -46,7 +63,7 @@ export async function POST(req: Request) {
       const updatedEvent = await Event.findByIdAndUpdate(
         eventId,
         { $addToSet: { registrations: userId } },
-        { new: true }
+        { new: true },
       ).populate("registrations", "name email");
 
       return NextResponse.json(updatedEvent, { status: 200 });
@@ -56,7 +73,7 @@ export async function POST(req: Request) {
       if (!groupId) {
         return NextResponse.json(
           { error: "groupId is required for team events" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -70,7 +87,7 @@ export async function POST(req: Request) {
       if (group.event.toString() !== event._id.toString()) {
         return NextResponse.json(
           { error: "Group does not belong to this event" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -78,7 +95,7 @@ export async function POST(req: Request) {
       if (event.groupRegistrations.includes(groupId)) {
         return NextResponse.json(
           { error: "Already registered for this event" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -86,7 +103,7 @@ export async function POST(req: Request) {
       const updatedEvent = await Event.findByIdAndUpdate(
         eventId,
         { $addToSet: { groupRegistrations: groupId } },
-        { new: true }
+        { new: true },
       ).populate({
         path: "groupRegistrations",
         populate: { path: "members", select: "name email" },

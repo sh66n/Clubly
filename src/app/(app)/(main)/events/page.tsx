@@ -2,15 +2,28 @@ import { auth } from "@/auth";
 import EventGrid from "@/components/Events/EventGrid";
 import ScheduleEventButton from "@/components/Events/ScheduleEventButton";
 import SearchBar from "@/components/Events/SearchBar";
+import ScheduleSuperEventButton from "@/components/SuperEvents/ScheduleSuperEventButton";
 import React from "react";
 
 const getAllEvents = async (query: string | string[], club) => {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/api/events?q=${query}&club=${club}`,
-    { cache: "no-store" }
+    { cache: "no-store" },
   );
   if (!res.ok) return null;
   return res.json();
+};
+
+const getAllSuperEvents = async () => {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/superevents`,
+    {
+      cache: "no-store",
+    },
+  );
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data;
 };
 
 const getAllClubs = async () => {
@@ -31,6 +44,8 @@ export default async function Events({
   const club = (await searchParams).club || "";
   const allEvents = await getAllEvents(query, club);
   const allClubs = await getAllClubs();
+  const allSuperEvents = await getAllSuperEvents();
+
   return (
     <div className="flex flex-col min-h-full">
       <h1 className="text-5xl font-semibold">Events</h1>
@@ -56,13 +71,12 @@ export default async function Events({
 
       <div className="grow mt-8">
         {session?.user?.role === "club-admin" && (
-          <div className="flex justify-end mb-4">
+          <div className="flex flex-col md:flex-row gap-4 items-end md:justify-end mb-4">
+            <ScheduleSuperEventButton />
             <ScheduleEventButton />
           </div>
         )}
-        <div className="flex justify-center">
-          <EventGrid events={allEvents} user={session?.user} />
-        </div>
+        <EventGrid events={allEvents} superEvents={allSuperEvents} />
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ interface EventCardProps {
   user: { id: string; name: string; email: string };
 }
 
-export default function EventCard({ event, user }: EventCardProps) {
+export default function EventCard({ event }: EventCardProps) {
   const eventDate = new Date(event.date);
   const colorClass = event.organizingClub._id
     ? getColorFromString(event.organizingClub._id.toString())
@@ -34,7 +34,7 @@ export default function EventCard({ event, user }: EventCardProps) {
   // };
   return (
     <Link
-      className="bg-black text-white rounded-xl overflow-hidden shadow-md w-full md:w-55 border border-[#515151] mb-2 flex flex-col"
+      className="bg-black text-white rounded-xl overflow-hidden shadow-md w-full border border-[#515151] mb-2 flex flex-col"
       href={`/events/${event._id}`}
     >
       {/* Image Section */}
@@ -63,7 +63,7 @@ export default function EventCard({ event, user }: EventCardProps) {
 
         {/* Bottom Row */}
         <div className="flex justify-between items-center text-xs mt-1">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-400 line-clamp-1">
             {eventDate.toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
@@ -74,7 +74,7 @@ export default function EventCard({ event, user }: EventCardProps) {
             })}
           </p>
           {/* Room */}
-          <span className="text-gray-400">Room 316</span>
+          <span className="text-gray-400 line-clamp-1">Room 316</span>
         </div>
 
         {/* Participants */}
