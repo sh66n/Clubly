@@ -1,23 +1,79 @@
 import { IEvent } from "@/models/event.schema";
 import React from "react";
 import EventCard from "./EventCard";
-import { Session } from "next-auth";
-
-import { toast } from "sonner";
+import { ISuperEvent, SuperEvent } from "@/models/superevent.model";
+import SuperEventCard from "../SuperEvents/SuperEventCard";
 
 interface EventGridProps {
   events: IEvent[];
-  user: Session["user"]; // <- use the NextAuth type
+  superEvents?: ISuperEvent[];
+  detailed?: boolean;
 }
 
-export default function EventGrid({ events, user }: EventGridProps) {
-  if (!events || events.length === 0)
-    return <div className="text-[#6D6D6D] my-4">No events found.</div>;
+export default function EventGrid({
+  events,
+  superEvents,
+  detailed = true,
+}: EventGridProps) {
+  if (!events || events.length === 0) {
+    return <div className="text-[#6D6D6D] my-6">No events found.</div>;
+  }
+
+  const now = new Date();
+
+  const upcomingEvents = events.filter((event) => new Date(event.date) >= now);
+  const completedEvents = events.filter((event) => new Date(event.date) < now);
+
+  const gridClasses =
+    "grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+
+  if (!detailed) {
+    return (
+      <div className={`${gridClasses} w-full`}>
+        {events.map((event) => (
+          <EventCard key={event._id} event={event} />
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <div className="grid gap-5 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 py-6 px-2">
-      {events.map((event, idx) => (
-        <EventCard key={event._id} event={event} user={user} />
-      ))}
+    <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 flex flex-col gap-14">
+      {/* Upcoming Events */}
+      {upcomingEvents.length > 0 && (
+        <section>
+          <h2 className="text-2xl font-semibold mb-6">Upcoming</h2>
+          <div className={gridClasses}>
+            {upcomingEvents.map((event) => (
+              <EventCard key={event._id} event={event} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Super Events */}
+      {superEvents && superEvents.length > 0 && (
+        <section>
+          <h2 className="text-2xl font-semibold mb-6">Super Events</h2>
+          <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+            {superEvents.map((superEvent) => (
+              <SuperEventCard key={superEvent._id} superEvent={superEvent} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Completed Events */}
+      {completedEvents.length > 0 && (
+        <section>
+          <h2 className="text-2xl font-semibold mb-6">Completed</h2>
+          <div className={gridClasses}>
+            {completedEvents.map((event) => (
+              <EventCard key={event._id} event={event} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

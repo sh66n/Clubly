@@ -95,8 +95,12 @@ const eventSchema = new Schema<IEvent>(
     maxRegistrations: {
       type: Number,
     },
+    superEvent: {
+      type: Schema.Types.ObjectId,
+      ref: "SuperEvent",
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const Event = models?.Event || model<IEvent>("Event", eventSchema);

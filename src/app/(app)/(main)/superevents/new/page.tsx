@@ -1,14 +1,14 @@
 import { auth } from "@/auth";
 import BackButton from "@/components/BackButton";
-import NewEventForm from "@/components/Events/NewEventForm";
+import NewSuperEventForm from "@/components/SuperEvents/NewSuperEventForm";
 import React from "react";
 
-export default async function NewEventPage() {
+export default async function NewSuperEvent() {
   const session = await auth();
   return (
     <div>
       <BackButton link={"/events"} />
-      <NewEventForm user={session?.user} />
+      <NewSuperEventForm organizingClubId={session?.user?.adminClub} />
     </div>
   );
 }

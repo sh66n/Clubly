@@ -47,4 +47,5 @@ export interface IEvent {
   winnerGroup: Types.ObjectId;
   image: string;
   maxRegistrations: number;
+  superEvent: Types.ObjectId;
 }

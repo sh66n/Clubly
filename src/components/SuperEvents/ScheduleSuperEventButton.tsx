@@ -2,12 +2,12 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
-export default function ScheduleEventButton() {
+export default function ScheduleSuperEventButton() {
   return (
     <button className="bg-white text-black rounded-full w-fit">
-      <Link href={"/events/new"} className="flex p-2">
+      <Link href={"/superevents/new"} className="flex items-center p-2">
         <Plus />
-        Schedule Event
+        Schedule Super Event
       </Link>
     </button>
   );
