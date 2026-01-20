@@ -20,6 +20,12 @@ export default auth(async (req) => {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
+    pathname.startsWith("/images") ||
+    pathname.endsWith(".png") ||
+    pathname.endsWith(".jpg") ||
+    pathname.endsWith(".jpeg") ||
+    pathname.endsWith(".svg") ||
+    pathname.endsWith(".webp") ||
     pathname === "/favicon.ico"
   ) {
     return NextResponse.next();
