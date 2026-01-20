@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { Globe, Lock, Loader2 } from "lucide-react";
+import BackButton from "../BackButton";
 
 export default function NewGroupForm({ eventId }: { eventId: string }) {
   const [name, setName] = useState("");
@@ -13,8 +15,9 @@ export default function NewGroupForm({ eventId }: { eventId: string }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    if (!name.trim()) return toast.error("Group name is required");
 
+    setLoading(true);
     try {
       const res = await fetch(`/api/events/${eventId}/groups`, {
         method: "POST",
@@ -27,6 +30,7 @@ export default function NewGroupForm({ eventId }: { eventId: string }) {
 
       toast.success(`Group created: ${data.name}`);
       router.push(`/events/${eventId}`);
+      router.refresh();
     } catch (err: any) {
       toast.error(`${err.message}`);
     } finally {
@@ -35,47 +39,84 @@ export default function NewGroupForm({ eventId }: { eventId: string }) {
   };
 
   return (
-    <div className="max-w-lg mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Create a New Group</h1>
+    <div className="w-full">
+      <BackButton />
+      <div className="">
+        <div className="max-w-lg">
+          <div className="mb-8 mt-4">
+            <h1 className="text-3xl font-bold text-white tracking-tight">
+              Create Group
+            </h1>
+            <p className="text-gray-500 mt-2">
+              Set up a team to participate in this event.
+            </p>
+          </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col gap-4 shadow-md rounded-2xl p-6"
-      >
-        {/* Group name */}
-        <div>
-          <label className="block font-medium mb-1">Group Name</label>
-          <input
-            type="text"
-            placeholder="Enter group name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full border rounded-lg p-2 focus:outline-none focus:ring focus:ring-blue-300"
-          />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Group Name */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-400 ml-1">
+                Group Name
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Team Cyber"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full bg-[#121212] border border-[#2A2A2A] text-white rounded-xl p-3 outline-none focus:border-gray-500 transition-colors placeholder:text-gray-700"
+              />
+            </div>
+
+            {/* Visibility Toggle */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-400 ml-1">
+                Visibility
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsPublic(true)}
+                  className={`flex items-center justify-center gap-2 p-3 rounded-xl border transition-all ${
+                    isPublic
+                      ? "bg-white text-black border-white"
+                      : "bg-transparent border-[#2A2A2A] text-gray-500 hover:border-gray-700"
+                  }`}
+                >
+                  <Globe size={16} />
+                  <span className="text-sm font-semibold">Public</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsPublic(false)}
+                  className={`flex items-center justify-center gap-2 p-3 rounded-xl border transition-all ${
+                    !isPublic
+                      ? "bg-white text-black border-white"
+                      : "bg-transparent border-[#2A2A2A] text-gray-500 hover:border-gray-700"
+                  }`}
+                >
+                  <Lock size={16} />
+                  <span className="text-sm font-semibold">Private</span>
+                </button>
+              </div>
+              <p className="text-[11px] text-gray-600 ml-1">
+                {isPublic
+                  ? "Anyone can find and join this group."
+                  : "Only people with the join code can enter."}
+              </p>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading || !name}
+              className="w-full mt-4 bg-white text-black font-bold py-3 px-4 rounded-xl hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+            >
+              {loading && <Loader2 size={18} className="animate-spin" />}
+              {loading ? "Creating..." : "Create Group"}
+            </button>
+          </form>
         </div>
-
-        {/* Public / Private toggle */}
-        <div>
-          <label className="block font-medium mb-1">Visibility</label>
-          <select
-            value={isPublic ? "public" : "private"}
-            onChange={(e) => setIsPublic(e.target.value === "public")}
-            className="w-full border rounded-lg p-2 focus:outline-none focus:ring focus:ring-blue-300"
-          >
-            <option value="public">Public (anyone can join)</option>
-            <option value="private">Private (requires code)</option>
-          </select>
-        </div>
-
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-600 text-white rounded-lg py-2 px-4 hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? "Creating..." : "Create Group"}
-        </button>
-      </form>
+      </div>
     </div>
   );
 }

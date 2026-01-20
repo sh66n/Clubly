@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import EventGrid from "@/components/Events/EventGrid";
+import ScheduleDropdown from "@/components/Events/ScheduleDropdown";
 import ScheduleEventButton from "@/components/Events/ScheduleEventButton";
 import SearchBar from "@/components/Events/SearchBar";
 import ScheduleSuperEventButton from "@/components/SuperEvents/ScheduleSuperEventButton";
@@ -71,11 +72,10 @@ export default async function Events({
 
       <div className="grow mt-8">
         {session?.user?.role === "club-admin" && (
-          <div className="flex flex-col md:flex-row gap-4 items-end md:justify-end mb-4">
-            <ScheduleSuperEventButton />
-            <ScheduleEventButton />
+          <div className="flex justify-end mb-6">
+            <ScheduleDropdown />
           </div>
-        )}
+        )}{" "}
         <EventGrid events={allEvents} superEvents={allSuperEvents} />
       </div>
     </div>

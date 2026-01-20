@@ -7,6 +7,7 @@ import {
   Award,
   Building,
   Calendar,
+  ChevronRight,
   FileBadge,
   Pencil,
   Trophy,
@@ -21,6 +22,7 @@ import { IUser } from "@/models/user.schema";
 import { toast } from "sonner";
 import Payment from "../Payment/Payment";
 import BackButton from "../BackButton";
+import CopyCodeButton from "../Groups/CopyCodeButton";
 
 interface EventDetailsProps {
   event: IEvent;
@@ -157,7 +159,7 @@ export default function EventDetails({
 
   return (
     <>
-      <BackButton link="/events" />
+      <BackButton />
       <div className="xl:flex relative">
         <div className="xl:w-[70%]">
           {/* Event Header */}
@@ -325,16 +327,19 @@ export default function EventDetails({
                 </div>
               </div>
             </BorderedDiv>
-
             {event.eventType === "team" && (
               <>
                 {group ? (
-                  <BorderedDiv>
-                    <GroupCard group={group} isExpanded={true} />
+                  <>
+                    <GroupCard
+                      group={group}
+                      isExpanded={true}
+                      eventId={event._id}
+                    />
                     {!group.isPublic && (
-                      <div className="mt-4">Code: {group.joinCode}</div>
+                      <CopyCodeButton code={group.joinCode} />
                     )}
-                  </BorderedDiv>
+                  </>
                 ) : (
                   <div className="flex flex-col gap-2">
                     <Link href={`/events/${event._id}/groups/new`}>
@@ -351,17 +356,17 @@ export default function EventDetails({
                 )}
               </>
             )}
-
             {user.role === "club-admin" && (
-              <Link href={`${event._id}/edit`}>
-                <BorderedDiv>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
-                      <Pencil />
-                    </div>
-                    <p>Edit Event</p>
-                  </div>
-                </BorderedDiv>
+              <Link href={`${event._id}/edit`} className="group block">
+                <div className="flex items-center gap-3 p-4 rounded-lg border border-dashed border-gray-500  transition-all duration-300">
+                  <Pencil
+                    size={18}
+                    className="text-gray-300 group-hover:text-white transition-colors"
+                  />
+                  <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">
+                    Edit Event
+                  </span>
+                </div>
               </Link>
             )}
           </div>
