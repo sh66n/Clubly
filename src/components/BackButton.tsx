@@ -16,12 +16,15 @@ export default function BackButton({ link }: BackButtonProps) {
       {link ? (
         <Link
           href={link}
-          className="text-white mb-4 inline-flex items-center justify-center p-0"
+          className="text-white mb-4 inline-flex items-center justify-center p-0 cursor-pointer"
         >
           <ChevronLeft />
         </Link>
       ) : (
-        <button onClick={() => router.back()} className="text-white mb-4">
+        <button
+          onClick={() => router.back()}
+          className="text-white mb-4 cursor-pointer"
+        >
           <ChevronLeft />
         </button>
       )}
