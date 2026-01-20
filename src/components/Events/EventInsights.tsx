@@ -49,7 +49,7 @@ export default function EventInsights({ event }: EventInsightsProps) {
               {isTeam ? (
                 event.groupRegistrations?.length > 0 ? (
                   event.groupRegistrations.map((g) => (
-                    <GroupCard group={g} eventId={event._id} />
+                    <GroupCard group={g} eventId={event._id} key={g._id} />
                   ))
                 ) : (
                   <div className="text-sm text-[#717171]">None yet</div>
@@ -71,7 +71,7 @@ export default function EventInsights({ event }: EventInsightsProps) {
               {isTeam ? (
                 event.participantGroups?.length > 0 ? (
                   event.participantGroups.map((g) => (
-                    <GroupCard group={g} eventId={event._id} />
+                    <GroupCard group={g} eventId={event._id} key={g._id} />
                   ))
                 ) : (
                   <div className="text-sm text-[#717171]">None yet</div>
@@ -90,7 +90,11 @@ export default function EventInsights({ event }: EventInsightsProps) {
             <div className="flex flex-col gap-2">
               {isTeam ? (
                 event.winnerGroup ? (
-                  <GroupCard group={event.winnerGroup} eventId={event._id} />
+                  <GroupCard
+                    group={event.winnerGroup}
+                    eventId={event._id}
+                    key={event.winnerGroup._id}
+                  />
                 ) : (
                   <div className="text-sm text-[#717171]">None yet</div>
                 )
