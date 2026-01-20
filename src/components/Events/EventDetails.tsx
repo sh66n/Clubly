@@ -162,7 +162,7 @@ export default function EventDetails({
 
   return (
     <>
-      <BackButton />
+      <BackButton link={"/events"} />
       <div className="xl:flex relative">
         <div className="xl:w-[70%]">
           {/* Event Header */}
@@ -262,122 +262,124 @@ export default function EventDetails({
         </div>
 
         {/* Right side sticky card */}
-        <div className="grow ml-0 xl:ml-4 pb-4">
-          <div className="flex flex-col gap-4 sticky top-2">
-            <BorderedDiv className="rounded-xl shadow-md p-4">
-              <h2 className="font-semibold text-3xl mb-2">
-                {event.registrationFee > 0
-                  ? `₹${event.registrationFee}`
-                  : "Free"}
-              </h2>
+        {user && (
+          <div className="grow ml-0 xl:ml-4 pb-4">
+            <div className="flex flex-col gap-4 sticky top-2">
+              <BorderedDiv className="rounded-xl shadow-md p-4">
+                <h2 className="font-semibold text-3xl mb-2">
+                  {event.registrationFee > 0
+                    ? `₹${event.registrationFee}`
+                    : "Free"}
+                </h2>
 
-              {event.registrationFee < 0 ? (
-                <button
-                  onClick={handleRegister}
-                  disabled={isRegisterDisabled}
-                  className={`w-full py-2 rounded-lg font-semibold mb-2 ${
-                    isRegisterDisabled
-                      ? "bg-[#000F57] opacity-50 cursor-not-allowed"
-                      : "bg-[#000F57] text-white"
-                  }`}
-                >
-                  {isAlreadyRegistered
-                    ? "Registered"
-                    : hasEventPassed
-                      ? "Registrations Closed"
-                      : isLoading
-                        ? "Registering..."
-                        : "Register"}
-                </button>
-              ) : (
-                <Payment
-                  amount={event.registrationFee || 0}
-                  text={ctaText}
-                  disabled={
-                    isRegisterDisabled ||
-                    isAlreadyRegistered ||
-                    hasEventPassed ||
-                    isLoading
-                  }
-                  className={`w-full py-2 rounded-lg font-semibold mb-2 ${
-                    isRegisterDisabled
-                      ? "bg-[#000F57] opacity-50 cursor-not-allowed"
-                      : "bg-[#000F57] text-white"
-                  }`}
-                  onSuccess={handleRegister}
-                />
-              )}
-
-              <div className="flex ml-auto items-center gap-2 text-[#717171] my-2">
-                <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
-                  {event.eventType === "individual" ? <User /> : <Users />}
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs">Team Size</span>
-                  <span className="text-sm">
-                    {event.teamSize
-                      ? event.teamSize
-                      : event.teamSizeRange
-                        ? `${event.teamSizeRange.min} - ${event.teamSizeRange.max}`
-                        : "1"}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex ml-auto items-center gap-2 text-[#717171] my-2">
-                <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
-                  <Calendar />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs">Registration Deadline</span>
-                  <span className="text-sm">{daysLeft} days left</span>
-                </div>
-              </div>
-            </BorderedDiv>
-            {event.eventType === "team" && (
-              <>
-                {group ? (
-                  <>
-                    <GroupCard
-                      group={group}
-                      isExpanded={true}
-                      eventId={event._id}
-                    />
-                    {!group.isPublic && (
-                      <CopyCodeButton code={group.joinCode} />
-                    )}
-                  </>
+                {event.registrationFee < 0 ? (
+                  <button
+                    onClick={handleRegister}
+                    disabled={isRegisterDisabled}
+                    className={`w-full py-2 rounded-lg font-semibold mb-2 ${
+                      isRegisterDisabled
+                        ? "bg-[#000F57] opacity-50 cursor-not-allowed"
+                        : "bg-[#000F57] text-white"
+                    }`}
+                  >
+                    {isAlreadyRegistered
+                      ? "Registered"
+                      : hasEventPassed
+                        ? "Registrations Closed"
+                        : isLoading
+                          ? "Registering..."
+                          : "Register"}
+                  </button>
                 ) : (
-                  <div className="flex flex-col gap-2">
-                    <Link href={`/events/${event._id}/groups/new`}>
-                      <BorderedDiv className="rounded-full text-center">
-                        Create group
-                      </BorderedDiv>
-                    </Link>
-                    <Link href={`/events/${event._id}/groups`}>
-                      <BorderedDiv className="rounded-full text-center">
-                        Join group
-                      </BorderedDiv>
-                    </Link>
-                  </div>
-                )}
-              </>
-            )}
-            {user.role === "club-admin" && (
-              <Link href={`${event._id}/edit`} className="group block">
-                <div className="flex items-center gap-3 p-4 rounded-lg border border-dashed border-gray-500  transition-all duration-300">
-                  <Pencil
-                    size={18}
-                    className="text-gray-300 group-hover:text-white transition-colors"
+                  <Payment
+                    amount={event.registrationFee || 0}
+                    text={ctaText}
+                    disabled={
+                      isRegisterDisabled ||
+                      isAlreadyRegistered ||
+                      hasEventPassed ||
+                      isLoading
+                    }
+                    className={`w-full py-2 rounded-lg font-semibold mb-2 ${
+                      isRegisterDisabled
+                        ? "bg-[#000F57] opacity-50 cursor-not-allowed"
+                        : "bg-[#000F57] text-white"
+                    }`}
+                    onSuccess={handleRegister}
                   />
-                  <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">
-                    Edit Event
-                  </span>
+                )}
+
+                <div className="flex ml-auto items-center gap-2 text-[#717171] my-2">
+                  <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
+                    {event.eventType === "individual" ? <User /> : <Users />}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs">Team Size</span>
+                    <span className="text-sm">
+                      {event.teamSize
+                        ? event.teamSize
+                        : event.teamSizeRange
+                          ? `${event.teamSizeRange.min} - ${event.teamSizeRange.max}`
+                          : "1"}
+                    </span>
+                  </div>
                 </div>
-              </Link>
-            )}
+
+                <div className="flex ml-auto items-center gap-2 text-[#717171] my-2">
+                  <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
+                    <Calendar />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs">Registration Deadline</span>
+                    <span className="text-sm">{daysLeft} days left</span>
+                  </div>
+                </div>
+              </BorderedDiv>
+              {event.eventType === "team" && (
+                <>
+                  {group ? (
+                    <>
+                      <GroupCard
+                        group={group}
+                        isExpanded={true}
+                        eventId={event._id}
+                      />
+                      {!group.isPublic && (
+                        <CopyCodeButton code={group.joinCode} />
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <Link href={`/events/${event._id}/groups/new`}>
+                        <BorderedDiv className="rounded-full text-center">
+                          Create group
+                        </BorderedDiv>
+                      </Link>
+                      <Link href={`/events/${event._id}/groups`}>
+                        <BorderedDiv className="rounded-full text-center">
+                          Join group
+                        </BorderedDiv>
+                      </Link>
+                    </div>
+                  )}
+                </>
+              )}
+              {user?.role === "club-admin" && (
+                <Link href={`${event._id}/edit`} className="group block">
+                  <div className="flex items-center gap-3 p-4 rounded-lg border border-dashed border-gray-500  transition-all duration-300">
+                    <Pencil
+                      size={18}
+                      className="text-gray-300 group-hover:text-white transition-colors"
+                    />
+                    <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">
+                      Edit Event
+                    </span>
+                  </div>
+                </Link>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </>
   );

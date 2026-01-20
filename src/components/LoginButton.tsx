@@ -1,13 +1,17 @@
 "use client";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginButton() {
   const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
 
   const handleSignIn = async () => {
     setLoading(true);
-    await signIn("google", { callbackUrl: "/dashboard" });
+    await signIn("google", {
+      callbackUrl: searchParams.get("callbackUrl") ?? "/dashboard",
+    });
     // The page will redirect, so no need to setLoading(false) here
   };
 

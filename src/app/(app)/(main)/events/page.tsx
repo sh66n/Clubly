@@ -71,11 +71,11 @@ export default async function Events({
       <SearchBar clubs={allClubs} />
 
       <div className="grow mt-8">
-        {session?.user?.role === "club-admin" && (
+        {session && session?.user?.role === "club-admin" && (
           <div className="flex justify-end mb-6">
             <ScheduleDropdown />
           </div>
-        )}{" "}
+        )}
         <EventGrid events={allEvents} superEvents={allSuperEvents} />
       </div>
     </div>
