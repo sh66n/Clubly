@@ -2,90 +2,92 @@
 
 import { getColorFromString } from "@/lib/utils";
 import { IEvent } from "@/models/event.schema";
-import { Heart, Users } from "lucide-react";
+import { Users, MapPin, Calendar, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
 interface EventCardProps {
   event: IEvent;
-  user: { id: string; name: string; email: string };
 }
 
 export default function EventCard({ event }: EventCardProps) {
   const eventDate = new Date(event.date);
-  const colorClass = event.organizingClub._id
-    ? getColorFromString(event.organizingClub._id.toString())
-    : getColorFromString(event.organizingClub.toString());
-  // const handleRegister = async () => {
-  //   const res = await fetch(
-  //     `${process.env.NEXT_PUBLIC_BASE_URL}/api/events/register`,
-  //     {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({ eventId: event._id, userId: user.id }),
-  //     }
-  //   );
 
-  //   if (!res.ok) {
-  //     throw new Error("Failed to register");
-  //   }
+  // Clean logic for the club tag color
+  const clubId =
+    event.organizingClub._id?.toString() || event.organizingClub.toString();
+  const colorClass = getColorFromString(clubId);
 
-  //   const updatedEvent = await res.json();
-  //   console.log(updatedEvent);
-  // };
   return (
     <Link
-      className="bg-black text-white rounded-xl overflow-hidden shadow-md w-full border border-[#515151] mb-2 flex flex-col"
       href={`/events/${event._id}`}
+      className="group relative flex flex-col bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl overflow-hidden transition-all duration-500 hover:border-gray-500 hover:shadow-[0_0_30px_rgba(0,0,0,0.5)]"
     >
-      {/* Image Section */}
-      <div className="relative">
+      {/* Image Section with Gradient Overlay */}
+      <div className="relative h-44 w-full overflow-hidden">
         <img
-          src={event.image ? event.image : "/images/default.png"}
-          alt="Event"
-          className="w-full h-40 object-cover"
+          src={event.image || "/images/default.png"}
+          alt={event.name}
+          className="w-full h-full object-cover"
         />
-        {/* Top Right - Tag */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-transparent opacity-60" />
+
+        {/* Floating Club Tag */}
         {event.organizingClub.name && (
-          <span
-            className={`absolute top-2 right-2 ${colorClass} text-xs font-semibold px-2 py-1 rounded-full border border-white`}
-          >
-            {event.organizingClub.name}
-          </span>
+          <div className="absolute top-3 left-3">
+            <span
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-white/10 backdrop-blur-md bg-black/40 text-white`}
+            >
+              {event.organizingClub.name}
+            </span>
+          </div>
         )}
+
+        {/* Hover Arrow Indicator */}
+        <div className="absolute top-3 right-3 p-2 rounded-full bg-white text-black opacity-0 -translate-y-2 translate-x-2 group-hover:opacity-100 group-hover:translate-y-0 group-hover:translate-x-0 transition-all duration-300">
+          <ArrowUpRight size={16} strokeWidth={3} />
+        </div>
       </div>
 
       {/* Content Section */}
-      <div className="p-3 flex flex-col gap-1 grow">
-        {/* Title */}
-        <div className="flex justify-between">
-          <h3 className="font-semibold text-base line-clamp-1">{event.name}</h3>
+      <div className="p-4 flex flex-col gap-3">
+        <div>
+          <h3 className="text-lg font-bold text-white tracking-tight line-clamp-1 group-hover:underline">
+            {event.name}
+          </h3>
+          <div className="flex items-center gap-2 mt-1 text-gray-500">
+            <Calendar size={12} />
+            <span className="text-[11px] font-medium uppercase tracking-wider">
+              {eventDate.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}{" "}
+              •{" "}
+              {eventDate.toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </span>
+          </div>
         </div>
 
-        {/* Bottom Row */}
-        <div className="flex justify-between items-center text-xs mt-1">
-          <p className="text-xs text-gray-400 line-clamp-1">
-            {eventDate.toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-              hour12: true,
-            })}
-          </p>
-          {/* Room */}
-          <span className="text-gray-400 line-clamp-1">Room 316</span>
-        </div>
+        {/* Bottom Metadata Row */}
+        <div className="flex items-center justify-between mt-2 pt-3 border-t border-[#1A1A1A]">
+          <div className="flex items-center gap-1.5 text-gray-400">
+            <Users size={14} className="text-gray-600" />
+            <span className="text-xs font-bold font-mono">
+              {event.eventType === "team"
+                ? event.groupRegistrations.length
+                : event.registrations.length}
+            </span>
+          </div>
 
-        {/* Participants */}
-
-        <div className="flex items-center gap-1 text-xs text-gray-300 mt-auto">
-          <Users size={14} />
-          <span>
-            {event.eventType === "team"
-              ? event.groupRegistrations.length
-              : event.registrations.length}
-          </span>
+          <div className="flex items-center gap-1.5 text-gray-500">
+            <MapPin size={14} />
+            <span className="text-[11px] font-semibold tracking-wide uppercase">
+              Room 316
+            </span>
+          </div>
         </div>
       </div>
     </Link>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 interface BackButtonProps {
@@ -9,26 +9,28 @@ interface BackButtonProps {
 }
 
 export default function BackButton({ link }: BackButtonProps) {
-  console.log(link);
   const router = useRouter();
 
-  if (link) {
-    return (
-      <Link
-        href={link}
-        className="text-black bg-white rounded-full mb-4 inline-flex items-center justify-center p-0"
-      >
-        <ChevronLeft />
-      </Link>
-    );
-  } else {
-    return (
+  return (
+    <div className="flex gap-1">
+      {link ? (
+        <Link
+          href={link}
+          className="text-white mb-4 inline-flex items-center justify-center p-0"
+        >
+          <ChevronLeft />
+        </Link>
+      ) : (
+        <button onClick={() => router.back()} className="text-white mb-4">
+          <ChevronLeft />
+        </button>
+      )}
       <button
-        onClick={() => router.back()}
-        className="text-black bg-white rounded-full mb-4"
+        disabled
+        className="text-white mb-4 cursor-not-allowed opacity-50"
       >
-        <ChevronLeft />
+        <ChevronRight />
       </button>
-    );
-  }
+    </div>
+  );
 }

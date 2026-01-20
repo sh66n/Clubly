@@ -2,16 +2,17 @@
 
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
-import { Menu, X } from "lucide-react"; // Install lucide-react or use SVG icons
+import { Menu, X, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState<"login" | "signup" | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 0);
-    };
+    const handleScroll = () => setScrolled(window.scrollY > 0);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -22,6 +23,11 @@ export default function Navbar() {
     { name: "How It Works", href: "#howitworks" },
     { name: "Contact", href: "#contact" },
   ];
+
+  const handleNavigate = (type: "login" | "signup") => {
+    setLoading(type);
+    router.push("/login"); // change signup route if needed
+  };
 
   return (
     <nav
@@ -36,7 +42,7 @@ export default function Navbar() {
           <span>Clubly</span>
         </div>
 
-        {/* Desktop Navigation */}
+        {/* Desktop Nav */}
         <ul className="hidden md:flex gap-8 items-center">
           {navLinks.map((link) => (
             <li key={link.name}>
@@ -52,29 +58,42 @@ export default function Navbar() {
 
         {/* Desktop Buttons */}
         <div className="hidden md:flex gap-4 items-center">
-          <Link href="/login">
-            <button className="border border-[#5E5E5E] rounded-full py-1.5 px-5 font-bold hover:bg-white/10 transition-all">
-              Login
-            </button>
-          </Link>
-          <Link href="/login">
-            <button className="bg-white text-black rounded-full py-1.5 px-5 font-bold hover:bg-gray-200 transition-all">
-              SignUp
-            </button>
-          </Link>
+          <button
+            onClick={() => handleNavigate("login")}
+            disabled={loading !== null}
+            className="border border-[#5E5E5E] rounded-full py-1.5 px-5 font-bold flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            {loading === "login" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <span>Login</span>
+            )}
+          </button>
+
+          <button
+            onClick={() => handleNavigate("signup")}
+            disabled={loading !== null}
+            className="bg-white text-black rounded-full py-1.5 px-5 font-bold flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            {loading === "signup" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <span>SignUp</span>
+            )}
+          </button>
         </div>
 
-        {/* Mobile Hamburger Icon */}
-        <div className="md:hidden flex items-center">
-          <button onClick={() => setIsOpen(!isOpen)} className="p-2">
+        {/* Mobile Menu Button */}
+        <div className="md:hidden">
+          <button onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Menu */}
       <div
-        className={`absolute top-full left-0 w-full bg-black/90 backdrop-blur-lg transition-all duration-300 overflow-hidden md:hidden ${
+        className={`absolute top-full left-0 w-full bg-black/90 backdrop-blur-lg transition-all duration-300 md:hidden ${
           isOpen ? "max-h-screen opacity-100 py-8" : "max-h-0 opacity-0"
         }`}
       >
@@ -83,24 +102,38 @@ export default function Navbar() {
             <li key={link.name}>
               <a
                 href={link.href}
-                className="text-sm"
                 onClick={() => setIsOpen(false)}
+                className="text-sm"
               >
                 {link.name}
               </a>
             </li>
           ))}
+
           <div className="flex flex-col w-full px-10 gap-4 mt-4">
-            <Link href="/login" className="w-full">
-              <button className="w-full border border-[#5E5E5E] rounded-full py-3 font-bold text-sm">
-                Login
-              </button>
-            </Link>
-            <Link href="/login" className="w-full">
-              <button className="w-full bg-white text-black rounded-full py-3 font-bold text-sm">
-                SignUp
-              </button>
-            </Link>
+            <button
+              onClick={() => handleNavigate("login")}
+              disabled={loading !== null}
+              className="w-full border border-[#5E5E5E] rounded-full py-3 font-bold flex justify-center gap-2 disabled:opacity-60"
+            >
+              {loading === "login" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <span>Login</span>
+              )}
+            </button>
+
+            <button
+              onClick={() => handleNavigate("signup")}
+              disabled={loading !== null}
+              className="w-full bg-white text-black rounded-full py-3 font-bold flex justify-center gap-2 disabled:opacity-60"
+            >
+              {loading === "signup" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <span>SignUp</span>
+              )}
+            </button>
           </div>
         </ul>
       </div>

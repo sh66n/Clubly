@@ -16,7 +16,7 @@ export default function SuperEventDetails({
   return (
     <div className="">
       {/* Hero */}
-      <div className="relative h-[260px] sm:h-[320px] md:h-[450px] w-full rounded-3xl overflow-hidden mb-8 border border-white/10 shadow-2xl">
+      <div className="relative h-[260px] sm:h-[320px] md:h-[450px] w-full rounded-3xl overflow-hidden mb-8 shadow-2xl">
         <img
           src={superEvent.image}
           className="w-full h-full object-cover"
@@ -52,80 +52,85 @@ export default function SuperEventDetails({
 
       {/* Timeline */}
       {sortedEvents.length > 0 && (
-        <div className="mb-12">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
-              <Clock />
+        <div className="mb-12 ">
+          <div className="flex items-center gap-3 mb-6">
+            {/* Minimalist Icon Container */}
+            <div className="flex items-center justify-center w-10 h-10 border border-gray-800 rounded-lg text-gray-400">
+              <Clock size={20} strokeWidth={1.5} />
             </div>
-            <h3 className="text-2xl">Timeline</h3>
+
+            {/* Clean Typography */}
+            <h3 className="text-xl font-medium tracking-tight text-gray-200">
+              Timeline
+            </h3>
           </div>
+          <div className="">
+            <div className="relative ml-4 border-l-2 border-[#2a2a2a] pl-8 pb-4">
+              {sortedEvents.map((event, idx) => {
+                const eventDate = new Date(event.date);
 
-          <div className="relative ml-4 border-l-2 border-[#2a2a2a] pl-8 pb-4">
-            {sortedEvents.map((event, idx) => {
-              const eventDate = new Date(event.date);
+                // Create "Date Only" strings to compare (YYYY-MM-DD)
+                const eventDateStr = eventDate.toDateString(); // e.g., "Tue Jan 20 2026"
+                const nowDateStr = now.toDateString();
 
-              // Create "Date Only" strings to compare (YYYY-MM-DD)
-              const eventDateStr = eventDate.toDateString(); // e.g., "Tue Jan 20 2026"
-              const nowDateStr = now.toDateString();
+                // Logic: Is it happening today?
+                const isLive = eventDateStr === nowDateStr;
 
-              // Logic: Is it happening today?
-              const isLive = eventDateStr === nowDateStr;
+                // Logic: Has the day already passed?
+                // We compare the start of the days in milliseconds
+                const eventStartOfDay = new Date(
+                  eventDate.setHours(0, 0, 0, 0),
+                ).getTime();
+                const nowStartOfDay = new Date(
+                  now.setHours(0, 0, 0, 0),
+                ).getTime();
 
-              // Logic: Has the day already passed?
-              // We compare the start of the days in milliseconds
-              const eventStartOfDay = new Date(
-                eventDate.setHours(0, 0, 0, 0),
-              ).getTime();
-              const nowStartOfDay = new Date(
-                now.setHours(0, 0, 0, 0),
-              ).getTime();
+                return (
+                  <div key={idx} className="mb-10 relative">
+                    {/* Timeline Dot */}
+                    <div
+                      className={`absolute -left-[41px] mt-1.5 w-4 h-4 rounded-full border-4 border-black z-10 
+                    ${isLive ? "bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]" : "bg-[#5E77F5]"}`}
+                    ></div>
 
-              return (
-                <div key={idx} className="mb-10 relative">
-                  {/* Timeline Dot */}
-                  <div
-                    className={`absolute -left-[41px] mt-1.5 w-4 h-4 rounded-full border-4 border-black z-10 
-                    ${isLive ? "bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]" : "bg-blue-600"}`}
-                  ></div>
-
-                  {/* Date/Time Label */}
-                  <div className="flex flex-col md:flex-row md:items-center gap-2 mb-1">
-                    <span className="text-sm font-bold text-blue-400 uppercase tracking-wider">
-                      {eventDate.toLocaleDateString(undefined, {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                    <span className="hidden md:block text-[#515151]">•</span>
-                    <span className="text-sm text-gray-400 flex items-center gap-1">
-                      <Clock size={14} />
-                      {eventDate.toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                    {isLive && (
-                      <span className="bg-green-500/10 text-green-500 text-[10px] font-bold px-2 py-0.5 rounded border border-green-500/20 w-fit ml-2 uppercase">
-                        Live Now
+                    {/* Date/Time Label */}
+                    <div className="flex flex-col md:flex-row md:items-center gap-2 mb-1">
+                      <span className="text-sm font-bold text-white uppercase tracking-wider">
+                        {eventDate.toLocaleDateString(undefined, {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </span>
-                    )}
-                  </div>
+                      <span className="text-sm text-gray-400 flex items-center gap-1">
+                        <Clock size={14} />
+                        {eventDate.toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      {isLive && (
+                        <span className="bg-green-500/10 text-green-500 text-[10px] font-bold px-2 py-0.5 rounded border border-green-500/20 w-fit ml-2 uppercase">
+                          Live Now
+                        </span>
+                      )}
+                    </div>
 
-                  {/* Event Content */}
-                  <BorderedDiv className="bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl hover:border-[#4a4a4a] transition-colors">
-                    <h4 className="text-lg font-medium text-white">
-                      {event.name}
-                    </h4>
-                    {event.description && (
-                      <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                        {event.description}
-                      </p>
-                    )}
-                  </BorderedDiv>
-                </div>
-              );
-            })}
+                    {/* Event Content */}
+                    <div className="px-2 py-4">
+                      <h4 className="text-lg font-medium text-white">
+                        {event.name}
+                      </h4>
+                      {event.description && (
+                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                          {event.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
@@ -133,39 +138,53 @@ export default function SuperEventDetails({
       {/* Description */}
       {superEvent?.description && (
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
-              <Info />
+          <div className="flex items-center gap-3 mb-6">
+            {/* Minimalist Icon Container */}
+            <div className="flex items-center justify-center w-10 h-10 border border-gray-800 rounded-lg text-gray-400">
+              <Info size={20} strokeWidth={1.5} />
             </div>
-            <h3 className="text-2xl">About {superEvent.name}</h3>
+
+            {/* Clean Typography */}
+            <h3 className="text-xl font-medium tracking-tight text-gray-200">
+              About {superEvent.name}
+            </h3>
           </div>
 
-          <BorderedDiv className="whitespace-pre-line text-[#bdbdbd]">
+          <div className="whitespace-pre-line text-[#bdbdbd] bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl ">
             {superEvent.description}
-          </BorderedDiv>
+          </div>
         </div>
       )}
 
       {/* Events */}
       <div className="mb-10">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
-            <Calendar />
+        <div className="flex items-center gap-3 mb-6">
+          {/* Minimalist Icon Container */}
+          <div className="flex items-center justify-center w-10 h-10 border border-gray-800 rounded-lg text-gray-400">
+            <Calendar size={20} strokeWidth={1.5} />
           </div>
-          <h3 className="text-2xl">Events ({eventsInSuperEvent.length})</h3>
-        </div>
 
+          {/* Clean Typography */}
+          <h3 className="text-xl font-medium tracking-tight text-gray-200">
+            Events ({eventsInSuperEvent.length})
+          </h3>
+        </div>
         <EventGrid events={eventsInSuperEvent} detailed={false} />
       </div>
 
       {/* Rewards */}
       {eventsInSuperEvent.length > 0 && (
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
-              <Trophy />
+          <div className="flex items-center gap-3 mb-6">
+            {/* Minimalist Icon Container */}
+            <div className="flex items-center justify-center w-10 h-10 border border-gray-800 rounded-lg text-gray-400">
+              <Trophy size={20} strokeWidth={1.5} />
             </div>
-            <h3 className="text-2xl">Rewards & Prizes</h3>
+
+            {/* Clean Typography */}
+            <h3 className="text-xl font-medium tracking-tight text-gray-200">
+              Rewards & Prizes
+            </h3>
           </div>
 
           <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
