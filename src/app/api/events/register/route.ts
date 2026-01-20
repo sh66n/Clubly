@@ -8,35 +8,43 @@ import { Group } from "@/models/group.model";
 export async function POST(req: Request) {
   try {
     const { eventId, userId, groupId } = await req.json();
+
     if (!eventId) {
       return NextResponse.json({ error: "Missing eventId" }, { status: 400 });
     }
 
     await connectToDb();
 
-    // Fetch event to check type
+    // Fetch event
     const event = await Event.findById(eventId);
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    // Check registration limit
+    /* ---------------- Registration Limit ---------------- */
     if (event.eventType === "individual") {
-      if (event.registrations.length >= event.maxRegistrations) {
-        return (
-          NextResponse.json({ error: "Registration limit exceeded!" }),
-          { status: 400 }
+      if (
+        event.maxRegistrations &&
+        event.registrations.length >= event.maxRegistrations
+      ) {
+        return NextResponse.json(
+          { error: "Registration limit exceeded!" },
+          { status: 400 },
         );
       }
     } else {
-      if (event.groupRegistrations.length >= event.maxRegistrations) {
-        return (
-          NextResponse.json({ error: "Registration limit exceeded!" }),
-          { status: 400 }
+      if (
+        event.maxRegistrations &&
+        event.groupRegistrations.length >= event.maxRegistrations
+      ) {
+        return NextResponse.json(
+          { error: "Registration limit exceeded!" },
+          { status: 400 },
         );
       }
     }
 
+    /* ================= INDIVIDUAL ================= */
     if (event.eventType === "individual") {
       if (!userId) {
         return NextResponse.json(
@@ -45,13 +53,11 @@ export async function POST(req: Request) {
         );
       }
 
-      // Ensure user exists
       const user = await User.findById(userId);
       if (!user) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
 
-      // Check if already registered
       if (event.registrations.includes(userId)) {
         return NextResponse.json(
           { error: "Already registered for this event" },
@@ -59,7 +65,6 @@ export async function POST(req: Request) {
         );
       }
 
-      // Register user
       const updatedEvent = await Event.findByIdAndUpdate(
         eventId,
         { $addToSet: { registrations: userId } },
@@ -69,6 +74,7 @@ export async function POST(req: Request) {
       return NextResponse.json(updatedEvent, { status: 200 });
     }
 
+    /* ================= TEAM ================= */
     if (event.eventType === "team") {
       if (!groupId) {
         return NextResponse.json(
@@ -77,13 +83,12 @@ export async function POST(req: Request) {
         );
       }
 
-      // Ensure group exists
-      const group = await Group.findById(groupId);
+      const group = await Group.findById(groupId).populate("members");
       if (!group) {
         return NextResponse.json({ error: "Group not found" }, { status: 404 });
       }
 
-      // Ensure the group belongs to this event
+      // Group must belong to event
       if (group.event.toString() !== event._id.toString()) {
         return NextResponse.json(
           { error: "Group does not belong to this event" },
@@ -91,7 +96,7 @@ export async function POST(req: Request) {
         );
       }
 
-      // Check if already registered
+      // Duplicate registration check
       if (event.groupRegistrations.includes(groupId)) {
         return NextResponse.json(
           { error: "Already registered for this event" },
@@ -99,7 +104,33 @@ export async function POST(req: Request) {
         );
       }
 
-      // Register group
+      /* -------- TEAM SIZE VALIDATION (NEW) -------- */
+      const memberCount = group.members.length;
+
+      // Range has priority
+      if (event.teamSizeRange?.min && event.teamSizeRange?.max) {
+        const { min, max } = event.teamSizeRange;
+
+        if (memberCount < min || memberCount > max) {
+          return NextResponse.json(
+            {
+              error: `Team size must be between ${min} and ${max} members`,
+            },
+            { status: 400 },
+          );
+        }
+      } else if (event.teamSize) {
+        if (memberCount !== event.teamSize) {
+          return NextResponse.json(
+            {
+              error: `Team size must be exactly ${event.teamSize} members`,
+            },
+            { status: 400 },
+          );
+        }
+      }
+
+      /* -------- Register Group -------- */
       const updatedEvent = await Event.findByIdAndUpdate(
         eventId,
         { $addToSet: { groupRegistrations: groupId } },
@@ -113,7 +144,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ error: "Unknown event type" }, { status: 400 });
-  } catch (err: any) {
+  } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }

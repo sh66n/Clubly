@@ -7,6 +7,7 @@ import { getEventsRegisteredByUser } from "@/services/getEventsRegisteredByUser"
 import { getLeaderboardRank } from "@/services/getLeaderboardRank";
 import { getWeeklyEventCounts } from "@/services/getWeeklyEventCounts";
 import Image from "next/image";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import React from "react";
 
@@ -14,7 +15,7 @@ const getInsights = async (userId) => {
   const eventsAttended = await getEventsAttendedByUser(userId);
   const leaderboardData = await getLeaderboardRank(
     "68ab3c6d14766aa80db61482",
-    userId
+    userId,
   );
   const eventsRegistered = await getEventsRegisteredByUser(userId);
   const upcomingEvents = await getWeeklyEventCounts();
@@ -119,7 +120,8 @@ export default async function Dashboard() {
             <div className="grow flex justify-evenly items-center">
               <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4 gap-4 w-full">
                 {anyFourClubs.map((club, idx) => (
-                  <div
+                  <Link
+                    href={`clubs/${club._id}`}
                     key={club._id}
                     className="flex flex-col items-center p-2 rounded-lg"
                   >
@@ -131,7 +133,7 @@ export default async function Dashboard() {
                     <div className="text-center mt-2 text-sm sm:text-base">
                       {club.name}
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>

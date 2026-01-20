@@ -109,7 +109,8 @@ export default function EventDetails({
     (event.eventType === "team" &&
       (!group || // No group
         user.id !== group.leader._id || // Not leader
-        group.members.length < event.teamSize)); // Team too small
+        group.members.length <
+          (event.teamSize ? event.teamSize : event.teamSizeRange.min))); // Team too small
 
   //  Dynamic CTA text for TEAM events only
   const getTeamCTA = () => {
@@ -139,7 +140,9 @@ export default function EventDetails({
       return "Create or join a group to continue";
     }
 
-    const required = event.teamSize;
+    const required = event.teamSize
+      ? event.teamSize
+      : event?.teamSizeRange?.min;
     const current = group.members.length;
 
     if (current < required) {
@@ -312,7 +315,11 @@ export default function EventDetails({
                 <div className="flex flex-col">
                   <span className="text-xs">Team Size</span>
                   <span className="text-sm">
-                    {event.teamSize ? event.teamSize : "1"}
+                    {event.teamSize
+                      ? event.teamSize
+                      : event.teamSizeRange
+                        ? `${event.teamSizeRange.min} - ${event.teamSizeRange.max}`
+                        : "1"}
                   </span>
                 </div>
               </div>

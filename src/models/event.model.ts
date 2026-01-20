@@ -30,6 +30,10 @@ const eventSchema = new Schema<IEvent>(
       type: Number,
       required: false,
     },
+    teamSizeRange: {
+      min: Number,
+      max: Number,
+    },
     prize: {
       type: Number,
       required: false,

@@ -31,6 +31,10 @@ export interface IEvent {
   date: Date;
   eventType: "team" | "individual";
   teamSize?: number;
+  teamSizeRange?: {
+    min: number;
+    max: number;
+  };
   prize?: number;
   providesCertificate: boolean;
   registrationFee: number;
