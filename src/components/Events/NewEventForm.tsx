@@ -25,6 +25,7 @@ export default function NewEventForm({ user }: NewEventFormProps) {
   const [eventType, setEventType] = useState<"individual" | "team">(
     "individual",
   );
+  const [teamSizeMode, setTeamSizeMode] = useState<"fixed" | "range">("fixed");
   const [loading, setLoading] = useState(false);
 
   const [superEvents, setSuperEvents] = useState<SuperEvent[]>([]);
@@ -53,8 +54,23 @@ export default function NewEventForm({ user }: NewEventFormProps) {
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
 
+    // Individual → force team size 1
     if (eventType === "individual") {
       formData.set("teamSize", "1");
+      formData.delete("teamSizeRange[min]");
+      formData.delete("teamSizeRange[max]");
+    }
+
+    // Team logic
+    if (eventType === "team") {
+      if (teamSizeMode === "fixed") {
+        formData.delete("teamSizeRange[min]");
+        formData.delete("teamSizeRange[max]");
+      }
+
+      if (teamSizeMode === "range") {
+        formData.delete("teamSize");
+      }
     }
 
     formData.append("organizingClub", user.adminClub);
@@ -118,10 +134,13 @@ export default function NewEventForm({ user }: NewEventFormProps) {
         <select
           name="eventType"
           value={eventType}
-          onChange={(e) =>
-            setEventType(e.target.value as "individual" | "team")
-          }
-          className="max-w-xs rounded-xl border border-gray-700 px-4 py-2 bg-gray-800 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onChange={(e) => {
+            setEventType(e.target.value as "individual" | "team");
+            if (e.target.value === "individual") {
+              setTeamSizeMode("fixed");
+            }
+          }}
+          className="max-w-xs rounded-xl border border-gray-700 px-4 py-2 bg-gray-800 text-gray-200"
         >
           <option value="individual">Individual</option>
           <option value="team">Team</option>
@@ -130,9 +149,57 @@ export default function NewEventForm({ user }: NewEventFormProps) {
 
       {/* Team Size */}
       {eventType === "team" && (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-3">
           <label className="text-sm font-medium text-gray-300">Team Size</label>
-          <Input type="number" name="teamSize" placeholder="Enter team size" />
+
+          <div className="flex gap-4 text-sm">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                checked={teamSizeMode === "fixed"}
+                onChange={() => setTeamSizeMode("fixed")}
+              />
+              Fixed
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                checked={teamSizeMode === "range"}
+                onChange={() => setTeamSizeMode("range")}
+              />
+              Range
+            </label>
+          </div>
+
+          {teamSizeMode === "fixed" && (
+            <Input
+              type="number"
+              name="teamSize"
+              min={1}
+              placeholder="Exact team size"
+              required
+            />
+          )}
+
+          {teamSizeMode === "range" && (
+            <div className="flex gap-3 max-w-xs">
+              <Input
+                type="number"
+                name="teamSizeRange[min]"
+                min={1}
+                placeholder="Min"
+                required
+              />
+              <Input
+                type="number"
+                name="teamSizeRange[max]"
+                min={1}
+                placeholder="Max"
+                required
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -142,10 +209,9 @@ export default function NewEventForm({ user }: NewEventFormProps) {
           Add to Super Event (optional)
         </label>
         <select
-          name="superEvent"
           value={selectedSuperEvent}
           onChange={(e) => setSelectedSuperEvent(e.target.value)}
-          className="max-w-xs rounded-xl border border-gray-700 px-4 py-2 bg-gray-800 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="max-w-xs rounded-xl border border-gray-700 px-4 py-2 bg-gray-800 text-gray-200"
         >
           <option value="">None</option>
           {superEvents.map((se) => (
@@ -159,7 +225,7 @@ export default function NewEventForm({ user }: NewEventFormProps) {
       {/* Prize */}
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium text-gray-300">Prize</label>
-        <Input type="number" name="prize" placeholder="Prize amount" />
+        <Input type="number" name="prize" />
       </div>
 
       {/* Certificate */}
@@ -181,7 +247,7 @@ export default function NewEventForm({ user }: NewEventFormProps) {
         <label className="text-sm font-medium text-gray-300">
           Registration Fee
         </label>
-        <Input type="number" name="registrationFee" />
+        <Input type="number" name="registrationFee" required />
       </div>
 
       {/* Max Registrations */}
