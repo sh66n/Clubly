@@ -131,7 +131,6 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
           <Input
             type="date"
             name="date"
-            min={today}
             defaultValue={event.date.split("T")[0]}
             required
           />
