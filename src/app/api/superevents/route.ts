@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import cloudinary from "@/lib/cloudinary";
 import { connectToDb } from "@/lib/connectToDb";
 import { SuperEvent } from "@/models/superevent.model";
+import { auth } from "@/auth";
 
 export async function GET(req: Request) {
   await connectToDb();
@@ -27,9 +28,24 @@ export async function GET(req: Request) {
 export const POST = async (req: NextRequest) => {
   try {
     await connectToDb();
-    const formData = await req.formData();
 
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (session.user.role !== "club-admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const formData = await req.formData();
     const organizingClub = formData.get("organizingClub") as string;
+
+    // make sure super event being created has the same organizing club as the club-admin
+    if (organizingClub.toString() !== session.user.adminClub?.toString()) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const name = formData.get("name") as string;
     const description = formData.get("description") as string | null;
     const startDate = formData.get("startDate") as string | null;

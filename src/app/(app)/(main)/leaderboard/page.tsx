@@ -5,7 +5,7 @@ import React from "react";
 const getLbRankings = async (clubId) => {
   try {
     const { data } = await axios.get(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/leaderboard?clubId=${clubId}&limit=10`
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/leaderboard?clubId=${clubId}&limit=5`,
     );
     return data;
   } catch (error) {

@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import EventDetails from "@/components/Events/EventDetails";
 import EventInsights from "@/components/Events/EventInsights";
 import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import React from "react";
 
 const getEventDetails = async (eventId) => {
@@ -19,6 +19,11 @@ const getEventDetails = async (eventId) => {
       cache: "no-store",
     },
   );
+
+  if (res.status === 401) {
+    redirect(`/login?callbackUrl=/events/${eventId}`);
+  }
+
   if (!res.ok) return null;
 
   const { event, myGroup, alreadyRegistered } = await res.json();

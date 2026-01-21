@@ -7,11 +7,16 @@ import { auth } from "@/auth";
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
     await connectToDb();
+
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     // ✅ ensure event exists
     const event = await Event.findById(id);
@@ -32,17 +37,18 @@ export async function GET(
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
     await connectToDb();
 
-    // get current user
     const session = await auth();
-    if (!session?.user?.id) {
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // get current user
     const userId = session.user.id;
 
     // get event
@@ -58,7 +64,7 @@ export async function POST(
     if (event.eventType !== "team") {
       return NextResponse.json(
         { error: "Groups can only be created for team events" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -70,7 +76,7 @@ export async function POST(
     if (existingGroup) {
       return NextResponse.json(
         { error: "You are already part of a group for this event" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

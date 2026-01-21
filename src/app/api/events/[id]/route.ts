@@ -5,10 +5,15 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const GET = async (
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) => {
   try {
     const session = await auth();
+    // check if logged in
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     await connectToDb();
     const { id } = await params;
     const event = await Event.findById(id)
@@ -53,7 +58,7 @@ export const GET = async (
 
     // Check if user is already individually registered
     const isIndividuallyRegistered = event.participants?.some(
-      (p: any) => p.toString?.() === session?.user.id
+      (p: any) => p.toString?.() === session?.user.id,
     );
 
     // Check if user is in any registered group
@@ -67,7 +72,7 @@ export const GET = async (
 
     return NextResponse.json(
       { event, myGroup, alreadyRegistered },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     console.error(error);
@@ -92,21 +97,39 @@ export const GET = async (
 
 export const PATCH = async (
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) => {
   try {
     const session = await auth();
-    if (!session?.user?.id) {
+
+    // check if logged in
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // check if club-admin
+    if (session.user.role !== "club-admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     await connectToDb();
+    const formData = await req.formData();
     const { id } = await params;
 
-    // ✅ Read FormData instead of JSON
-    const formData = await req.formData();
+    const event = await Event.findById(id);
 
-    // ✅ Convert FormData → plain object
+    if (!event) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    // check if the event being updated belongs to the club of the club-admin
+    if (
+      event.organizingClub.toString() !== session?.user?.adminClub?.toString()
+    ) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    //  Convert FormData → plain object
     const body: any = {};
     for (const [key, value] of formData.entries()) {
       if (value === "") {
@@ -117,7 +140,7 @@ export const PATCH = async (
         body[key] = value === "true";
       } else if (
         ["teamSize", "prize", "registrationFee", "maxRegistrations"].includes(
-          key
+          key,
         )
       ) {
         body[key] = Number(value);
@@ -130,13 +153,8 @@ export const PATCH = async (
     if (body.maxRegistrations !== undefined && body.maxRegistrations < 1) {
       return NextResponse.json(
         { error: "maxRegistrations must be at least 1" },
-        { status: 400 }
+        { status: 400 },
       );
-    }
-
-    const event = await Event.findById(id);
-    if (!event) {
-      return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
     // Optional permission check
@@ -147,7 +165,7 @@ export const PATCH = async (
     const updatedEvent = await Event.findByIdAndUpdate(
       id,
       { $set: body },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     return NextResponse.json({ event: updatedEvent }, { status: 200 });
@@ -155,14 +173,14 @@ export const PATCH = async (
     console.error(error);
     return NextResponse.json(
       { error: "Failed to update event" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 };
 
 export const DELETE = async (
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) => {
   try {
     await connectToDb();

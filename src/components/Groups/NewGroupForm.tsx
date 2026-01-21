@@ -26,7 +26,27 @@ export default function NewGroupForm({ eventId }: { eventId: string }) {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create group");
+      if (!res.ok) {
+        const data = await res.json();
+
+        // if not logged in
+        if (res.status === 401) {
+          router.push(
+            `/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`,
+          );
+          return;
+        }
+
+        // if not admin or is club-admin of other club
+        if (res.status === 403) {
+          router.replace("/forbidden");
+          return;
+        }
+
+        //fallback
+        toast.error(data.error);
+        return;
+      }
 
       toast.success(`Group created: ${data.name}`);
       router.push(`/events/${eventId}`);

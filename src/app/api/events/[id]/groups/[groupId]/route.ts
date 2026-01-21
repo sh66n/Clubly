@@ -5,10 +5,17 @@ import { auth } from "@/auth";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string; groupId: string } }
+  { params }: { params: { id: string; groupId: string } },
 ) {
   try {
     const { id, groupId } = params;
+
+    // checked if user is logged in
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     await connectToDb();
 
     // ✅ ensure event exists
@@ -35,7 +42,7 @@ export async function GET(
         capacity: group.maxSize,
         isPublic: group.isPublic,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (err: any) {
     console.error(err);

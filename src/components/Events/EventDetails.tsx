@@ -68,8 +68,29 @@ export default function EventDetails({
         body: JSON.stringify(payload),
       });
 
+      if (!res.ok) {
+        const data = await res.json();
+
+        // if not logged in
+        if (res.status === 401) {
+          router.push(
+            `/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`,
+          );
+          return;
+        }
+
+        // if not admin or is club-admin of other club
+        if (res.status === 403) {
+          router.replace("/forbidden");
+          return;
+        }
+
+        //fallback
+        toast.error(data.error);
+        return;
+      }
+
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error);
 
       toast.success("Registered successfully");
       router.refresh();
@@ -282,13 +303,7 @@ export default function EventDetails({
                         : "bg-[#000F57] text-white"
                     }`}
                   >
-                    {isAlreadyRegistered
-                      ? "Registered"
-                      : hasEventPassed
-                        ? "Registrations Closed"
-                        : isLoading
-                          ? "Registering..."
-                          : "Register"}
+                    {ctaText}
                   </button>
                 ) : (
                   <Payment

@@ -5,8 +5,6 @@ import UserCard from "./UserCard";
 import GroupCard from "../Groups/GroupCard"; // ✅ import group card
 import { Calendar, Crown } from "lucide-react";
 import Link from "next/link";
-import CompactGroupCard from "../Groups/AnimatedGroupCard";
-import AnimatedGroupCard from "../Groups/AnimatedGroupCard";
 
 interface EventInsightsProps {
   event: IEvent;
