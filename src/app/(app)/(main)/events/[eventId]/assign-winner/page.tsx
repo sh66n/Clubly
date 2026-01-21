@@ -3,6 +3,7 @@ import { getEventType } from "@/services/getEventType";
 import { getParticipants } from "@/services/getParticipants";
 import { getEvent } from "@/services/getEvent";
 import React from "react";
+import BackButton from "@/components/BackButton";
 
 export default async function AssignWinner({
   params,
@@ -78,7 +79,12 @@ export default async function AssignWinner({
 
   return (
     <div>
-      <h1 className="text-5xl font-semibold mb-6">Assign Winner</h1>
+      <BackButton link={`/events/${eventId}`} />
+      <h1 className="text-3xl font-semibold mb-2">Assign Winner</h1>
+      <div className="mb-8 text-[#717171]">
+        Select and confirm the winner for this event
+      </div>
+
       <WinnerAssigner
         participants={participants}
         eventId={eventId}

@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import UserCard from "./UserCard";
 import AttendanceToggle from "./AttendanceToggle";
 import GroupCard from "../Groups/GroupCard";
-import BorderedDiv from "../BorderedDiv";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
@@ -17,19 +16,16 @@ export default function AttendanceMarker({
   const [present, setPresent] = useState(initialPresent);
   const [absent, setAbsent] = useState(initialAbsent);
   const [loading, setLoading] = useState(false);
-
   const router = useRouter();
 
   const handleToggle = (id: string, makePresent: boolean) => {
     if (makePresent) {
-      // Move from absent → present
       const item = absent.find((a) => a._id === id);
       if (item) {
         setAbsent(absent.filter((a) => a._id !== id));
         setPresent([...present, item]);
       }
     } else {
-      // Move from present → absent
       const item = present.find((a) => a._id === id);
       if (item) {
         setPresent(present.filter((a) => a._id !== id));
@@ -49,132 +45,98 @@ export default function AttendanceMarker({
           body: JSON.stringify({ present, absent }),
         },
       );
-
-      // handle all errors
-      if (!res.ok) {
-        const data = await res.json();
-
-        // if not logged in
-        if (res.status === 401) {
-          router.push(
-            `/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`,
-          );
-          return;
-        }
-
-        // if not admin or is club-admin of other club
-        if (res.status === 403) {
-          router.replace("/forbidden");
-          return;
-        }
-
-        //fallback
-        toast.error(data.error);
-        return;
-      }
-
-      const updatedEvent = await res.json();
-      toast.success("Attendance updated");
+      if (!res.ok) throw new Error();
+      toast.success("Changes saved");
       router.push(`/events/${eventId}`);
     } catch (error) {
-      toast.error("Error submitting attendance");
+      toast.error("Failed to sync");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="grow flex flex-col">
-      <div className="flex-1">
-        {/* PRESENT */}
-        <div className="min-h-20 h-fit p-4 space-y-2">
-          <h3 className="font-semibold">Present</h3>
-          {present.map((entity) =>
-            eventType === "individual" ? (
-              <UserCard
-                key={entity._id}
-                user={entity}
-                action={
-                  <AttendanceToggle
-                    isPresent={true}
-                    onChange={(makePresent) =>
-                      handleToggle(entity._id, makePresent)
-                    }
-                  />
-                }
-              />
-            ) : (
-              <BorderedDiv key={entity._id} className="">
-                <GroupCard group={entity} />
-                <div className="mt-2 flex justify-center">
-                  <span>
-                    <AttendanceToggle
-                      isPresent={true}
-                      onChange={(makePresent) =>
-                        handleToggle(entity._id, makePresent)
-                      }
-                    />
-                  </span>
-                </div>
-              </BorderedDiv>
-            ),
-          )}
+    <div className="max-w-xl mx-auto w-full px-6 py-12 space-y-16 ">
+      {/* List: Present */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white">
+            Present
+          </span>
+          <div className="h-[1px] grow bg-gradient-to-r from-zinc-800 to-transparent" />
+          <span className="text-[10px] font-mono text-zinc-600">
+            {present.length}
+          </span>
         </div>
 
-        {/* ABSENT */}
-        <div className="min-h-30 h-fit p-4 space-y-2">
-          <h3 className="font-semibold">Absent</h3>
-          {absent.map((entity) =>
-            eventType === "individual" ? (
-              <UserCard
-                key={entity._id}
-                user={entity}
-                action={
-                  <AttendanceToggle
-                    isPresent={false}
-                    onChange={(makePresent) =>
-                      handleToggle(entity._id, makePresent)
-                    }
-                  />
-                }
-              />
-            ) : (
-              <BorderedDiv key={entity._id}>
-                <GroupCard group={entity} />
-                <div className="mt-2 flex justify-center">
-                  <span>
-                    <AttendanceToggle
-                      isPresent={false}
-                      onChange={(makePresent) =>
-                        handleToggle(entity._id, makePresent)
-                      }
-                    />
-                  </span>
-                </div>
-              </BorderedDiv>
-            ),
-          )}
+        <div className="space-y-4">
+          {present.map((entity) => (
+            <div
+              key={entity._id}
+              className="flex items-center justify-between group transition-opacity duration-300"
+            >
+              <div className="flex-1">
+                {eventType === "individual" ? (
+                  <UserCard user={entity} />
+                ) : (
+                  <GroupCard group={entity} eventId={eventId} />
+                )}
+              </div>
+              <div className="pl-4">
+                <AttendanceToggle
+                  isPresent={true}
+                  onChange={(val) => handleToggle(entity._id, val)}
+                />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="flex justify-center">
+      {/* List: Absent */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-600">
+            Absent
+          </span>
+          <div className="h-[1px] grow bg-gradient-to-r from-zinc-900 to-transparent" />
+          <span className="text-[10px] font-mono text-zinc-800">
+            {absent.length}
+          </span>
+        </div>
+
+        <div className="space-y-4 opacity-40 hover:opacity-100 transition-opacity duration-500">
+          {absent.map((entity) => (
+            <div
+              key={entity._id}
+              className="flex items-center justify-between group"
+            >
+              <div className="flex-1">
+                {eventType === "individual" ? (
+                  <UserCard user={entity} />
+                ) : (
+                  <GroupCard group={entity} eventId={eventId} />
+                )}
+              </div>
+              <div className="pl-4">
+                <AttendanceToggle
+                  isPresent={false}
+                  onChange={(val) => handleToggle(entity._id, val)}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Subtle Footer */}
+      <div className="pt-10 flex justify-center">
         <button
           disabled={loading}
           onClick={handleSubmit}
-          className={`px-4 py-2 rounded-lg ${
-            loading
-              ? "bg-green-600 opacity-50 cursor-not-allowed"
-              : "bg-green-600 hover:opacity-50 hover:cursor-pointer"
-          }`}
+          className="text-[10px] font-black uppercase tracking-[0.3em] text-white border-b border-white pb-1 hover:text-zinc-400 hover:border-zinc-400 transition-all disabled:opacity-20"
         >
-          {loading ? (
-            <div className="flex gap-2">
-              <LoaderCircle className="animate-spin" />
-              <div>Submitting</div>
-            </div>
-          ) : (
-            "Submit Attendance"
-          )}
+          {loading ? "Processing..." : "Sync Attendance"}
         </button>
       </div>
     </div>

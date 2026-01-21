@@ -1,3 +1,4 @@
+import BackButton from "@/components/BackButton";
 import AttendanceMarker from "@/components/Events/AttendanceMarker";
 import UserCard from "@/components/Events/AttendanceUserCard";
 import { connectToDb } from "@/lib/connectToDb";
@@ -26,14 +27,21 @@ export default async function Attendance({
   const absent = safeAttendanceData.filter((entity) => !entity.present);
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="text-3xl mb-4">Attendance</div>
-      <AttendanceMarker
-        present={present}
-        absent={absent}
-        eventId={eventId}
-        eventType={eventType} // pass event type
-      />
-    </div>
+    <>
+      <BackButton link={`/events/${eventId}`} />
+      <div className="flex flex-col">
+        <div className="text-3xl mb-2">Attendance</div>
+        <div className="mb-8 text-[#717171]">
+          Record attendance for participants{" "}
+        </div>
+
+        <AttendanceMarker
+          present={present}
+          absent={absent}
+          eventId={eventId}
+          eventType={eventType} // pass event type
+        />
+      </div>
+    </>
   );
 }
