@@ -6,6 +6,8 @@ import BackButton from "@/components/BackButton";
 import { Globe, Lock, Users, Crown } from "lucide-react";
 import { headers } from "next/headers";
 import React from "react";
+import RemoveMemberButton from "@/components/Groups/RemoveMemberButton";
+import { auth } from "@/auth";
 
 const getGroup = async (eventId: string, groupId: string) => {
   const nextHeaders = await headers();
@@ -28,6 +30,7 @@ export default async function GroupDetails({
 }: {
   params: Promise<{ eventId: string; groupId: string }>;
 }) {
+  const session = await auth();
   const { eventId, groupId } = await params;
   const group = await getGroup(eventId, groupId);
 
@@ -35,6 +38,9 @@ export default async function GroupDetails({
     return (
       <div className="text-gray-500 p-10 text-center">Group not found.</div>
     );
+
+  // Check if current user is the leader
+  const isLeader = session?.user?.id === group.leader._id;
 
   return (
     <div className="max-w-6xl">
@@ -97,7 +103,21 @@ export default async function GroupDetails({
               {group.members
                 .filter((m: any) => m._id !== group.leader._id)
                 .map((member: any) => (
-                  <UserCard key={member._id} user={member} />
+                  <UserCard
+                    key={member._id}
+                    user={member}
+                    action={
+                      // Only render the button if the viewer is the leader
+                      isLeader && (
+                        <RemoveMemberButton
+                          groupId={group._id}
+                          userId={member._id}
+                          eventId={eventId}
+                          userName={member.name}
+                        />
+                      )
+                    }
+                  />
                 ))}
 
               {/* Empty Slots */}
