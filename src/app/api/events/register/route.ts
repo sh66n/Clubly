@@ -4,17 +4,23 @@ import { connectToDb } from "@/lib/connectToDb";
 import { User } from "@/models/user.model";
 import { Event } from "@/models/event.model";
 import { Group } from "@/models/group.model";
+import { auth } from "@/auth";
 
 export async function POST(req: Request) {
   try {
+    await connectToDb();
+
+    // check if logged in
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { eventId, userId, groupId } = await req.json();
 
     if (!eventId) {
       return NextResponse.json({ error: "Missing eventId" }, { status: 400 });
     }
-
-    await connectToDb();
-
     // Fetch event
     const event = await Event.findById(eventId);
     if (!event) {

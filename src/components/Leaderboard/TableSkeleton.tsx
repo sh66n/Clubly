@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function TableSkeleton({ rows = 6 }) {
+export default function TableSkeleton({ rows = 5 }) {
   return (
     <div className="bg-black h-[40%] flex flex-col rounded-lg border border-[#515151] relative z-10 animate-pulse">
       {/* Header */}
@@ -9,7 +9,7 @@ export default function TableSkeleton({ rows = 6 }) {
       </div>
 
       {/* Table body */}
-      <div className="overflow-y-auto flex-1">
+      <div className="overflow-y-hidden flex-1">
         <table className="w-full">
           <tbody>
             {Array.from({ length: rows }).map((_, index) => (

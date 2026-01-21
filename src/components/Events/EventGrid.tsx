@@ -42,7 +42,7 @@ export default function EventGrid({
       {/* Upcoming Events */}
       {upcomingEvents.length > 0 && (
         <section>
-          <h2 className="text-2xl font-semibold mb-4">Upcoming</h2>
+          <h2 className="text-2xl font-semibold mt-4 mb-8">Upcoming</h2>
           <div className={gridClasses}>
             {upcomingEvents.map((event) => (
               <EventCard key={event._id} event={event} />
@@ -54,7 +54,7 @@ export default function EventGrid({
       {/* Completed Events */}
       {completedEvents.length > 0 && (
         <section>
-          <h2 className="text-2xl font-semibold mb-4">Completed</h2>
+          <h2 className="text-2xl font-semibold mt-4 mb-8">Completed</h2>
           <div className={gridClasses}>
             {completedEvents.map((event) => (
               <EventCard key={event._id} event={event} />
@@ -66,7 +66,7 @@ export default function EventGrid({
       {/* Super Events */}
       {superEvents && superEvents.length > 0 && (
         <section>
-          <h2 className="text-2xl font-semibold mb-4">Super Events</h2>
+          <h2 className="text-2xl font-semibold mt-4 mb-8">Super Events</h2>
           <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
             {superEvents.map((superEvent) => (
               <SuperEventCard key={superEvent._id} superEvent={superEvent} />

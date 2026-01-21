@@ -1,4 +1,5 @@
 // app/api/razorpay/create-razorpay-order/route.ts
+import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 
@@ -9,6 +10,11 @@ const razorpay = new Razorpay({
 
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
 
     const order = await razorpay.orders.create({
@@ -30,7 +36,7 @@ export async function POST(request: Request) {
         error: "Failed to create order",
         details: error.error?.description || error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

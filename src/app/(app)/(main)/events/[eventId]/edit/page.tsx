@@ -16,7 +16,7 @@ const getEventDetails = async (eventId) => {
         cookie: cookieHeader,
       },
       cache: "no-store",
-    }
+    },
   );
   if (!res.ok) return null;
 

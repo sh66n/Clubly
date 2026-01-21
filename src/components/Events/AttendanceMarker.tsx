@@ -47,9 +47,32 @@ export default function AttendanceMarker({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ present, absent }),
-        }
+        },
       );
-      if (!res.ok) throw new Error("Failed to update attendance");
+
+      // handle all errors
+      if (!res.ok) {
+        const data = await res.json();
+
+        // if not logged in
+        if (res.status === 401) {
+          router.push(
+            `/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`,
+          );
+          return;
+        }
+
+        // if not admin or is club-admin of other club
+        if (res.status === 403) {
+          router.replace("/forbidden");
+          return;
+        }
+
+        //fallback
+        toast.error(data.error);
+        return;
+      }
+
       const updatedEvent = await res.json();
       toast.success("Attendance updated");
       router.push(`/events/${eventId}`);
@@ -94,7 +117,7 @@ export default function AttendanceMarker({
                   </span>
                 </div>
               </BorderedDiv>
-            )
+            ),
           )}
         </div>
 
@@ -129,7 +152,7 @@ export default function AttendanceMarker({
                   </span>
                 </div>
               </BorderedDiv>
-            )
+            ),
           )}
         </div>
       </div>

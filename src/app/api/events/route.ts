@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import cloudinary from "@/lib/cloudinary";
 import { connectToDb } from "@/lib/connectToDb";
 import { Event, Club } from "@/models";
@@ -44,9 +45,28 @@ export const GET = async (req: NextRequest) => {
 export const POST = async (req: NextRequest) => {
   try {
     await connectToDb();
-    const formData = await req.formData();
 
+    // check if logged in
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // check if club-admin
+    if (session.user.role !== "club-admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const formData = await req.formData();
     const organizingClub = formData.get("organizingClub") as string;
+
+    // check if the event being created belongs to the club of the club-admin
+    if (organizingClub.toString() !== session?.user?.adminClub?.toString()) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // safe to create event
+
     const name = formData.get("name") as string;
     const description = formData.get("description") as string;
     const date = formData.get("date") as string;
