@@ -18,8 +18,8 @@ const groupSchema = new Schema(
     joinCode: { type: String },
     maxSize: { type: Number },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Use the safety check we discussed earlier
-export const Group = models?.Group || model("Group", groupSchema);
+export const Group = models.Group || model("Group", groupSchema);

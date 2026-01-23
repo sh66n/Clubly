@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const GET = async (
   req: NextRequest,
-  { params }: { params: Promise<{ clubId: string; userId: string }> }
+  { params }: { params: Promise<{ clubId: string; userId: string }> },
 ) => {
   try {
     await connectToDb();
@@ -46,7 +46,7 @@ export const GET = async (
       if (!user) {
         return NextResponse.json(
           { message: "User not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
       return NextResponse.json({
@@ -63,6 +63,7 @@ export const GET = async (
       totalUsers,
     });
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ message: "error", error }, { status: 500 });
   }
 };

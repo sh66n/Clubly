@@ -25,8 +25,8 @@ export default function NewGroupForm({ eventId }: { eventId: string }) {
         body: JSON.stringify({ name, isPublic }),
       });
 
+      const data = await res.json();
       if (!res.ok) {
-        const data = await res.json();
 
         // if not logged in
         if (res.status === 401) {
