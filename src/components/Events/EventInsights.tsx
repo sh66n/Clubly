@@ -5,6 +5,7 @@ import UserCard from "./UserCard";
 import GroupCard from "../Groups/GroupCard"; // ✅ import group card
 import { Calendar, Crown } from "lucide-react";
 import Link from "next/link";
+import DownloadAttendance from "./DownloadAttendance";
 
 interface EventInsightsProps {
   event: IEvent;
@@ -17,7 +18,7 @@ export default function EventInsights({ event }: EventInsightsProps) {
     <>
       <h2 className="text-xl mb-2">Event Insights</h2>
       <BorderedDiv className="">
-        <div className="flex gap-4">
+        <div className="flex md:flex-row flex-col gap-4">
           <Link
             className="flex items-center gap-2 mb-4 w-fit hover:opacity-80"
             href={`/events/${event._id}/attendance`}
@@ -37,6 +38,8 @@ export default function EventInsights({ event }: EventInsightsProps) {
             </div>
             Assign Winner
           </Link>
+
+          <DownloadAttendance eventId={event._id} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
