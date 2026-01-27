@@ -33,7 +33,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               url: user.image,
               publicId: user.email?.split("@")[0],
             }),
-          }
+          },
         );
 
         const data = await res.json();
@@ -64,7 +64,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           const totalPoints = dbUser.points.reduce(
             (sum, entry) => sum + (entry.points || 0),
-            0
+            0,
           );
           token.points = totalPoints;
 
