@@ -39,6 +39,20 @@ export default function EventGrid({
 
   return (
     <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 flex flex-col gap-8">
+      {/* Super Events */}
+      {superEvents && superEvents.length > 0 && (
+        <section>
+          <h2 className="text-2xl font-semibold mt-4 mb-8">
+            Featured Experiences
+          </h2>
+          <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+            {superEvents.map((superEvent) => (
+              <SuperEventCard key={superEvent._id} superEvent={superEvent} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Upcoming Events */}
       {upcomingEvents.length > 0 && (
         <section>
@@ -58,18 +72,6 @@ export default function EventGrid({
           <div className={gridClasses}>
             {completedEvents.map((event) => (
               <EventCard key={event._id} event={event} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Super Events */}
-      {superEvents && superEvents.length > 0 && (
-        <section>
-          <h2 className="text-2xl font-semibold mt-4 mb-8">Super Events</h2>
-          <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-            {superEvents.map((superEvent) => (
-              <SuperEventCard key={superEvent._id} superEvent={superEvent} />
             ))}
           </div>
         </section>

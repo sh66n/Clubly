@@ -143,7 +143,7 @@ export default function Sidebar({ isLoggedIn, points }: SidebarProps) {
 
           {/* My Points */}
           {isLoggedIn && (
-            <div className="justify-center hidden [@media(min-height:660px)]:flex">
+            <div className="justify-center hidden [@media(min-height:645px)]:flex">
               <Points points={points} />
             </div>
           )}

@@ -11,6 +11,7 @@ export const GET = async (req: NextRequest) => {
     await connectToDb();
 
     const allEvents = await Event.find({})
+      .sort({ createdAt: -1 }) // newest first
       .populate("participants")
       .populate("registrations")
       .populate("organizingClub");
