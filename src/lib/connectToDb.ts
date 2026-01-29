@@ -1,7 +1,5 @@
 import mongoose from "mongoose";
-import "@/models/club.schema";
-import "@/models/event.schema";
-import "@/models/user.schema";
+import "@/models";
 
 interface Connection {
   isConnected?: number;
