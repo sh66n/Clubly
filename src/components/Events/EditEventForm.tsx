@@ -51,18 +51,6 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
       formData.append("image", file);
     }
 
-    for (const [key, value] of formData.entries()) {
-      if (value instanceof File) {
-        console.log(key, {
-          name: value.name,
-          size: value.size,
-          type: value.type,
-        });
-      } else {
-        console.log(key, value);
-      }
-    }
-
     try {
       const res = await fetch(`/api/events/${event._id}`, {
         method: "PATCH",

@@ -1,5 +1,4 @@
 import React from "react";
-import { Toaster } from "sonner";
 
 export default function layout({
   children,
@@ -8,18 +7,6 @@ export default function layout({
 }>) {
   return (
     <>
-      <Toaster
-        position="bottom-right"
-        expand={false}
-        toastOptions={{
-          style: {
-            background: "black",
-            color: "white",
-          },
-        }}
-        visibleToasts={8}
-      />
-
       {/* md and above */}
       <div className="relative min-h-screen h-full flex-grow pt-4 pr-4 pb-4 hidden md:block">
         <div className="h-full rounded-lg p-10 pb-4 border border-[#515151] relative bg-[url(/images/bg.png)] bg-cover bg-top bg-no-repeat">

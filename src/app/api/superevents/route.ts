@@ -40,7 +40,6 @@ export const POST = async (req: NextRequest) => {
 
     const formData = await req.formData();
     const organizingClub = formData.get("organizingClub") as string;
-    console.log(organizingClub);
 
     // make sure super event being created has the same organizing club as the club-admin
     if (organizingClub.toString() !== session.user.adminClub?.toString()) {
