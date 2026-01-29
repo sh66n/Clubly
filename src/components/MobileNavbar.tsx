@@ -18,7 +18,9 @@ export default function MobileNavbar() {
   return (
     <nav className="bg-black border-t border-[#515151] rounded-t-2xl fixed bottom-0 h-20 w-full md:hidden flex justify-evenly items-center z-50">
       {navItems.map((item) => {
-        const isActive = pathname === item.href.split("/")[1];
+        const isActive =
+          pathname === item.href.split("/")[1] ||
+          (item.name === "Events" && pathname === "superevents");
         const Icon = item.icon;
 
         return (
