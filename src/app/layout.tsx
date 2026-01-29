@@ -6,6 +6,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { Silkscreen } from "next/font/google";
 import { auth } from "@/auth";
 import MobileNavbar from "@/components/MobileNavbar";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,6 +44,17 @@ export default async function RootLayout({
       <body
         className={`${jakarta.variable} ${silkscreen.variable} antialiased`}
       >
+        <Toaster
+          position="bottom-right"
+          expand={false}
+          toastOptions={{
+            style: {
+              background: "black",
+              color: "white",
+            },
+          }}
+          visibleToasts={8}
+        />
         {children}
       </body>
     </html>

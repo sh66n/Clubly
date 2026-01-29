@@ -5,11 +5,10 @@ import { NextResponse } from "next/server";
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string; groupId: string } }
+  { params }: { params: { id: string; groupId: string } },
 ) {
   try {
     const { id, groupId } = params;
-    console.log(id, groupId);
     await connectToDb();
 
     // ✅ get current user
@@ -43,7 +42,7 @@ export async function POST(
     if (existingGroup) {
       return NextResponse.json(
         { error: "You are already in a group for this event" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -55,13 +54,13 @@ export async function POST(
       if (!joinCode) {
         return NextResponse.json(
           { error: "Join code is required for private groups" },
-          { status: 400 }
+          { status: 400 },
         );
       }
       if (group.joinCode !== joinCode) {
         return NextResponse.json(
           { error: "Invalid join code" },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -75,7 +74,7 @@ export async function POST(
     if (group.members.includes(userId)) {
       return NextResponse.json(
         { error: "You are already in this group" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

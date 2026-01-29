@@ -40,7 +40,6 @@ export default function EventDetails({
   const daysLeft = Math.max(differenceInCalendarDays(eventDate, today), 0);
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  console.log(group);
 
   const handleRegister = async () => {
     try {
