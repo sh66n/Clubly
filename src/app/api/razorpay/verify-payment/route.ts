@@ -4,6 +4,9 @@
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 import crypto from "crypto";
+import { auth } from "@/auth";
+import { User } from "@/models";
+import { connectToDb } from "@/lib/connectToDb";
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID!,
@@ -11,6 +14,8 @@ const razorpay = new Razorpay({
 });
 
 export async function POST(request: Request) {
+  const session = await auth();
+
   try {
     const body = await request.json();
 
@@ -21,7 +26,7 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -35,8 +40,18 @@ export async function POST(request: Request) {
     if (generated_signature !== razorpay_signature) {
       return NextResponse.json(
         { success: false, error: "Invalid signature" },
-        { status: 400 }
+        { status: 400 },
       );
+    }
+
+    if (generated_signature === razorpay_signature) {
+      await connectToDb();
+      const paymentDetails = await razorpay.payments.fetch(razorpay_payment_id);
+      const phoneNumber = paymentDetails.contact;
+
+      await User.findByIdAndUpdate(session?.user.id, {
+        phoneNumber: phoneNumber,
+      });
     }
 
     // Here you would typically save the payment details to your database
@@ -61,7 +76,7 @@ export async function POST(request: Request) {
         error: "Payment verification failed",
         details: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

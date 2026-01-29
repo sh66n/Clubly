@@ -25,7 +25,7 @@ export default async function layout({
           {/* Avatar */}
           <Link href={`/profiles/${session?.user?.id}`} className="flex gap-2">
             <div
-              style={{ backgroundImage: `url(${session?.user?.image})` }}
+              style={{ backgroundImage: `url(${session?.user.image})` }}
               className="h-8 w-8 sm:h-10 sm:w-10 bg-cover bg-center bg-no-repeat bg-red-100 rounded-full flex-shrink-0"
             />
             {/* User Info */}

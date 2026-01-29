@@ -30,8 +30,11 @@ const userSchema = new Schema<IUser>(
       type: Schema.Types.ObjectId,
       ref: "Club",
     },
+    phoneNumber: {
+      type: String,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const User =

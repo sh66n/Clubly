@@ -7,7 +7,7 @@ export const zUser = z.object({
       z.object({
         clubId: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId"), // store ObjectId as string
         points: z.number().nonnegative().default(0),
-      })
+      }),
     )
     .default([]),
   _id: z.string().optional(),
@@ -16,6 +16,7 @@ export const zUser = z.object({
   role: z.enum(["user", "club-admin"]),
   image: z.string().url(),
   adminClub: z.string().length(24).optional(),
+  phoneNumber: z.optional(z.string()),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 });
@@ -31,6 +32,7 @@ export interface IUser {
     points: number;
   }[];
   adminClub?: Types.ObjectId;
+  phoneNumber?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

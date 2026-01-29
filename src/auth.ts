@@ -80,5 +80,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return token;
     },
+
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
+        session.user.points = token.points as number;
+        session.user.image = token.image as string;
+
+        // ✅ Expose adminClub in session
+
+        if (token.adminClub) {
+          session.user.adminClub = token.adminClub as string;
+        }
+      }
+
+      return session;
+    },
   },
 });

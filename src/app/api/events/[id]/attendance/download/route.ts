@@ -66,7 +66,7 @@ export async function GET(
     };
 
     // 3. Define CSV Headers (Added Team Name)
-    const headers = ["Team Name", "Name", "Email", "Year"];
+    const headers = ["Team Name", "Phone number", "Name", "Email", "Year"];
     let rows: string[] = [];
 
     // 4. Logic for handling Individual vs Team events
@@ -78,6 +78,7 @@ export async function GET(
           rows.push(
             [
               `"${teamName}"`,
+              `"${member.phoneNumber ? member.phoneNumber : "---"}"`,
               `"${member.name}"`,
               `"${member.email}"`,
               `"${studentYear}"`,
@@ -92,6 +93,7 @@ export async function GET(
         rows.push(
           [
             `"N/A"`, // No team name for individuals
+            `"${user.phoneNumber ? user.phoneNumber : "---"}"`,
             `"${user.name}"`,
             `"${user.email}"`,
             `"${studentYear}"`,
