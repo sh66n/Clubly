@@ -28,6 +28,12 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
     event.teamSizeRange ? "range" : "fixed",
   );
 
+  const d = new Date(event.date);
+
+  const defaultTime = `${String(d.getHours()).padStart(2, "0")}:${String(
+    d.getMinutes(),
+  ).padStart(2, "0")}`;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -125,6 +131,17 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
             type="date"
             name="date"
             defaultValue={event.date.split("T")[0]}
+            required
+          />
+        </div>
+
+        {/* Time */}
+        <div className="flex flex-col gap-1 max-w-xs">
+          <label className="text-sm font-medium text-gray-300">Time</label>
+          <Input
+            type="time"
+            name="eventTime"
+            defaultValue={defaultTime}
             required
           />
         </div>

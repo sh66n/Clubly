@@ -71,6 +71,13 @@ export const POST = async (req: NextRequest) => {
     const name = formData.get("name") as string;
     const description = formData.get("description") as string;
     const date = formData.get("date") as string;
+    const eventTime = (formData.get("eventTime") as string) || "00:00"; // "18:30"
+
+    // save time with date
+    const [year, month, day] = date.split("-").map(Number);
+    const [hours, minutes] = eventTime.split(":").map(Number);
+    const eventDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
+
     const eventType = formData.get("eventType") as string;
 
     const teamSize = formData.get("teamSize") as string | null;
@@ -134,7 +141,7 @@ export const POST = async (req: NextRequest) => {
       organizingClub,
       name,
       description,
-      date,
+      date: eventDate,
       eventType,
       teamSize: finalTeamSize,
       teamSizeRange,
