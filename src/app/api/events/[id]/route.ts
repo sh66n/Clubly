@@ -151,26 +151,30 @@ export const PATCH = async (
     }
 
     // upload image to cloudinary
-
     const file = formData.get("image") as unknown as File | null;
-    let imageUrl = "";
 
     if (file) {
-      const buffer = Buffer.from(await file.arrayBuffer());
+      let imageUrl = "";
 
-      const uploadResult: any = await new Promise((resolve, reject) => {
-        cloudinary.uploader
-          .upload_stream({ resource_type: "image" }, (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          })
-          .end(buffer);
-      });
+      if (file) {
+        const buffer = Buffer.from(await file.arrayBuffer());
 
-      imageUrl = uploadResult.secure_url;
+        const uploadResult: any = await new Promise((resolve, reject) => {
+          cloudinary.uploader
+            .upload_stream({ resource_type: "image" }, (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            })
+            .end(buffer);
+        });
+
+        imageUrl = uploadResult.secure_url;
+      }
+
+      body.image = imageUrl;
+    } else {
+      body.image = "";
     }
-
-    body.image = imageUrl;
 
     // ✅ Validate maxRegistrations
     if (body.maxRegistrations !== undefined && body.maxRegistrations < 1) {
