@@ -30,6 +30,8 @@ interface EventDetailsProps {
   user: IUser;
 }
 
+type RegistrationStatus = "idle" | "processing" | "registered";
+
 export default function EventDetails({
   event,
   group,
@@ -41,9 +43,12 @@ export default function EventDetails({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
+  const [registrationStatus, setRegistrationStatus] =
+    useState<RegistrationStatus>("idle");
+
   const handleRegister = async () => {
     try {
-      setIsLoading(true);
+      setRegistrationStatus("processing");
 
       if (!user) {
         router.push("/login");
@@ -51,12 +56,13 @@ export default function EventDetails({
       }
 
       const payload: any = { eventId: event._id };
+
       if (event.eventType === "individual") {
         payload.userId = user.id;
-      } else if (event.eventType === "team") {
+      } else {
         if (!group) {
           toast.error("You must join or create a group first.");
-          setIsLoading(false);
+          setRegistrationStatus("idle");
           return;
         }
         payload.groupId = group._id;
@@ -72,11 +78,12 @@ export default function EventDetails({
       if (!res.ok) throw new Error(body.error);
 
       toast.success("Registered successfully");
+      setRegistrationStatus("registered");
+
       router.refresh();
     } catch (err: any) {
       toast.error(err.message);
-    } finally {
-      setIsLoading(false);
+      setRegistrationStatus("idle");
     }
   };
 
@@ -102,6 +109,7 @@ export default function EventDetails({
 
   //  Disable register logic
   const isRegisterDisabled =
+    registrationStatus !== "idle" ||
     isAlreadyRegistered ||
     hasEventPassed ||
     isLoading ||
@@ -112,8 +120,10 @@ export default function EventDetails({
         group.members.length <
           (event.teamSize ? event.teamSize : event.teamSizeRange.min))); // Team too small
 
-  //  Dynamic CTA text for TEAM events only
-  const getTeamCTA = () => {
+  const getCTA = () => {
+    //handle processing
+    if (registrationStatus === "processing") return "Processing";
+
     //handle already registered
     if (isAlreadyRegistered) {
       return "Registered";
@@ -131,6 +141,8 @@ export default function EventDetails({
 
     //handle solo events
     if (event.eventType !== "team") {
+      if (registrationStatus === "registered") return "Registered";
+
       if (event.registrationFee) return "Pay now";
       else return "Register";
     }
@@ -158,7 +170,7 @@ export default function EventDetails({
     else return "Register";
   };
 
-  const ctaText = getTeamCTA();
+  const ctaText = getCTA();
 
   return (
     <>
@@ -305,7 +317,9 @@ export default function EventDetails({
                         ? "bg-[#000F57] opacity-50 cursor-not-allowed"
                         : "bg-[#000F57] text-white"
                     }`}
-                    onSuccess={handleRegister}
+                    onSuccess={() => {
+                      handleRegister();
+                    }}
                   />
                 )}
 
