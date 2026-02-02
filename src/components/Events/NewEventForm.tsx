@@ -148,6 +148,12 @@ export default function NewEventForm({ user }: NewEventFormProps) {
         <Input type="date" name="date" min={today} required />
       </div>
 
+      {/* Event Time */}
+      <div className="flex flex-col gap-1 max-w-xs">
+        <label className="text-sm font-medium text-gray-300">Time</label>
+        <Input type="time" name="eventTime" required />
+      </div>
+
       {/* Event Type */}
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium text-gray-300">Event Type</label>

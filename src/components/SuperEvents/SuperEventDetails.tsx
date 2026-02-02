@@ -79,10 +79,10 @@ export default function SuperEventDetails({
                 // Logic: Has the day already passed?
                 // We compare the start of the days in milliseconds
                 const eventStartOfDay = new Date(
-                  eventDate.setHours(0, 0, 0, 0),
+                  new Date(eventDate).setHours(0, 0, 0, 0),
                 ).getTime();
                 const nowStartOfDay = new Date(
-                  now.setHours(0, 0, 0, 0),
+                  new Date(now).setHours(0, 0, 0, 0),
                 ).getTime();
 
                 return (
@@ -107,7 +107,8 @@ export default function SuperEventDetails({
                         {eventDate.toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
-                        })}
+                        })}{" "}
+                        onwards
                       </span>
                       {isLive && (
                         <span className="bg-green-500/10 text-green-500 text-[10px] font-bold px-2 py-0.5 rounded border border-green-500/20 w-fit ml-2 uppercase">

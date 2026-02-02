@@ -168,6 +168,22 @@ export const PATCH = async (
       body.image = uploadResult.secure_url;
     }
 
+    //change date and time
+    // 🕒 Handle date + time properly
+    if (body.date) {
+      const dateStr = body.date; // "2026-02-10"
+      const timeStr = body.eventTime || "00:00"; // fallback
+
+      // Combine into local Date (NO UTC SHIFT)
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const [hours, minutes] = timeStr.split(":").map(Number);
+
+      const combinedDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
+
+      body.date = combinedDate;
+      delete body.eventTime; // we don't really care about this
+    }
+
     // ✅ Validate maxRegistrations
     if (body.maxRegistrations !== undefined && body.maxRegistrations < 1) {
       return NextResponse.json(
