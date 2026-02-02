@@ -150,9 +150,6 @@ export const PATCH = async (
       }
     }
 
-    // upload image to cloudinary
-    const file = formData.get("image") as unknown as File | null;
-
     // upload image to cloudinary (ONLY if provided)
     const file = formData.get("image") as File | null;
 
