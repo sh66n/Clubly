@@ -7,22 +7,11 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import BackButton from "../BackButton";
+import { IEvent } from "@/models/event.schema";
 
 interface EditEventFormProps {
   user: Session["user"];
-  event: {
-    _id: string;
-    name: string;
-    description?: string;
-    date: string;
-    eventType: "individual" | "team";
-    teamSize?: number;
-    prize?: number;
-    providesCertificate: boolean;
-    registrationFee?: number;
-    maxRegistrations?: number;
-    image?: string;
-  };
+  event: IEvent;
 }
 
 export default function EditEventForm({ user, event }: EditEventFormProps) {
@@ -35,6 +24,9 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
     event.eventType,
   );
   const [loading, setLoading] = useState(false);
+  const [teamSizeMode, setTeamSizeMode] = useState<"fixed" | "range">(
+    event.teamSizeRange ? "range" : "fixed",
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +37,19 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
 
     if (eventType === "individual") {
       formData.set("teamSize", "1");
+      formData.delete("teamSizeRange[min]");
+      formData.delete("teamSizeRange[max]");
+    }
+
+    if (eventType === "team") {
+      if (teamSizeMode === "fixed") {
+        formData.delete("teamSizeRange[min]");
+        formData.delete("teamSizeRange[max]");
+      }
+
+      if (teamSizeMode === "range") {
+        formData.delete("teamSize");
+      }
     }
 
     if (file) {
@@ -142,13 +147,62 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
 
         {/* Team Size */}
         {eventType === "team" && (
-          <div className="flex flex-col gap-1">
-            <label className="text-sm text-gray-300">Team Size</label>
-            <Input
-              type="number"
-              name="teamSize"
-              defaultValue={event.teamSize}
-            />
+          <div className="flex flex-col gap-3">
+            <label className="text-sm font-medium text-gray-300">
+              Team Size
+            </label>
+
+            <div className="flex gap-4 text-sm">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={teamSizeMode === "fixed"}
+                  onChange={() => setTeamSizeMode("fixed")}
+                />
+                Fixed
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={teamSizeMode === "range"}
+                  onChange={() => setTeamSizeMode("range")}
+                />
+                Range
+              </label>
+            </div>
+
+            {teamSizeMode === "fixed" && (
+              <Input
+                type="number"
+                name="teamSize"
+                min={1}
+                defaultValue={event.teamSize}
+                placeholder="Exact team size"
+                required
+              />
+            )}
+
+            {teamSizeMode === "range" && (
+              <div className="flex gap-3 max-w-xs">
+                <Input
+                  type="number"
+                  name="teamSizeRange[min]"
+                  min={1}
+                  defaultValue={event.teamSizeRange?.min}
+                  placeholder="Min"
+                  required
+                />
+                <Input
+                  type="number"
+                  name="teamSizeRange[max]"
+                  min={1}
+                  defaultValue={event.teamSizeRange?.max}
+                  placeholder="Max"
+                  required
+                />
+              </div>
+            )}
           </div>
         )}
 

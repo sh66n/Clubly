@@ -23,7 +23,7 @@ export default function EventCard({ event }: EventCardProps) {
       className="group relative flex flex-col bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl overflow-hidden transition-all duration-500 hover:border-gray-500 hover:shadow-[0_0_30px_rgba(0,0,0,0.5)]"
     >
       {/* Image Section with Gradient Overlay */}
-      <div className="relative h-44 w-full overflow-hidden">
+      <div className="relative h-55 w-full overflow-hidden">
         <img
           src={event.image || "/images/default.png"}
           alt={event.name}
