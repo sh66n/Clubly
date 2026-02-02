@@ -85,7 +85,7 @@ export default function EventCard({ event }: EventCardProps) {
           <div className="flex items-center gap-1.5 text-gray-500">
             <MapPin size={14} />
             <span className="text-[11px] font-semibold tracking-wide uppercase">
-              Room 316
+              TBD
             </span>
           </div>
         </div>

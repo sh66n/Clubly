@@ -72,29 +72,39 @@ export default function Payment({
         description: "Campus Club Management System",
         order_id: orderData.id,
         handler: async function (response: any) {
-          const verificationResponse = await fetch(
-            "/api/razorpay/verify-payment",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
+          try {
+            const verificationResponse = await fetch(
+              "/api/razorpay/verify-payment",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_signature: response.razorpay_signature,
+                  amount: orderData.amount,
+                }),
               },
-              body: JSON.stringify({
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
-                amount: orderData.amount,
-              }),
-            }
-          );
+            );
 
-          const verificationData = await verificationResponse.json();
-          if (verificationData.success) {
-            if (onSuccess) onSuccess();
-          } else {
-            alert("Payment verification failed. Please try again.");
+            const verificationData = await verificationResponse.json();
+
+            if (verificationData.success) {
+              onSuccess?.();
+            } else {
+              alert("Payment verification failed");
+            }
+          } finally {
+            setPaymentLoading(false);
           }
         },
+
+        modal: {
+          ondismiss: () => {
+            setPaymentLoading(false);
+          },
+        },
+
         theme: {
           color: "#37AFA2",
         },
@@ -104,9 +114,8 @@ export default function Payment({
       rzp.open();
     } catch (error) {
       console.error("Payment error:", error);
-      alert("Payment failed. Please try again.");
-    } finally {
       setPaymentLoading(false);
+      alert("Payment failed. Please try again.");
     }
   };
 

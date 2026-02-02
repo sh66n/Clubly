@@ -20,11 +20,11 @@ export async function GET(
     // 1. Fetch event and populate based on type
     const event = await Event.findById(id)
       .populate({
-        path: "participants",
+        path: "registrations",
         model: User,
       })
       .populate({
-        path: "participantGroups",
+        path: "groupRegistrations",
         model: "Group",
         populate: {
           path: "members",
@@ -71,7 +71,7 @@ export async function GET(
 
     // 4. Logic for handling Individual vs Team events
     if (event.eventType === "team") {
-      (event.participantGroups || []).forEach((group: any) => {
+      (event.groupRegistrations || []).forEach((group: any) => {
         const teamName = group.name || "Unnamed Team";
         group.members.forEach((member: any) => {
           const studentYear = getYearFromEmail(member.email);
@@ -88,7 +88,7 @@ export async function GET(
       });
     } else {
       // Individual Event
-      (event.participants || []).forEach((user: any) => {
+      (event.registrations || []).forEach((user: any) => {
         const studentYear = getYearFromEmail(user.email);
         rows.push(
           [
