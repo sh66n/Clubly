@@ -3,6 +3,7 @@ import { connectToDb } from "@/lib/connectToDb";
 import { Event, Group } from "@/models";
 import { auth } from "@/auth";
 import mongoose from "mongoose";
+import crypto from "crypto";
 
 export async function GET(
   req: Request,
@@ -98,7 +99,19 @@ export const PATCH = async (
 
     // ✏️ Apply ONLY allowed fields
     if (name !== undefined) group.name = name;
-    if (isPublic !== undefined) group.isPublic = isPublic;
+    if (isPublic !== undefined) {
+      // if switching from public -> private, generate joinCode
+      if (group.isPublic && !isPublic) {
+        group.joinCode = crypto.randomBytes(3).toString("hex"); // 6-char code
+      }
+
+      // if switching from private -> public, remove joinCode
+      if (!group.isPublic && isPublic) {
+        group.joinCode = undefined;
+      }
+
+      group.isPublic = isPublic;
+    }
 
     await group.save();
 
