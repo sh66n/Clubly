@@ -8,6 +8,9 @@ import { headers } from "next/headers";
 import React from "react";
 import RemoveMemberButton from "@/components/Groups/RemoveMemberButton";
 import { auth } from "@/auth";
+import DisbandGroupButton from "@/components/Groups/DisbandGroupButton";
+import EditGroupForm from "@/components/Groups/EditGroupForm";
+import EditGroupButton from "@/components/Groups/EditGroupButton";
 
 const getGroup = async (eventId: string, groupId: string) => {
   const nextHeaders = await headers();
@@ -133,6 +136,12 @@ export default async function GroupDetails({
               ))}
             </div>
           </div>
+          {isLeader && (
+            <div className="flex flex-col gap-4">
+              <EditGroupButton eventId={eventId} groupId={group._id} />
+              <DisbandGroupButton eventId={eventId} groupId={group._id} />
+            </div>
+          )}
         </aside>
       </div>
     </div>
