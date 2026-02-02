@@ -104,11 +104,14 @@ export async function GET(
 
     const csvContent = [headers.join(","), ...rows].join("\n");
 
-    return new Response(csvContent, {
+    const encoder = new TextEncoder();
+    const csvBytes = encoder.encode(csvContent);
+
+    return new Response(csvBytes, {
       status: 200,
       headers: {
-        "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename="attendance_${event.name.replace(/\s+/g, "_")}.csv"`,
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": "attachment; filename=attendance.csv",
       },
     });
   } catch (err: any) {
