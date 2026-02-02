@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import cloudinary from "@/lib/cloudinary";
 import { connectToDb } from "@/lib/connectToDb";
 import { Event, Group } from "@/models";
 import { NextRequest, NextResponse } from "next/server";
@@ -113,8 +114,8 @@ export const PATCH = async (
     }
 
     await connectToDb();
-    const formData = await req.formData();
     const { id } = await params;
+    const formData = await req.formData();
 
     const event = await Event.findById(id);
 
@@ -148,6 +149,28 @@ export const PATCH = async (
         body[key] = value;
       }
     }
+
+    // upload image to cloudinary
+
+    const file = formData.get("image") as unknown as File | null;
+    let imageUrl = "";
+
+    if (file) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+
+      const uploadResult: any = await new Promise((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream({ resource_type: "image" }, (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          })
+          .end(buffer);
+      });
+
+      imageUrl = uploadResult.secure_url;
+    }
+
+    body.image = imageUrl;
 
     // ✅ Validate maxRegistrations
     if (body.maxRegistrations !== undefined && body.maxRegistrations < 1) {
