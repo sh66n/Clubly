@@ -4,7 +4,7 @@ import React from "react";
 
 export default function Table({ topUsers }) {
   return (
-    <div className="bg-black h-[40%] flex flex-col rounded-lg border border-[#515151] relative z-10">
+    <div className="bg-black h-fit md:h-[40%] flex flex-col rounded-lg border border-[#515151] relative z-10">
       {/* Header */}
       <div className="p-3 sm:p-4 border-b border-b-[#515151] text-lg sm:text-2xl font-semibold">
         All Time
