@@ -15,7 +15,7 @@ export default async function layout({
       {/* Header Section */}
       <BorderedDiv className="h-auto sm:h-[10%] min-h-[80px] rounded-lg flex flex-col sm:flex-row items-start sm:items-center p-3 sm:p-4 gap-3 sm:gap-1">
         {/* Welcome Message */}
-        <div className="text-lg sm:text-2xl lg:text-3xl">
+        <div className="text-lg sm:text-2xl lg:text-3xl line-clamp-1">
           <span>Welcome back,</span>{" "}
           <span className="font-bold">{session?.user?.name}</span>
         </div>
