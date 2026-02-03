@@ -11,9 +11,7 @@ export default function Leaderboard({ topUsers = [] }) {
       {hasMinData ? (
         <div className="w-full h-full animate-in fade-in duration-700">
           <Podium topThree={topUsers.slice(0, 3)} />
-          <div className="mt-8">
-            <Table topUsers={topUsers} />
-          </div>
+          <Table topUsers={topUsers} />
         </div>
       ) : (
         <div className="w-full h-full grow p-4">
