@@ -169,19 +169,16 @@ export const PATCH = async (
     }
 
     //change date and time
-    // 🕒 Handle date + time properly
+    // 🕒 Handle date + time properly (IST → UTC)
     if (body.date) {
       const dateStr = body.date; // "2026-02-10"
-      const timeStr = body.eventTime || "00:00"; // fallback
+      const timeStr = body.eventTime || "00:00"; // "10:00"
 
-      // Combine into local Date (NO UTC SHIFT)
-      const [year, month, day] = dateStr.split("-").map(Number);
-      const [hours, minutes] = timeStr.split(":").map(Number);
+      // Explicit IST datetime
+      const istDateTime = new Date(`${dateStr}T${timeStr}:00+05:30`);
 
-      const combinedDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
-
-      body.date = combinedDate;
-      delete body.eventTime; // we don't really care about this
+      body.date = istDateTime; // Mongo stores as UTC internally
+      delete body.eventTime;
     }
 
     // ✅ Validate maxRegistrations

@@ -30,9 +30,15 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
 
   const d = new Date(event.date);
 
-  const defaultTime = `${String(d.getHours()).padStart(2, "0")}:${String(
-    d.getMinutes(),
-  ).padStart(2, "0")}`;
+  // Force IST extraction
+  const istTime = d.toLocaleTimeString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    hour12: false,
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const defaultTime = istTime;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
