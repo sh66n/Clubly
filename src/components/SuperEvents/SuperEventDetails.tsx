@@ -104,9 +104,10 @@ export default function SuperEventDetails({
                       </span>
                       <span className="text-sm text-gray-400 flex items-center gap-1">
                         <Clock size={14} />
-                        {eventDate.toLocaleTimeString([], {
+                        {eventDate.toLocaleTimeString("en-IN", {
                           hour: "2-digit",
                           minute: "2-digit",
+                          timeZone: "Asia/Kolkata",
                         })}{" "}
                         onwards
                       </span>
@@ -188,20 +189,18 @@ export default function SuperEventDetails({
             </h3>
           </div>
 
-          <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-2 gap-4">
             {eventsInSuperEvent.map((event) => (
               <div
                 key={event._id}
-                className="flex items-center rounded-xl border border-[#2a2a2a] bg-black overflow-hidden w-full"
+                className="flex items-center rounded-xl border border-[#2a2a2a] bg-black overflow-hidden w-full p"
               >
                 {/* Prize */}
-                <div className="bg-gradient-to-b from-[#0a1b7a] to-[#020b3a] px-4 sm:px-6 py-4 min-w-[110px] sm:min-w-[140px] text-center">
+                <div className="bg-gradient-to-b from-[#0a1b7a] to-[#020b3a] px-4 sm:px-6 py-8 min-w-[110px] sm:min-w-[140px] text-center">
                   <div className="text-white text-lg sm:text-xl font-semibold">
                     ₹{event.prize}
                   </div>
-                  <div className="text-white text-sm sm:text-lg font-semibold tracking-wide">
-                    CASH
-                  </div>
+                  <div className="text-white text-sm sm:text-lg font-semibold tracking-wide"></div>
                 </div>
 
                 {/* Event name */}
