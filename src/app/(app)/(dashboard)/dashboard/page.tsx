@@ -6,6 +6,7 @@ import { getEventsAttendedByUser } from "@/services/getEventsAttendedByUser";
 import { getEventsRegisteredByUser } from "@/services/getEventsRegisteredByUser";
 import { getLeaderboardRank } from "@/services/getLeaderboardRank";
 import { getWeeklyEventCounts } from "@/services/getWeeklyEventCounts";
+import { ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -98,9 +99,15 @@ export default async function Dashboard() {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 flex-1">
           {/* Events Chart */}
           <BorderedDiv className="flex flex-col">
-            <div className="text-lg sm:text-xl lg:text-2xl font-semibold mb-2">
-              Events this week
-            </div>
+            <Link href={"/events"} className="flex justify-between">
+              <div className="text-lg sm:text-xl lg:text-2xl font-semibold mb-2 hover:underline">
+                Events this week
+              </div>
+              <div className="text-[#717171]">
+                <ChevronRight />
+              </div>
+            </Link>
+
             <div className="text-xs text-[#717171] mb-2">
               Keep an eye out for upcoming ones.
             </div>
@@ -109,17 +116,33 @@ export default async function Dashboard() {
 
           {/* Clubs Section */}
           <BorderedDiv className="flex flex-col">
-            <div className="text-lg sm:text-xl lg:text-2xl font-semibold mb-2">
-              Explore Clubs
-            </div>
+            <Link href={"/clubs"} className="flex justify-between">
+              <div className="text-lg sm:text-xl lg:text-2xl font-semibold mb-2 hover:underline">
+                Explore Clubs
+              </div>
+              <div className="text-[#717171]">
+                <ChevronRight />
+              </div>
+            </Link>
             <div className="text-xs text-[#717171] mb-2">
               Clubs you might be interested in
             </div>
 
-            {/* Clubs Grid - Responsive Layout */}
-            <div className="grow flex justify-evenly items-center">
-              <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4 gap-4 w-full">
-                {anyFourClubs.map((club, idx) => (
+            <div className="grow flex justify-center items-center">
+              <div
+                className={`grid gap-4 w-full max-w-4xl
+                    ${
+                      anyFourClubs.length === 1
+                        ? "grid-cols-1"
+                        : anyFourClubs.length === 2
+                          ? "grid-cols-2"
+                          : anyFourClubs.length === 3
+                            ? "grid-cols-3"
+                            : "grid-cols-2 lg:grid-cols-4"
+                    }
+                  `}
+              >
+                {anyFourClubs.map((club) => (
                   <Link
                     href={`clubs/${club._id}`}
                     key={club._id}
