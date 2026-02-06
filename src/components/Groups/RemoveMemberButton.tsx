@@ -74,7 +74,7 @@ export default function RemoveMemberButton({
       {isLoading ? (
         <Loader2 className="w-4 h-4 animate-spin" />
       ) : (
-        <X className="w-4 h-4 opacity-0 group-hover:opacity-100 md:opacity-40" />
+        <X className="w-4 h-4 opacity-40 group-hover:opacity-100" />
       )}
     </button>
   );
