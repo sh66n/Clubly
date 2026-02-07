@@ -51,7 +51,7 @@ export default function MobileNavbar({ user }: MobileNavbarProps) {
               <img
                 src={user.image}
                 alt={user.name}
-                className={`h-8 w-8 rounded-full transition-transform duration-200 border ${
+                className={`h-8 w-8 rounded-full transition-transform duration-200 border-2 ${
                   isActive ? "scale-125" : "scale-100 opacity-60"
                 }`}
               />
