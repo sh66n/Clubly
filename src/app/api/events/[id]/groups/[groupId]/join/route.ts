@@ -5,10 +5,10 @@ import { NextResponse } from "next/server";
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string; groupId: string } },
+  { params }: { params: Promise<{ id: string; groupId: string }> },
 ) {
   try {
-    const { id, groupId } = params;
+    const { id, groupId } = await params;
     await connectToDb();
 
     // ✅ get current user

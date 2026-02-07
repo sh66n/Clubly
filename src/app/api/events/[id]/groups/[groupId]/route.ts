@@ -7,10 +7,10 @@ import crypto from "crypto";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string; groupId: string } },
+  { params }: { params: Promise<{ id: string; groupId: string }> },
 ) {
   try {
-    const { id, groupId } = params;
+    const { id, groupId } = await params;
 
     // checked if user is logged in
     const session = await auth();

@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import GroupGrid from "@/components/Groups/GroupGrid";
 import BackButton from "@/components/BackButton";
 import GroupSearchWrapper from "@/components/Groups/GroupSearchWrapper";
+import { IEvent } from "@/models/event.schema";
 
 const getAllGroups = async (eventId) => {
   const nextHeaders = await headers();
@@ -19,10 +20,31 @@ const getAllGroups = async (eventId) => {
     },
   );
 
-  if (!res.ok) return null;
+  if (!res.ok) {
+    return null;
+  }
 
   const allGroups = await res.json();
   return allGroups;
+};
+
+const getEventName = async (eventId) => {
+  const nextHeaders = await headers();
+  const cookieHeader = nextHeaders.get("cookie") ?? "";
+
+  const res = await fetch(`${process.env.NEXTAUTH_URL}/api/events/${eventId}`, {
+    method: "GET",
+    headers: {
+      cookie: cookieHeader,
+    },
+  });
+
+  if (!res.ok) {
+    return null;
+  }
+
+  const { event } = await res.json();
+  return event.name;
 };
 
 export default async function GroupsPage({
@@ -33,16 +55,17 @@ export default async function GroupsPage({
   const { eventId } = await params;
 
   const allGroups = await getAllGroups(eventId);
+  const eventName = await getEventName(eventId);
 
   return (
     <div>
       <BackButton link={`/events/${eventId}`} />
       <h1 className="text-5xl font-semibold mt-4">Groups</h1>
       <div className="my-2 text-[#717171] mb-4">
-        All participant groups for this event
+        All participant groups for {eventName ? `"${eventName}"` : "this event"}
       </div>
       <div className="mt-12">
-        <GroupSearchWrapper initialGroups={allGroups} eventId={eventId} />
+        <GroupSearchWrapper initialGroups={allGroups ?? []} eventId={eventId} />
       </div>
     </div>
   );
