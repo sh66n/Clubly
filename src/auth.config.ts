@@ -7,10 +7,10 @@ export const authConfig: NextAuthConfig = {
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
       authorization: {
-        params: {
-          hd: "pvppcoe.ac.in",
-          prompt: "select_account",
-        },
+        // params: {
+        //   hd: "pvppcoe.ac.in",
+        //   prompt: "select_account",
+        // },
       },
     }),
   ],

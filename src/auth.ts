@@ -13,12 +13,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (!email) {
         return "/login?error=missing-email";
       }
-      const normalizedEmail = email.toLowerCase().trim();
-      // 🔒 Enforce college domain
-      if (!normalizedEmail.endsWith("@pvppcoe.ac.in")) {
-        console.warn("Blocked non-college email:", normalizedEmail);
-        return "/login?error=unauthorized-domain";
-      }
+      // const normalizedEmail = email.toLowerCase().trim();
+      // // 🔒 Enforce college domain
+      // if (!normalizedEmail.endsWith("@pvppcoe.ac.in")) {
+      //   console.warn("Blocked non-college email:", normalizedEmail);
+      //   return "/login?error=unauthorized-domain";
+      // }
 
       await connectToDb();
 
