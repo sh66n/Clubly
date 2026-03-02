@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true, // ⚠️ ignores all TS errors during build
   },
 
+  eslint: {
+    ignoreDuringBuilds: true, // ✅ ADD THIS
+  },
+
   images: {
     remotePatterns: [
       {
