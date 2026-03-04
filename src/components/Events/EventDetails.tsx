@@ -172,6 +172,8 @@ export default function EventDetails({
 
   const ctaText = getCTA();
 
+  const hasRewards = event.prize || event.providesCertificate;
+
   return (
     <>
       <BackButton link={"/events"} />
@@ -191,12 +193,14 @@ export default function EventDetails({
             <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
 
             {/* Prize badge — top right */}
-            <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-black/70 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full">
-              <Trophy size={13} className="text-yellow-500" />
-              <span className="text-xs font-semibold tracking-[0.14em] text-yellow-400">
-                ₹{event.prize}
-              </span>
-            </div>
+            {event.prize && event.prize > 0 && (
+              <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-black/70 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full">
+                <Trophy size={13} className="text-yellow-500" />
+                <span className="text-xs font-semibold tracking-[0.14em] text-yellow-400">
+                  ₹{event.prize}
+                </span>
+              </div>
+            )}
 
             {/* Bottom content */}
             <div className="absolute inset-0 flex flex-col justify-end gap-3 p-5 md:p-8">
@@ -231,26 +235,30 @@ export default function EventDetails({
           </div>
 
           {/* Rewards */}
-          <div className="mb-4">
-            <h2 className="text-xl mb-2">Rewards and Prizes</h2>
-            <BorderedDiv className="flex-1 flex flex-col gap-4 p-4">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
-                  <Trophy />
-                </div>
-                ₹{event.prize}
-              </div>
-
-              {event.providesCertificate && (
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
-                    <FileBadge />
+          {hasRewards && (
+            <div className="mb-4">
+              <h2 className="text-xl mb-2">Rewards and Prizes</h2>
+              <BorderedDiv className="flex-1 flex flex-col gap-4 p-4">
+                {event.prize && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
+                      <Trophy />
+                    </div>
+                    ₹{event.prize}
                   </div>
-                  Certificate
-                </div>
-              )}
-            </BorderedDiv>
-          </div>
+                )}
+
+                {event.providesCertificate && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
+                      <FileBadge />
+                    </div>
+                    Certificate
+                  </div>
+                )}
+              </BorderedDiv>
+            </div>
+          )}
 
           {/* Details */}
           <div className="mb-4">
