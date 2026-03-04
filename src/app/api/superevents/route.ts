@@ -63,6 +63,15 @@ export const POST = async (req: NextRequest) => {
     let imageUrl: string | undefined;
 
     if (file) {
+      const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
+      if (file.size > MAX_SIZE) {
+        return NextResponse.json(
+          { message: "Image must be less than 10MB" },
+          { status: 400 },
+        );
+      }
+
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
 

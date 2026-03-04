@@ -178,23 +178,57 @@ export default function EventDetails({
       <div className="xl:flex relative">
         <div className="xl:w-[70%]">
           {/* Event Header */}
-          <BorderedDiv className="p-4 mb-8">
-            <div>
-              <img
-                src={event.organizingClub.logo}
-                className="h-20 w-20 rounded-full border border-[#717171]"
-                alt=""
-              />
-              <h1 className="text-3xl font-semibold my-4">{event.name}</h1>
-              <div className="flex ml-auto items-center gap-2 text-[#717171] my-2">
-                <Building />
-                {event.organizingClub.name}
+          <div className="relative w-full h-64 md:h-[26rem] overflow-hidden mb-8 rounded-sm">
+            {/* Image */}
+            <img
+              src={event.image || "/images/default-banner.png"}
+              className="w-full h-full object-cover scale-[1.04] hover:scale-100 duration-[8000ms] grayscale-[0.2] brightness-90 hover:grayscale-0 hover:brightness-95 transition-all"
+              alt={event.name}
+            />
+
+            {/* Gradient overlays */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
+
+            {/* Prize badge — top right */}
+            <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-black/70 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full">
+              <Trophy size={13} className="text-yellow-500" />
+              <span className="text-xs font-semibold tracking-[0.14em] text-yellow-400">
+                ₹{event.prize}
+              </span>
+            </div>
+
+            {/* Bottom content */}
+            <div className="absolute inset-0 flex flex-col justify-end gap-3 p-5 md:p-8">
+              {/* Live dot + event type */}
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
+                <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-white/40">
+                  {event.eventType === "team" ? "Team Event" : "Solo Event"}
+                </span>
               </div>
-              <div className="flex ml-auto items-center gap-2 text-[#717171]">
-                <Trophy />₹{event.prize}
+
+              {/* Title */}
+              <h1
+                className="text-3xl md:text-5xl font-black uppercase leading-[0.9] tracking-tight text-white drop-shadow-2xl"
+                style={{ fontFamily: "'Bebas Neue', sans-serif" }}
+              >
+                {event.name}
+              </h1>
+
+              {/* Club row */}
+              <div className="flex items-center gap-3">
+                <img
+                  src={event.organizingClub.logo}
+                  className="w-7 h-7 rounded object-cover border border-white/10 grayscale-[0.3] hover:grayscale-0 transition-all"
+                  alt={event.organizingClub.name}
+                />
+                <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/40">
+                  {event.organizingClub.name}
+                </span>
               </div>
             </div>
-          </BorderedDiv>
+          </div>
 
           {/* Rewards */}
           <div className="mb-4">
