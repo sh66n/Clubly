@@ -127,7 +127,20 @@ export default function NewSuperEventForm({
         <input
           type="file"
           accept="image/*"
-          onChange={(e) => setImage(e.target.files?.[0] || null)}
+          onChange={(e) => {
+            const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+            const file = e.target.files?.[0];
+
+            if (!file) return;
+
+            if (file.size > MAX_SIZE) {
+              toast.error("Image must be less than 10MB");
+              e.target.value = ""; // reset input
+              return;
+            }
+
+            setImage(file);
+          }}
           className="w-full"
         />
       </div>
