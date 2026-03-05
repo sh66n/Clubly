@@ -21,6 +21,7 @@ export const zEvent = z.object({
   winner: z.string().regex(/^[0-9a-fA-F]{24}$/),
   image: z.optional(z.string()),
   maxRegistrations: z.number(),
+  whatsappGroupLink: z.string(),
 });
 
 export interface IEvent {
@@ -52,4 +53,5 @@ export interface IEvent {
   image: string;
   maxRegistrations: number;
   superEvent: Types.ObjectId;
+  whatsappGroupLink: string;
 }

@@ -9,6 +9,7 @@ import {
   Calendar,
   ChevronRight,
   FileBadge,
+  MessageCircle,
   Pencil,
   Trophy,
   User,
@@ -80,7 +81,7 @@ export default function EventDetails({
       toast.success("Registered successfully");
       setRegistrationStatus("registered");
 
-      router.refresh();
+      router.replace(`/events/${event._id}/success`);
     } catch (err: any) {
       toast.error(err.message);
       setRegistrationStatus("idle");
@@ -390,6 +391,28 @@ export default function EventDetails({
                     <span className="text-sm">{daysLeft} days left</span>
                   </div>
                 </div>
+                {isAlreadyRegistered && event.whatsappGroupLink && (
+                  <a
+                    href={event.whatsappGroupLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    <div className="flex ml-auto items-center gap-2 text-[#717171] my-2 hover:opacity-50">
+                      <div className="flex items-center justify-center p-2 bg-green-600 rounded-lg text-white">
+                        <MessageCircle />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm text-green-600">
+                          Join WhatsApp group
+                        </span>
+                        <span className="text-xs">
+                          Event updates will be shared here
+                        </span>
+                      </div>
+                    </div>
+                  </a>
+                )}
               </BorderedDiv>
               {event.eventType === "team" && (
                 <>

@@ -103,6 +103,10 @@ const eventSchema = new Schema<IEvent>(
       type: Schema.Types.ObjectId,
       ref: "SuperEvent",
     },
+    whatsappGroupLink: {
+      type: String,
+      required: false,
+    },
   },
   { timestamps: true },
 );
