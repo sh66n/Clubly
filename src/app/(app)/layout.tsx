@@ -17,7 +17,7 @@ export default async function layout({
       <Sidebar isLoggedIn={session ? true : false} points={points} />
       <MobileNavbar user={session?.user} />
       {/* Main content */}
-      <div className="flex-1 pl-2 pr-2 pb-20 md:pb-0">{children}</div>
+      <div className="flex-1 pl-2 pr-2 pb-20 md:pb-0 md:ml-64">{children}</div>
     </div>
   );
 }

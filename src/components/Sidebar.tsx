@@ -58,7 +58,7 @@ export default function Sidebar({ isLoggedIn, points }: SidebarProps) {
         className={`
           fixed top-0 left-0 h-screen w-64 p-4 pr-2  z-50 bg-black text-white transform transition-transform duration-300
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0 md:static md:flex hidden
+          md:translate-x-0 md:fixed md:flex hidden
         `}
       >
         <div className="flex flex-col h-full w-full rounded-lg md:border md:border-[#515151] p-4">
