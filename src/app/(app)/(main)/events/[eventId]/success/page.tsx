@@ -71,7 +71,9 @@ export default async function RegistrationSuccess({
 
           <div className="space-y-1">
             <h1 className="text-2xl font-medium text-white tracking-tight">
-              Payment Received
+              {event.registrationFee > 0
+                ? "Payment Received"
+                : "Registration Successful"}
             </h1>
 
             <p className="text-zinc-500 text-sm">
