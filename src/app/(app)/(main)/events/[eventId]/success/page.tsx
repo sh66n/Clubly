@@ -8,14 +8,12 @@ import { IEvent } from "@/models/event.schema";
 import SuccessIcon from "@/components/Events/SuccessIcon";
 import { auth } from "@/auth";
 
-interface SuccessPageProps {
-  params: { eventId: string };
-}
-
 export default async function RegistrationSuccess({
   params,
-}: SuccessPageProps) {
-  const { eventId } = params;
+}: {
+  params: { eventId: String };
+}) {
+  const { eventId } = await params;
 
   const event: IEvent = await getEvent(eventId);
   const session = await auth();
@@ -71,7 +69,8 @@ export default async function RegistrationSuccess({
 
           <div className="space-y-1">
             <h1 className="text-2xl font-medium text-white tracking-tight">
-              {event.registrationFee > 0
+              {event.registrationFee > 0 &&
+              event._id != "69a7fa06cd938ddb63b0f06f"
                 ? "Payment Received"
                 : "Registration Successful"}
             </h1>
