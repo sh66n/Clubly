@@ -71,6 +71,14 @@ export const GET = async (
 
     const alreadyRegistered = isIndividuallyRegistered || isGroupRegistered;
 
+    // temporary fix for changing price according to email
+    if (
+      event._id.toString() === "69a7fa06cd938ddb63b0f06f" &&
+      session?.user?.email?.endsWith("@pvppcoe.ac.in")
+    ) {
+      event.registrationFee = 0;
+    }
+
     return NextResponse.json(
       { event, myGroup, alreadyRegistered },
       { status: 200 },
