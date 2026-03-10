@@ -341,7 +341,7 @@ export default function EventDetails({
                       ? "Registered"
                       : hasEventPassed
                         ? "Registrations Closed"
-                        : isLoading
+                        : registrationStatus === "processing"
                           ? "Registering..."
                           : "Register"}
                   </button>
