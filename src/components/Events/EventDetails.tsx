@@ -327,7 +327,7 @@ export default function EventDetails({
                     : "Free"}
                 </h2>
 
-                {event.registrationFee < 0 ? (
+                {event.registrationFee <= 0 ? (
                   <button
                     onClick={handleRegister}
                     disabled={isRegisterDisabled}
