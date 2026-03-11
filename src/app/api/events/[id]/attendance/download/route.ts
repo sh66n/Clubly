@@ -44,8 +44,11 @@ export async function GET(
     // 2. Helper function to calculate year
     const getYearFromEmail = (email: string) => {
       if (!email || !email.endsWith("@pvppcoe.ac.in")) return "External";
+
       const match = email.match(/\d{4}/);
       if (!match) return "N/A";
+
+      const isDSE = email.substring(0, 4).endsWith("s");
 
       const startYearShort = parseInt(match[0].substring(0, 2));
       const currentYearShort = new Date().getFullYear() % 100;
@@ -53,7 +56,10 @@ export async function GET(
 
       const adjustedCurrentYear =
         currentMonth < 6 ? currentYearShort - 1 : currentYearShort;
-      const diff = adjustedCurrentYear - startYearShort + 1;
+
+      let diff = adjustedCurrentYear - startYearShort + 1;
+
+      if (isDSE) diff += 1;
 
       const yearMap: Record<number, string> = {
         1: "FE (1st Year)",
@@ -65,8 +71,31 @@ export async function GET(
       return yearMap[diff] || "Alumni/Unknown";
     };
 
+    const getDepartmentFromEmail = (email: string) => {
+      if (!email || !email.endsWith("@pvppcoe.ac.in")) return "External";
+
+      const prefix = email.substring(0, 3).toLowerCase();
+
+      const deptMap: Record<string, string> = {
+        vu1: "Computer Engineering",
+        vu2: "Artificial Intelligence & Data Science",
+        vu3: "Electronics & Computer Science",
+        vu4: "Information Technology",
+        vu7: "Mechatronics",
+      };
+
+      return deptMap[prefix] || "External";
+    };
+
     // 3. Define CSV Headers (Added Team Name)
-    const headers = ["Team Name", "Phone number", "Name", "Email", "Year"];
+    const headers = [
+      "Team Name",
+      "Phone number",
+      "Name",
+      "Email",
+      "Year",
+      "Department",
+    ];
     let rows: string[] = [];
 
     // 4. Logic for handling Individual vs Team events
@@ -75,6 +104,7 @@ export async function GET(
         const teamName = group.name || "Unnamed Team";
         group.members.forEach((member: any) => {
           const studentYear = getYearFromEmail(member.email);
+          const department = getDepartmentFromEmail(member.email);
           rows.push(
             [
               `"${teamName}"`,
@@ -82,6 +112,7 @@ export async function GET(
               `"${member.name}"`,
               `"${member.email}"`,
               `"${studentYear}"`,
+              `"${department}"`,
             ].join(","),
           );
         });
@@ -90,13 +121,15 @@ export async function GET(
       // Individual Event
       (event.registrations || []).forEach((user: any) => {
         const studentYear = getYearFromEmail(user.email);
+        const department = getDepartmentFromEmail(user.email);
         rows.push(
           [
-            `"N/A"`, // No team name for individuals
+            `"N/A"`,
             `"${user.phoneNumber ? user.phoneNumber : "---"}"`,
             `"${user.name}"`,
             `"${user.email}"`,
             `"${studentYear}"`,
+            `"${department}"`,
           ].join(","),
         );
       });
