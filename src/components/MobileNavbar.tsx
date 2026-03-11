@@ -26,7 +26,7 @@ export default function MobileNavbar({ user }: MobileNavbarProps) {
     {
       name: "Profile",
       icon: CircleUser,
-      href: user ? `/profiles/${user?.id}` : "/login",
+      href: user ? `/settings` : "/login",
     },
   ];
 

@@ -32,7 +32,7 @@ export default async function SuperEventPage({
   const eventsInSuperEvent = await fetchEvents(superEventId);
 
   return (
-    <div className="">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6">
       <BackButton link={"/events"} />
       <SuperEventDetails
         superEvent={superEvent}

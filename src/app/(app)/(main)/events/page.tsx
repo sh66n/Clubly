@@ -9,7 +9,6 @@ import React from "react";
 const getAllEvents = async (query: string | string[], club) => {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/api/events?q=${query}&club=${club}`,
-    { cache: "no-store" },
   );
   if (!res.ok) return null;
   return res.json();
@@ -18,9 +17,6 @@ const getAllEvents = async (query: string | string[], club) => {
 const getAllSuperEvents = async () => {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/api/superevents`,
-    {
-      cache: "no-store",
-    },
   );
   if (!res.ok) return null;
   const data = await res.json();
