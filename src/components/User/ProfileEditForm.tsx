@@ -50,7 +50,7 @@ export default function ProfileEditForm({ user }: ProfileEditFormProps) {
       }
 
       toast.success("Profile updated successfully");
-      router.refresh();
+      router.push("/dashboard");
     } catch (err) {
       toast.error("Something went wrong");
     } finally {

@@ -65,6 +65,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const dbUser = await User.findOne({ email: token.email });
           if (dbUser) {
             token.id = dbUser._id.toString();
+            token.name = dbUser.name.toString();
             token.role = dbUser.role;
             token.adminClub = dbUser.adminClub?.toString();
             token.points =
@@ -84,6 +85,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.name = token.name as string;
         session.user.role = token.role as string;
         session.user.points = token.points as number;
         session.user.image = token.image as string;
