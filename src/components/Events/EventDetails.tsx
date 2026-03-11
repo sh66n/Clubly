@@ -264,8 +264,10 @@ export default function EventDetails({
           {/* Details */}
           <div className="mb-4">
             <h2 className="text-xl mb-2">Details</h2>
-            <BorderedDiv className="flex-1 p-4 whitespace-pre-line">
-              <p>{event.description}</p>
+            <BorderedDiv className="flex-1 min-w-0 p-4 whitespace-pre-line leading-relaxed">
+              <p className="whitespace-pre-line">
+                {formatDescription(event.description)}
+              </p>
             </BorderedDiv>
           </div>
 
@@ -461,5 +463,24 @@ export default function EventDetails({
         )}
       </div>
     </>
+  );
+}
+
+function formatDescription(text: string) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+  return text.split(urlRegex).map((part, i) =>
+    urlRegex.test(part) ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        className="text-blue-400 underline break-all"
+      >
+        {part}
+      </a>
+    ) : (
+      part
+    ),
   );
 }

@@ -2,6 +2,8 @@ import React from "react";
 import BorderedDiv from "../BorderedDiv";
 import { Calendar, Clock, Info, Trophy } from "lucide-react";
 import EventGrid from "../Events/EventGrid";
+import Image from "next/image";
+import Link from "next/link";
 
 export default function SuperEventDetails({
   superEvent,
@@ -86,13 +88,12 @@ export default function SuperEventDetails({
                 ).getTime();
 
                 return (
-                  <div key={idx} className="mb-10 relative">
+                  <div key={idx} className="mb-4 relative">
                     {/* Timeline Dot */}
                     <div
                       className={`absolute -left-[41px] mt-1.5 w-4 h-4 rounded-full border-4 border-black z-10 
                     ${isLive ? "bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]" : "bg-[#5E77F5]"}`}
                     ></div>
-
                     {/* Date/Time Label */}
                     <div className="flex flex-col md:flex-row md:items-center gap-2 mb-1">
                       <span className="text-sm font-bold text-white uppercase tracking-wider">
@@ -117,18 +118,34 @@ export default function SuperEventDetails({
                         </span>
                       )}
                     </div>
-
                     {/* Event Content */}
-                    <div className="px-2 py-4">
-                      <h4 className="text-lg font-medium text-white">
-                        {event.name}
-                      </h4>
-                      {event.description && (
-                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                          {event.description}
-                        </p>
-                      )}
-                    </div>
+                    <Link href={`/events/${event._id}`}>
+                      <div className="px-3 py-3 flex gap-4 items-start rounded-lg hover:bg-white/5 transition-all duration-200 mt-2">
+                        {/* Image Preview */}
+                        <div className="w-16 h-16 flex-shrink-0 relative rounded-md overflow-hidden">
+                          <Image
+                            src={event.image || "/placeholder.png"}
+                            alt={event.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        {/* Event Text */}
+                        <div className="">
+                          <h4 className="text-lg font-medium text-white">
+                            <span className="hover:underline hover:cursor-pointer">
+                              {event.name}
+                            </span>
+                          </h4>
+
+                          {event.description && (
+                            <p className="hidden md:line-clamp-1 text-sm text-gray-500 mt-1 break-words">
+                              {event.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
                   </div>
                 );
               })}
@@ -152,7 +169,7 @@ export default function SuperEventDetails({
             </h3>
           </div>
 
-          <div className="whitespace-pre-line text-[#bdbdbd] bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl ">
+          <div className="whitespace-pre-line text-[#bdbdbd] bg-[#121212] border border-[#2a2a2a] p-4 rounded-xl break-words">
             {superEvent.description}
           </div>
         </div>
@@ -190,28 +207,31 @@ export default function SuperEventDetails({
           </div>
 
           <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-2 gap-4">
-            {eventsInSuperEvent.map((event) => (
-              <div
-                key={event._id}
-                className="flex items-center rounded-xl border border-[#2a2a2a] bg-black overflow-hidden w-full p"
-              >
-                {/* Prize */}
-                <div className="bg-gradient-to-b from-[#0a1b7a] to-[#020b3a] px-4 sm:px-6 py-8 min-w-[110px] sm:min-w-[140px] text-center">
-                  <div className="text-white text-lg sm:text-xl font-semibold">
-                    ₹{event.prize}
-                  </div>
-                  <div className="text-white text-sm sm:text-lg font-semibold tracking-wide"></div>
-                </div>
+            {eventsInSuperEvent.map(
+              (event) =>
+                event.prize > 0 && (
+                  <div
+                    key={event._id}
+                    className="flex items-center rounded-xl border border-[#2a2a2a] bg-black overflow-hidden w-full p"
+                  >
+                    {/* Prize */}
+                    <div className="bg-gradient-to-b from-[#0a1b7a] to-[#020b3a] px-4 sm:px-6 py-8 min-w-[110px] sm:min-w-[140px] text-center">
+                      <div className="text-white text-lg sm:text-xl font-semibold">
+                        ₹{event.prize}
+                      </div>
+                      <div className="text-white text-sm sm:text-lg font-semibold tracking-wide"></div>
+                    </div>
 
-                {/* Event name */}
-                <div className="flex-1 px-4 sm:px-6 text-white text-base sm:text-lg font-medium">
-                  <div className="line-clamp-1">{event.name}</div>
-                  <div className="text-xs line-clamp-2 text-[#515151]">
-                    {event.description}
+                    {/* Event name */}
+                    <div className="flex-1 px-4 sm:px-6 text-white text-base sm:text-lg font-medium">
+                      <div className="line-clamp-1">{event.name}</div>
+                      <div className="hidden text-xs md:line-clamp-2 text-[#515151] break-words">
+                        {event.description}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                ),
+            )}
           </div>
         </div>
       )}
