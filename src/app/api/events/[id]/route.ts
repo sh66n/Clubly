@@ -217,17 +217,3 @@ export const PATCH = async (
     );
   }
 };
-
-export const DELETE = async (
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) => {
-  try {
-    await connectToDb();
-    const { id } = await params;
-    const deletedEvent = await Event.findByIdAndDelete(id, { new: true });
-    return NextResponse.json({ deletedEvent }, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({ error }, { status: 500 });
-  }
-};
