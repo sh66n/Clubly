@@ -78,9 +78,10 @@ export async function POST(
       );
     }
 
-    // ✅ add user to group
-    group.members.push(userId);
-    await group.save();
+    // ✅ add user to group atomically
+    await Group.findByIdAndUpdate(groupId, {
+      $addToSet: { members: userId },
+    });
 
     return NextResponse.json(group, { status: 200 });
   } catch (err: any) {

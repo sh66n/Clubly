@@ -97,23 +97,26 @@ export const PATCH = async (
       );
     }
 
-    // ✏️ Apply ONLY allowed fields
-    if (name !== undefined) group.name = name;
+    // ✏️ Apply ONLY allowed fields atomically
+    const updateBody: any = {};
+    if (name !== undefined) updateBody.name = name;
     if (isPublic !== undefined) {
+      updateBody.isPublic = isPublic;
       // if switching from public -> private, generate joinCode
       if (group.isPublic && !isPublic) {
-        group.joinCode = crypto.randomBytes(3).toString("hex"); // 6-char code
+        updateBody.joinCode = crypto.randomBytes(3).toString("hex"); // 6-char code
       }
-
-      // if switching from private -> public, remove joinCode
+      // if switching from private -> public, remove joinCode (using $unset or null)
       if (!group.isPublic && isPublic) {
-        group.joinCode = undefined;
+        updateBody.joinCode = null; // or use $unset
       }
-
-      group.isPublic = isPublic;
     }
 
-    await group.save();
+    const updatedGroup = await Group.findByIdAndUpdate(
+      groupId,
+      { $set: updateBody },
+      { new: true },
+    );
 
     return NextResponse.json(
       {
