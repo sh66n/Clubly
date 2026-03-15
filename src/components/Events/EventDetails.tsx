@@ -350,6 +350,8 @@ export default function EventDetails({
                 ) : (
                   <Payment
                     amount={event.registrationFee || 0}
+                    eventId={event._id.toString()}
+                    groupId={group?._id?.toString()}
                     text={ctaText}
                     disabled={
                       isRegisterDisabled ||
@@ -363,7 +365,9 @@ export default function EventDetails({
                         : "bg-[#000F57] text-white"
                     }`}
                     onSuccess={() => {
-                      handleRegister();
+                      toast.success("Payment successful! You are registered.");
+                      setRegistrationStatus("registered");
+                      router.replace(`/events/${event._id}/success`);
                     }}
                   />
                 )}

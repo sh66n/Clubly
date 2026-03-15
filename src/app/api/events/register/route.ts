@@ -4,6 +4,7 @@ import { connectToDb } from "@/lib/connectToDb";
 import { User } from "@/models/user.model";
 import { Event } from "@/models/event.model";
 import { Group } from "@/models/group.model";
+import { Payment } from "@/models/payment.model";
 import { auth } from "@/auth";
 
 export async function POST(req: Request) {
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { eventId, userId, groupId } = await req.json();
+    const { eventId, groupId } = await req.json();
 
     if (!eventId) {
       return NextResponse.json({ error: "Missing eventId" }, { status: 400 });
@@ -25,6 +26,22 @@ export async function POST(req: Request) {
     const event = await Event.findById(eventId);
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    // Payment guard: paid events require a verified payment
+    if (event.registrationFee && event.registrationFee > 0) {
+      const paidPayment = await Payment.findOne({
+        userId: session.user.id,
+        eventId,
+        status: "paid",
+      });
+
+      if (!paidPayment) {
+        return NextResponse.json(
+          { error: "Payment required before registration" },
+          { status: 402 },
+        );
+      }
     }
 
     /* ---------------- Registration Limit ---------------- */
@@ -52,12 +69,8 @@ export async function POST(req: Request) {
 
     /* ================= INDIVIDUAL ================= */
     if (event.eventType === "individual") {
-      if (!userId) {
-        return NextResponse.json(
-          { error: "userId is required for individual events" },
-          { status: 400 },
-        );
-      }
+      // Use session user ID instead of client-supplied userId
+      const userId = session.user.id;
 
       const user = await User.findById(userId);
       if (!user) {

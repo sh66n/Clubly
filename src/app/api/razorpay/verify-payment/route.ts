@@ -1,11 +1,10 @@
 // app/api/razorpay/verify-payment/route.ts
-"use server";
 
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import { auth } from "@/auth";
-import { User } from "@/models";
+import { Event, Payment } from "@/models";
 import { connectToDb } from "@/lib/connectToDb";
 
 const razorpay = new Razorpay({
@@ -14,9 +13,12 @@ const razorpay = new Razorpay({
 });
 
 export async function POST(request: Request) {
-  const session = await auth();
-
   try {
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
 
     if (
@@ -32,6 +34,7 @@ export async function POST(request: Request) {
 
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
 
+    // Verify Razorpay signature
     const generated_signature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
@@ -44,24 +47,61 @@ export async function POST(request: Request) {
       );
     }
 
-    if (generated_signature === razorpay_signature) {
-      await connectToDb();
-      const paymentDetails = await razorpay.payments.fetch(razorpay_payment_id);
-      const phoneNumber = paymentDetails.contact;
+    // Signature valid — process the payment
+    await connectToDb();
 
-      await User.findByIdAndUpdate(session?.user.id, {
+    // Find the payment record created during order creation
+    const payment = await Payment.findOne({
+      razorpayOrderId: razorpay_order_id,
+    });
+
+    if (!payment) {
+      return NextResponse.json(
+        { success: false, error: "Payment record not found" },
+        { status: 404 },
+      );
+    }
+
+    // Idempotency: if already paid, return success without re-processing
+    if (payment.status === "paid") {
+      return NextResponse.json({
+        success: true,
+        paymentId: razorpay_payment_id,
+        orderId: razorpay_order_id,
+        alreadyProcessed: true,
+      });
+    }
+
+    // Fetch payment details from Razorpay (for phone number)
+    const paymentDetails = await razorpay.payments.fetch(razorpay_payment_id);
+    const phoneNumber = paymentDetails.contact;
+
+    // Update the Payment record to "paid"
+    payment.razorpayPaymentId = razorpay_payment_id;
+    payment.status = "paid";
+    await payment.save();
+
+    // Update user's phone number if available
+    if (phoneNumber) {
+      const { User } = await import("@/models");
+      await User.findByIdAndUpdate(session.user.id, {
         phoneNumber: phoneNumber,
       });
     }
 
-    // Here you would typically save the payment details to your database
-    // For example:
-    // await savePaymentToDatabase({
-    //   orderId: razorpay_order_id,
-    //   paymentId: razorpay_payment_id,
-    //   amount: body.amount,
-    //   status: 'completed',
-    // });
+    // Auto-register the user for the event
+    const event = await Event.findById(payment.eventId);
+    if (event) {
+      if (event.eventType === "individual") {
+        await Event.findByIdAndUpdate(payment.eventId, {
+          $addToSet: { registrations: session.user.id },
+        });
+      } else if (event.eventType === "team" && payment.groupId) {
+        await Event.findByIdAndUpdate(payment.eventId, {
+          $addToSet: { groupRegistrations: payment.groupId },
+        });
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -74,7 +114,6 @@ export async function POST(request: Request) {
       {
         success: false,
         error: "Payment verification failed",
-        details: error.message,
       },
       { status: 500 },
     );

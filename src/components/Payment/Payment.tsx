@@ -1,6 +1,7 @@
 "use client";
 import Script from "next/script";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { toast } from "sonner";
 
 declare global {
   interface Window {
@@ -10,6 +11,8 @@ declare global {
 
 interface PaymentProps {
   amount: number;
+  eventId: string;
+  groupId?: string;
   text?: React.ReactNode;
   className?: string;
   disabled?: boolean;
@@ -18,6 +21,8 @@ interface PaymentProps {
 
 export default function Payment({
   amount,
+  eventId,
+  groupId,
   text,
   className,
   disabled,
@@ -25,19 +30,6 @@ export default function Payment({
 }: PaymentProps) {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
-
-  useEffect(() => {
-    // Load Razorpay script dynamically
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    script.onload = () => setRazorpayLoaded(true);
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
 
   const handlePayment = async () => {
     if (!razorpayLoaded) {
@@ -48,21 +40,37 @@ export default function Payment({
     setPaymentLoading(true);
 
     try {
-      // Create order
+      // Create order (server validates amount from event.registrationFee)
       const response = await fetch("/api/razorpay/create-razorpay-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          amount: amount * 100, // Razorpay expects amount in paise
-          currency: "INR",
-          receipt: `receipt_${Date.now()}`,
+          eventId,
+          groupId: groupId || undefined,
         }),
       });
 
       const orderData = await response.json();
-      if (orderData.error) throw new Error(orderData.details);
+
+      if (!response.ok) {
+        // Handle "already paid" — re-register then redirect
+        if (response.status === 409) {
+          toast.success("You've already paid — re-registering you now!");
+          await fetch("/api/events/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              eventId,
+              ...(groupId ? { groupId } : {}),
+            }),
+          });
+          onSuccess?.();
+          return;
+        }
+        throw new Error(orderData.error || orderData.details || "Failed to create order");
+      }
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
@@ -82,7 +90,6 @@ export default function Payment({
                   razorpay_payment_id: response.razorpay_payment_id,
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_signature: response.razorpay_signature,
-                  amount: orderData.amount,
                 }),
               },
             );
@@ -112,10 +119,10 @@ export default function Payment({
 
       const rzp = new window.Razorpay(options);
       rzp.open();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Payment error:", error);
       setPaymentLoading(false);
-      alert("Payment failed. Please try again.");
+      alert(error.message || "Payment failed. Please try again.");
     }
   };
 
@@ -124,7 +131,8 @@ export default function Payment({
       <Script
         id="razorpay-checkout-js"
         src="https://checkout.razorpay.com/v1/checkout.js"
-        strategy="beforeInteractive"
+        strategy="afterInteractive"
+        onReady={() => setRazorpayLoaded(true)}
       />
       <button
         onClick={handlePayment}
