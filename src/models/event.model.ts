@@ -107,6 +107,10 @@ const eventSchema = new Schema<IEvent>(
       type: String,
       required: false,
     },
+    isRegistrationOpen: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true },
 );

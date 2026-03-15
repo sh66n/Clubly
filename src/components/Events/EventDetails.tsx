@@ -118,11 +118,12 @@ export default function EventDetails({
     hasEventPassed ||
     isLoading ||
     registrationsFull ||
+    event.isRegistrationOpen === false ||
     (event.eventType === "team" &&
       (!group || // No group
         user.id !== group.leader._id || // Not leader
         group.members.length <
-          (event.teamSize ? event.teamSize : event.teamSizeRange.min))); // Team too small
+          (event.teamSize ? event.teamSize : (event.teamSizeRange?.min ?? 1)))); // Team too small
 
   const getCTA = () => {
     //handle processing
@@ -143,6 +144,11 @@ export default function EventDetails({
       return "Registrations closed";
     }
 
+    //handle explicitly closed registrations
+    if (event.isRegistrationOpen === false) {
+      return "Registrations closed";
+    }
+
     //handle solo events
     if (event.eventType !== "team") {
       if (registrationStatus === "registered") return "Registered";
@@ -158,7 +164,7 @@ export default function EventDetails({
 
     const required = event.teamSize
       ? event.teamSize
-      : event?.teamSizeRange?.min;
+      : (event?.teamSizeRange?.min ?? 1);
     const current = group.members.length;
 
     if (current < required) {

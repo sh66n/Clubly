@@ -28,6 +28,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
+    if (event.isRegistrationOpen === false) {
+      return NextResponse.json(
+        { error: "Registrations are currently closed for this event" },
+        { status: 403 },
+      );
+    }
+
     // Payment guard: paid events require a verified payment
     if (event.registrationFee && event.registrationFee > 0) {
       const paidPayment = await Payment.findOne({

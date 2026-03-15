@@ -6,6 +6,7 @@ import GroupCard from "../Groups/GroupCard"; // ✅ import group card
 import { Calendar, Crown } from "lucide-react";
 import Link from "next/link";
 import DownloadAttendance from "./DownloadAttendance";
+import CloseRegistrationToggle from "./CloseRegistrationToggle";
 
 interface EventInsightsProps {
   event: IEvent;
@@ -39,7 +40,12 @@ export default function EventInsights({ event }: EventInsightsProps) {
             Assign Winner
           </Link>
 
-          <DownloadAttendance eventId={event._id} />
+          <DownloadAttendance eventId={event._id.toString()} />
+
+          <CloseRegistrationToggle
+            eventId={event._id.toString()}
+            initialStatus={event.isRegistrationOpen ?? true}
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -49,15 +55,15 @@ export default function EventInsights({ event }: EventInsightsProps) {
             <div className="flex flex-col gap-2">
               {isTeam ? (
                 event.groupRegistrations?.length > 0 ? (
-                  event.groupRegistrations.map((g) => (
-                    <GroupCard group={g} eventId={event._id} key={g._id} />
+                  event.groupRegistrations.map((g: any) => (
+                    <GroupCard group={g} eventId={event._id.toString()} key={g._id.toString()} />
                   ))
                 ) : (
                   <div className="text-sm text-[#717171]">None yet</div>
                 )
               ) : event.registrations?.length > 0 ? (
-                event.registrations.map((u) => (
-                  <UserCard user={u} key={u._id} />
+                event.registrations.map((u: any) => (
+                  <UserCard user={u} key={u._id.toString()} />
                 ))
               ) : (
                 <div className="text-sm text-[#717171]">None yet</div>
@@ -71,14 +77,14 @@ export default function EventInsights({ event }: EventInsightsProps) {
             <div className="flex flex-col gap-2">
               {isTeam ? (
                 event.participantGroups?.length > 0 ? (
-                  event.participantGroups.map((g) => (
-                    <GroupCard group={g} eventId={event._id} key={g._id} />
+                  event.participantGroups.map((g: any) => (
+                    <GroupCard group={g} eventId={event._id.toString()} key={g._id.toString()} />
                   ))
                 ) : (
                   <div className="text-sm text-[#717171]">None yet</div>
                 )
               ) : event.participants?.length > 0 ? (
-                event.participants.map((u) => <UserCard user={u} key={u._id} />)
+                event.participants.map((u: any) => <UserCard user={u} key={u._id.toString()} />)
               ) : (
                 <div className="text-sm text-[#717171]">None yet</div>
               )}
@@ -92,15 +98,15 @@ export default function EventInsights({ event }: EventInsightsProps) {
               {isTeam ? (
                 event.winnerGroup ? (
                   <GroupCard
-                    group={event.winnerGroup}
-                    eventId={event._id}
-                    key={event.winnerGroup._id}
+                    group={event.winnerGroup as any}
+                    eventId={event._id.toString()}
+                    key={(event.winnerGroup as any)._id?.toString()}
                   />
                 ) : (
                   <div className="text-sm text-[#717171]">None yet</div>
                 )
               ) : event.winner ? (
-                <UserCard user={event.winner} key={event.winner._id} />
+                <UserCard user={event.winner as any} key={(event.winner as any)._id?.toString()} />
               ) : (
                 <div className="text-sm text-[#717171]">None yet</div>
               )}

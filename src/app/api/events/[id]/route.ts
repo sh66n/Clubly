@@ -138,23 +138,50 @@ export const PATCH = async (
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const ALLOWED_FIELDS = [
+      "name",
+      "description",
+      "date",
+      "eventTime",
+      "eventType",
+      "teamSize",
+      "teamSizeRange.min",
+      "teamSizeRange.max",
+      "prize",
+      "providesCertificate",
+      "registrationFee",
+      "maxRegistrations",
+      "isRegistrationOpen",
+    ];
+
     //  Convert FormData → plain object
     const body: any = {};
     for (const [key, value] of formData.entries()) {
-      if (value === "") {
+      if (value === "") continue;
+
+      // Convert "teamSizeRange[min]" to "teamSizeRange.min" for mongoose
+      const parsedKey = key.replace(/\[/g, ".").replace(/\]/g, "");
+
+      // Strictly allow-list to prevent mass-assignment vulnerability
+      if (!ALLOWED_FIELDS.includes(parsedKey) && parsedKey !== "image") {
         continue;
       }
 
-      if (key === "providesCertificate") {
-        body[key] = value === "true";
+      if (parsedKey === "providesCertificate" || parsedKey === "isRegistrationOpen") {
+        body[parsedKey] = value === "true";
       } else if (
-        ["teamSize", "prize", "registrationFee", "maxRegistrations"].includes(
-          key,
-        )
+        [
+          "teamSize",
+          "teamSizeRange.min",
+          "teamSizeRange.max",
+          "prize",
+          "registrationFee",
+          "maxRegistrations",
+        ].includes(parsedKey)
       ) {
-        body[key] = Number(value);
+        body[parsedKey] = Number(value);
       } else {
-        body[key] = value;
+        body[parsedKey] = value;
       }
     }
 
