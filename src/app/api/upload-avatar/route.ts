@@ -1,11 +1,23 @@
 import { NextResponse } from "next/server";
 import cloudinary from "@/lib/cloudinary";
+import { auth } from "@/auth";
 
 // Ensure this runs in Node.js runtime, not Edge
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
+    // Auth: allow either a logged-in user or an internal server call
+    const internalSecret = req.headers.get("x-internal-secret");
+    const isInternalCall = internalSecret === process.env.AUTH_SECRET;
+
+    if (!isInternalCall) {
+      const session = await auth();
+      if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    }
+
     const { url, publicId } = await req.json();
 
     if (!url) {
