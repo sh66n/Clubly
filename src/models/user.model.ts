@@ -48,6 +48,10 @@ const userSchema = new Schema<IUser>(
     phoneNumber: {
       type: String,
     },
+    college: {
+      type: String,
+      required: false,
+    },
     department: {
       type: String,
       required: false,
@@ -113,6 +117,9 @@ userSchema.pre("validate", function (next) {
 
     if (department) user.department = department;
     if (year) user.year = year;
+    if (user.email.endsWith("@pvppcoe.ac.in") && !user.college) {
+      user.college = "PVPPCOE";
+    }
   }
 
   next();

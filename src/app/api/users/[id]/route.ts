@@ -70,6 +70,7 @@ export async function PATCH(
     // Extract data
     const name = formData.get("name") as string;
     const phoneNumber = formData.get("phoneNumber") as string;
+    const college = formData.get("college") as string;
     const file = formData.get("avatar") as unknown as File | null; // Key matches frontend input name
 
     const updateData: Record<string, any> = {};
@@ -77,6 +78,7 @@ export async function PATCH(
     // 3. Security: Only allow specific fields to be updated via this route
     if (name) updateData.name = name;
     if (phoneNumber) updateData.phoneNumber = phoneNumber;
+    if (college !== null && college !== undefined) updateData.college = college;
 
     // 4. Cloudinary Image Upload (Same logic as events)
     if (file && file.size > 0) {
