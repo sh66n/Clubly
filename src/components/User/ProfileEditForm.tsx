@@ -12,6 +12,8 @@ interface ProfileEditFormProps {
     year?: string;
     department?: string;
     phoneNumber?: string;
+    college?: string;
+    _id?: string;
   };
 }
 
@@ -181,6 +183,21 @@ export default function ProfileEditForm({ user }: ProfileEditFormProps) {
                   />
                   <Mail className="absolute right-4 top-3.5 w-4 h-4 text-zinc-800" />
                 </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-zinc-400 ml-1">
+                  College
+                </label>
+                <input
+                  name="college"
+                  disabled={user.email?.endsWith("@pvppcoe.ac.in")}
+                  defaultValue={user?.college || ""}
+                  placeholder="e.g. Vasantdada Patil College of Engineering"
+                  className="w-full bg-zinc-900/40 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-200 focus:ring-1 focus:ring-zinc-500 outline-none transition-all placeholder:text-zinc-700 cursor-not-allowed"
+                />
               </div>
             </div>
           </section>

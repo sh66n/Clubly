@@ -46,6 +46,8 @@ export const zUser = z.object({
 
   phoneNumber: z.string().optional(),
 
+  college: z.string().optional(),
+
   department: DepartmentEnum.optional(),
 
   year: YearEnum.optional(),
@@ -69,6 +71,7 @@ export interface IUser {
 
   adminClub?: Types.ObjectId;
   phoneNumber?: string;
+  college?: string;
 
   department?:
     | "Computer Engineering"
