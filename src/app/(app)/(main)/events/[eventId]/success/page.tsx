@@ -41,15 +41,32 @@ export default async function RegistrationSuccess({
   let isRegistered = false;
 
   if (event.eventType === "individual") {
+    // registrations is an array of ObjectIds (not populated), compare as strings
     isRegistered =
       event.registrations?.some(
-        (u: any) => u._id.toString() === session.user.id,
+        (u: any) => u.toString() === session.user.id,
       ) ?? false;
   } else {
-    isRegistered =
-      event.groupRegistrations?.some((g: any) =>
-        g.members?.some((m: any) => m._id.toString() === session.user.id),
-      ) ?? false;
+    // groupRegistrations are also not populated by getEvent(),
+    // so check via the Payment model instead
+    const { Payment } = await import("@/models");
+    const paidPayment = await Payment.findOne({
+      userId: session.user.id,
+      eventId: event._id,
+      status: "paid",
+    });
+    isRegistered = !!paidPayment;
+
+    // Also check if individually registered as a fallback (free team events)
+    if (!isRegistered) {
+      const { Group } = await import("@/models");
+      const userGroup = await Group.findOne({
+        event: event._id,
+        members: session.user.id,
+        _id: { $in: event.groupRegistrations || [] },
+      });
+      isRegistered = !!userGroup;
+    }
   }
 
   if (!isRegistered) {
