@@ -87,14 +87,14 @@ export async function GET(
       return deptMap[prefix] || "External";
     };
 
-    // 3. Define CSV Headers (Added Team Name)
+    // 3. Define CSV Headers (Updated Order)
     const headers = [
       "Team Name",
-      "Phone number",
       "Name",
-      "Email",
       "Year",
       "Department",
+      "Email",
+      "Phone number",
     ];
     let rows: string[] = [];
 
@@ -108,11 +108,11 @@ export async function GET(
           rows.push(
             [
               `"${teamName}"`,
-              `"${member.phoneNumber ? member.phoneNumber : "---"}"`,
               `"${member.name}"`,
-              `"${member.email}"`,
               `"${studentYear}"`,
               `"${department}"`,
+              `"${member.email}"`,
+              `"\t${member.phoneNumber ? member.phoneNumber : "---"}"`,
             ].join(","),
           );
         });
@@ -125,11 +125,11 @@ export async function GET(
         rows.push(
           [
             `"N/A"`,
-            `"${user.phoneNumber ? user.phoneNumber : "---"}"`,
             `"${user.name}"`,
-            `"${user.email}"`,
             `"${studentYear}"`,
             `"${department}"`,
+            `"${user.email}"`,
+            `"\t${user.phoneNumber ? user.phoneNumber : "---"}"`,
           ].join(","),
         );
       });
@@ -140,11 +140,17 @@ export async function GET(
     const encoder = new TextEncoder();
     const csvBytes = encoder.encode(csvContent);
 
+    // Sanitize event name for filename
+    const sanitizedEventName = event.name
+      .replace(/\s+/g, "-") // Replace spaces with dashes
+      .replace(/[\\/:*?"<>|]/g, ""); // Remove strictly illegal filename characters
+    const filename = `${sanitizedEventName}.csv`;
+
     return new Response(csvBytes, {
       status: 200,
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": "attachment; filename=attendance.csv",
+        "Content-Disposition": `attachment; filename="${filename}"`,
       },
     });
   } catch (err: any) {

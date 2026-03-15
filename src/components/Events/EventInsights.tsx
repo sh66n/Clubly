@@ -40,7 +40,10 @@ export default function EventInsights({ event }: EventInsightsProps) {
             Assign Winner
           </Link>
 
-          <DownloadAttendance eventId={event._id.toString()} />
+          <DownloadAttendance
+            eventId={event._id.toString()}
+            eventName={event.name}
+          />
 
           <CloseRegistrationToggle
             eventId={event._id.toString()}
