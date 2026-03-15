@@ -77,7 +77,7 @@ export default function Payment({
         amount: orderData.amount,
         currency: orderData.currency,
         name: "Clubly",
-        description: "Campus Club Management System",
+        description: "",
         order_id: orderData.id,
         handler: async function (response: any) {
           try {
