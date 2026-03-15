@@ -86,7 +86,7 @@ export default function SuperEventDetails({
             </h3>
           </div>
           <div className="">
-            <div className="relative ml-4 border-l-2 border-[#2a2a2a] pl-8 pb-4">
+            <div className="relative ml-4 border-l-2 border-[#2a2a2a] pl-5 pb-4">
               {groupedEvents.map((group, groupIdx) => {
                 const { dateStr, eventDate, events } = group;
                 const nowDateStr = now.toDateString();
@@ -96,7 +96,7 @@ export default function SuperEventDetails({
                   <div key={groupIdx} className="mb-10 relative">
                     {/* Timeline Dot for the Day */}
                     <div
-                      className={`absolute -left-[41px] mt-1.5 w-4 h-4 rounded-full border-4 border-black z-10 
+                      className={`absolute -left-7.5 mt-1.5 w-4 h-4 rounded-full border-4 border-black z-10 
                     ${isLive ? "bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]" : "bg-[#5E77F5]"}`}
                     ></div>
                     
@@ -123,7 +123,7 @@ export default function SuperEventDetails({
                         return (
                           <div key={idx} className="flex flex-row items-center gap-1 sm:gap-4 w-full">
                             {/* Time UI - Outside the link */}
-                            <div className="flex-shrink-0 flex items-center justify-center min-w-[70px] sm:min-w-[84px] md:py-1.5 border border-indigo-500/20 rounded-lg bg-indigo-200/10 backdrop-blur-sm shadow-sm">
+                            <div className="flex-shrink-0 flex items-center justify-center min-w-[70px] sm:min-w-[84px] py-1.5 border border-indigo-500/20 rounded-lg bg-indigo-200/10 backdrop-blur-sm shadow-sm">
                               <span className="text-[13px] sm:text-[14px] font-semibold text-indigo-300 tracking-wider text-center tabular-nums">
                                 {eventDateObj.toLocaleTimeString("en-IN", {
                                   hour: "2-digit",
