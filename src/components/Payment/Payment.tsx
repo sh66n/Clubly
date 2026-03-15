@@ -29,10 +29,9 @@ export default function Payment({
   onSuccess,
 }: PaymentProps) {
   const [paymentLoading, setPaymentLoading] = useState(false);
-  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
   const handlePayment = async () => {
-    if (!razorpayLoaded) {
+    if (typeof window === "undefined" || !window.Razorpay) {
       alert("Payment gateway is still loading. Please try again in a moment.");
       return;
     }
@@ -132,7 +131,6 @@ export default function Payment({
         id="razorpay-checkout-js"
         src="https://checkout.razorpay.com/v1/checkout.js"
         strategy="afterInteractive"
-        onReady={() => setRazorpayLoaded(true)}
       />
       <button
         onClick={handlePayment}
