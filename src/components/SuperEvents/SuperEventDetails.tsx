@@ -117,14 +117,14 @@ export default function SuperEventDetails({
                     </div>
                     
                     {/* Events list within the day */}
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-8">
                       {events.map((event: any, idx: number) => {
                         const eventDateObj = new Date(event.date);
                         return (
-                          <div key={idx} className="flex flex-row items-center gap-1 sm:gap-4 w-full">
+                          <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-4 w-full">
                             {/* Time UI - Outside the link */}
-                            <div className="flex-shrink-0 flex items-center justify-center min-w-[70px] sm:min-w-[84px] px-1 py-1.5 border border-indigo-500/20 rounded-lg bg-indigo-200/10 backdrop-blur-sm shadow-sm">
-                              <span className="text-[13px] sm:text-[14px] font-semibold text-indigo-300 tracking-wider text-center tabular-nums">
+                            <div className="flex-shrink-0 inline-flex items-center justify-center min-w-[70px] sm:min-w-[84px] px-2 py-1 sm:py-1.5 border border-indigo-500/20 rounded-lg bg-indigo-200/10 backdrop-blur-sm shadow-sm">
+                              <span className="text-[12px] sm:text-[14px] font-semibold text-indigo-300 tracking-wider text-center tabular-nums">
                                 {eventDateObj.toLocaleTimeString("en-IN", {
                                   hour: "2-digit",
                                   minute: "2-digit",
@@ -133,7 +133,7 @@ export default function SuperEventDetails({
                               </span>
                             </div>
 
-                            <Link href={`/events/${event._id}`} className="flex-1 md:max-w-[75%]">
+                            <Link href={`/events/${event._id}`} className="flex-1 w-full md:max-w-[75%] mt-1 sm:mt-0">
                               <div className="group p-2 sm:p-3 flex items-center gap-4 sm:gap-6 rounded-xl hover:bg-white/5 bg-white/5 md:bg-transparent border border-transparent transition-all duration-200">
                                 {/* Event Content */}
                                 <div className="flex gap-3 sm:gap-4 items-center flex-1 w-full">
