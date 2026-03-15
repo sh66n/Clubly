@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { format, differenceInCalendarDays } from "date-fns";
 import { IEvent } from "@/models/event.schema";
 import {
+  ArrowRight,
   Award,
   Building,
   Calendar,
@@ -24,6 +25,7 @@ import { toast } from "sonner";
 import Payment from "../Payment/Payment";
 import BackButton from "../BackButton";
 import CopyCodeButton from "../Groups/CopyCodeButton";
+import ContinueWithGroupModal from "../Groups/ContinueWithGroupModal";
 
 interface EventDetailsProps {
   event: IEvent;
@@ -43,6 +45,7 @@ export default function EventDetails({
   const daysLeft = Math.max(differenceInCalendarDays(eventDate, today), 0);
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [registrationStatus, setRegistrationStatus] =
     useState<RegistrationStatus>("idle");
@@ -445,6 +448,23 @@ export default function EventDetails({
                           Join group
                         </BorderedDiv>
                       </Link>
+                      <div className="relative flex items-center py-2">
+                        <div className="flex-grow border-t border-gray-800"></div>
+                        <span className="flex-shrink-0 mx-3 text-[10px] uppercase tracking-widest text-gray-500 font-bold">or</span>
+                        <div className="flex-grow border-t border-gray-800"></div>
+                      </div>
+                      <button 
+                        onClick={() => setIsModalOpen(true)} 
+                        className="w-full py-2 text-sm text-gray-400 hover:text-white transition-colors flex items-center justify-center gap-2 group hover:bg-white/5 rounded-full hover:cursor-pointer"
+                      >
+                        Continue with a past group <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                      </button>
+                      <ContinueWithGroupModal
+                        isOpen={isModalOpen}
+                        onClose={() => setIsModalOpen(false)}
+                        event={event}
+                        user={user}
+                      />
                     </div>
                   )}
                 </>
