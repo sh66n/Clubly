@@ -5,9 +5,10 @@ import React, { useState } from "react";
 
 interface Props {
   eventId: string;
+  eventName: string;
 }
 
-export default function DownloadAttendance({ eventId }: Props) {
+export default function DownloadAttendance({ eventId, eventName }: Props) {
   const [loading, setLoading] = useState(false);
 
   const handleDownload = async () => {
@@ -28,7 +29,12 @@ export default function DownloadAttendance({ eventId }: Props) {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `attendance-${eventId}.csv`; // Fallback filename
+
+      // Sanitize event name for filename
+      const sanitizedEventName = eventName
+        .replace(/\s+/g, "-") // Replace spaces with dashes
+        .replace(/[\\/:*?"<>|]/g, ""); // Remove strictly illegal filename characters
+      a.download = `${sanitizedEventName}.csv`; // Fallback filename
 
       // 3. Trigger the click and cleanup
       document.body.appendChild(a);
