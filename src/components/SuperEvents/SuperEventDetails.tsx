@@ -13,8 +13,27 @@ export default function SuperEventDetails({
 
   // Sort events chronologically
   const sortedEvents = [...eventsInSuperEvent].sort(
-    (a, b) => new Date(a.date) - new Date(b.date),
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
   );
+
+  // Group events by day
+  const groupedEvents: any[] = [];
+  sortedEvents.forEach((event) => {
+    const eventDate = new Date(event.date);
+    const dateStr = eventDate.toDateString();
+    
+    let group = groupedEvents.find((g) => g.dateStr === dateStr);
+    if (!group) {
+      group = {
+        dateStr,
+        eventDate,
+        events: [],
+      };
+      groupedEvents.push(group);
+    }
+    group.events.push(event);
+  });
+
   return (
     <div className="">
       {/* Hero */}
@@ -53,7 +72,7 @@ export default function SuperEventDetails({
       </div>
 
       {/* Timeline */}
-      {sortedEvents.length > 0 && (
+      {groupedEvents.length > 0 && (
         <div className="mb-12 ">
           <div className="flex items-center gap-3 mb-6">
             {/* Minimalist Icon Container */}
@@ -68,84 +87,83 @@ export default function SuperEventDetails({
           </div>
           <div className="">
             <div className="relative ml-4 border-l-2 border-[#2a2a2a] pl-8 pb-4">
-              {sortedEvents.map((event, idx) => {
-                const eventDate = new Date(event.date);
-
-                // Create "Date Only" strings to compare (YYYY-MM-DD)
-                const eventDateStr = eventDate.toDateString(); // e.g., "Tue Jan 20 2026"
+              {groupedEvents.map((group, groupIdx) => {
+                const { dateStr, eventDate, events } = group;
                 const nowDateStr = now.toDateString();
-
-                // Logic: Is it happening today?
-                const isLive = eventDateStr === nowDateStr;
-
-                // Logic: Has the day already passed?
-                // We compare the start of the days in milliseconds
-                const eventStartOfDay = new Date(
-                  new Date(eventDate).setHours(0, 0, 0, 0),
-                ).getTime();
-                const nowStartOfDay = new Date(
-                  new Date(now).setHours(0, 0, 0, 0),
-                ).getTime();
+                const isLive = dateStr === nowDateStr;
 
                 return (
-                  <div key={idx} className="mb-4 relative">
-                    {/* Timeline Dot */}
+                  <div key={groupIdx} className="mb-10 relative">
+                    {/* Timeline Dot for the Day */}
                     <div
                       className={`absolute -left-[41px] mt-1.5 w-4 h-4 rounded-full border-4 border-black z-10 
                     ${isLive ? "bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]" : "bg-[#5E77F5]"}`}
                     ></div>
-                    {/* Date/Time Label */}
-                    <div className="flex flex-col md:flex-row md:items-center gap-2 mb-1">
-                      <span className="text-sm font-bold text-white uppercase tracking-wider">
+                    
+                    {/* Date Label */}
+                    <div className="flex flex-col md:flex-row md:items-center gap-3 mb-5">
+                      <span className="text-base font-bold text-white uppercase tracking-wider">
                         {eventDate.toLocaleDateString(undefined, {
                           weekday: "short",
                           month: "short",
                           day: "numeric",
                         })}
                       </span>
-                      <span className="text-sm text-gray-400 flex items-center gap-1">
-                        <Clock size={14} />
-                        {eventDate.toLocaleTimeString("en-IN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          timeZone: "Asia/Kolkata",
-                        })}{" "}
-                        onwards
-                      </span>
                       {isLive && (
-                        <span className="bg-green-500/10 text-green-500 text-[10px] font-bold px-2 py-0.5 rounded border border-green-500/20 w-fit ml-2 uppercase">
-                          Live Now
+                        <span className="bg-green-500/10 text-green-500 text-[10px] font-bold px-2 py-0.5 rounded border border-green-500/20 w-fit uppercase tracking-wide">
+                          Today
                         </span>
                       )}
                     </div>
-                    {/* Event Content */}
-                    <Link href={`/events/${event._id}`}>
-                      <div className="px-3 py-3 flex gap-4 items-start rounded-lg hover:bg-white/5 transition-all duration-200 mt-2">
-                        {/* Image Preview */}
-                        <div className="w-16 h-16 flex-shrink-0 relative rounded-md overflow-hidden">
-                          <Image
-                            src={event.image || "/placeholder.png"}
-                            alt={event.name}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        {/* Event Text */}
-                        <div className="">
-                          <h4 className="text-lg font-medium text-white">
-                            <span className="hover:underline hover:cursor-pointer">
-                              {event.name}
-                            </span>
-                          </h4>
+                    
+                    {/* Events list within the day */}
+                    <div className="flex flex-col gap-4">
+                      {events.map((event: any, idx: number) => {
+                        const eventDateObj = new Date(event.date);
+                        return (
+                          <div key={idx} className="flex flex-row items-center gap-1 sm:gap-4 w-full">
+                            {/* Time UI - Outside the link */}
+                            <div className="flex-shrink-0 flex items-center justify-center min-w-[70px] sm:min-w-[84px] md:py-1.5 border border-indigo-500/20 rounded-lg bg-indigo-200/10 backdrop-blur-sm shadow-sm">
+                              <span className="text-[13px] sm:text-[14px] font-semibold text-indigo-300 tracking-wider text-center tabular-nums">
+                                {eventDateObj.toLocaleTimeString("en-IN", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  timeZone: "Asia/Kolkata",
+                                })}
+                              </span>
+                            </div>
 
-                          {event.description && (
-                            <p className="hidden md:line-clamp-1 text-sm text-gray-500 mt-1 break-words">
-                              {event.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
+                            <Link href={`/events/${event._id}`} className="flex-1 min-w-0">
+                              <div className="group p-2 sm:p-3 flex items-center gap-4 sm:gap-6 rounded-xl hover:bg-white/5 bg-white/5 md:bg-transparent border border-transparent transition-all duration-200">
+                                {/* Event Content */}
+                                <div className="flex gap-3 sm:gap-4 items-center flex-1 w-full">
+                                  {/* Image Preview */}
+                                  <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 flex-shrink-0 relative rounded-lg overflow-hidden border border-white/5">
+                                    <Image
+                                      src={event.image || "/placeholder.png"}
+                                      alt={event.name}
+                                      fill
+                                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                  </div>
+                                  {/* Event Text */}
+                                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                    <h4 className="text-base sm:text-lg font-medium text-white group-hover:underline transition-colors line-clamp-1">
+                                      {event.name}
+                                    </h4>
+                                    {event.description && (
+                                      <p className="hidden md:line-clamp-2 text-xs sm:text-sm text-gray-400 leading-relaxed mt-0.5 sm:mt-1">
+                                        {event.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </Link>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })}
