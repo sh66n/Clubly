@@ -148,7 +148,7 @@ export default function SuperEventDetails({
                                   </div>
                                   {/* Event Text */}
                                   <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                    <h4 className="text-base sm:text-lg font-medium text-white group-hover:underline transition-colors line-clamp-1">
+                                    <h4 className="text-base sm:text-lg font-medium text-white  transition-colors line-clamp-1">
                                       {event.name}
                                     </h4>
                                     {event.description && (
