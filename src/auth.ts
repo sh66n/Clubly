@@ -30,7 +30,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           `${process.env.NEXT_PUBLIC_BASE_URL}/api/upload-avatar`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "x-internal-secret": process.env.AUTH_SECRET || "",
+            },
             body: JSON.stringify({
               url: user.image,
               publicId: user.email?.split("@")[0],
