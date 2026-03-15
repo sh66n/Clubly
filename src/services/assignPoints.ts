@@ -31,48 +31,43 @@ export async function assignPointsForEvent(
     }
   }
 
-  // ✅ Handle present
+  const presentIds = present.map(p => new mongoose.Types.ObjectId(p._id));
+  const absentIds = absent.map(p => p._id);
+
+  // 1. Process points for present users
   for (const item of present) {
-    if (event.eventType === "team" && item.members) {
-      // Add group to participantGroups if not already
-      if (!event.participantGroups.includes(item._id as any)) {
-        event.participantGroups.push(new mongoose.Types.ObjectId(item._id));
-      }
-      // Award points to each member
-      await processUsers(
-        item.members.map((m) => m._id),
-        10
-      );
-    } else {
-      // Individual
-      if (!event.participants.includes(item._id as any)) {
-        event.participants.push(new mongoose.Types.ObjectId(item._id));
-      }
-      await processUsers([item._id], 10);
-    }
+    const userIds = event.eventType === "team" && item.members 
+      ? item.members.map(m => m._id) 
+      : [item._id];
+    await processUsers(userIds, 10);
   }
 
-  // ✅ Handle absent
+  // 2. Process points for absent users
   for (const item of absent) {
-    if (event.eventType === "team" && item.members) {
-      // Remove group from participantGroups
-      event.participantGroups = event.participantGroups.filter(
-        (g) => g.toString() !== item._id
-      );
-      // Deduct points from each member
-      await processUsers(
-        item.members.map((m) => m._id),
-        -10
-      );
-    } else {
-      // Individual
-      event.participants = event.participants.filter(
-        (p) => p.toString() !== item._id
-      );
-      await processUsers([item._id], -10);
-    }
+    const userIds = event.eventType === "team" && item.members 
+      ? item.members.map(m => m._id) 
+      : [item._id];
+    await processUsers(userIds, -10);
   }
 
-  await event.save();
-  return event;
+  // 3. Atomically update the Event document
+  if (event.eventType === "team") {
+    return await Event.findByIdAndUpdate(
+      eventId,
+      {
+        $addToSet: { participantGroups: { $each: presentIds } },
+        $pullAll: { participantGroups: absentIds }
+      },
+      { new: true }
+    );
+  } else {
+    return await Event.findByIdAndUpdate(
+      eventId,
+      {
+        $addToSet: { participants: { $each: presentIds } },
+        $pullAll: { participants: absentIds }
+      },
+      { new: true }
+    );
+  }
 }

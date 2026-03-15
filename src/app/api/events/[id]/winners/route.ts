@@ -50,9 +50,9 @@ export const PUT = async (
       }
 
       // Assign new winner
-      event.winner = winnerId;
-      event.winnerGroup = null;
-      await event.save();
+      await Event.findByIdAndUpdate(id, {
+        $set: { winner: winnerId, winnerGroup: null },
+      });
 
       // Award points
       await awardPointsToUser(winnerId, clubId, winnerPoints);
@@ -78,9 +78,9 @@ export const PUT = async (
       }
 
       // Assign new winner group
-      event.winnerGroup = group._id;
-      event.winner = null;
-      await event.save();
+      await Event.findByIdAndUpdate(id, {
+        $set: { winnerGroup: group._id, winner: null },
+      });
 
       // Award points to new winner group
       for (const member of group.members) {
@@ -110,7 +110,7 @@ async function awardPointsToUser(userId: string, clubId: any, points: number) {
   if (!user) return;
 
   const existing = user.points.find(
-    (p) => p.clubId.toString() === clubId.toString(),
+    (p: any) => p.clubId.toString() === clubId.toString(),
   );
   if (existing) {
     await User.updateOne(
