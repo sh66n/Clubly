@@ -123,7 +123,7 @@ export default function SuperEventDetails({
                         return (
                           <div key={idx} className="flex flex-row items-center gap-1 sm:gap-4 w-full">
                             {/* Time UI - Outside the link */}
-                            <div className="flex-shrink-0 flex items-center justify-center min-w-[70px] sm:min-w-[84px] py-1.5 border border-indigo-500/20 rounded-lg bg-indigo-200/10 backdrop-blur-sm shadow-sm">
+                            <div className="flex-shrink-0 flex items-center justify-center min-w-[70px] sm:min-w-[84px] px-1 py-1.5 border border-indigo-500/20 rounded-lg bg-indigo-200/10 backdrop-blur-sm shadow-sm">
                               <span className="text-[13px] sm:text-[14px] font-semibold text-indigo-300 tracking-wider text-center tabular-nums">
                                 {eventDateObj.toLocaleTimeString("en-IN", {
                                   hour: "2-digit",
@@ -133,7 +133,7 @@ export default function SuperEventDetails({
                               </span>
                             </div>
 
-                            <Link href={`/events/${event._id}`} className="flex-1 min-w-0">
+                            <Link href={`/events/${event._id}`} className="flex-1 md:max-w-[75%]">
                               <div className="group p-2 sm:p-3 flex items-center gap-4 sm:gap-6 rounded-xl hover:bg-white/5 bg-white/5 md:bg-transparent border border-transparent transition-all duration-200">
                                 {/* Event Content */}
                                 <div className="flex gap-3 sm:gap-4 items-center flex-1 w-full">
@@ -148,11 +148,11 @@ export default function SuperEventDetails({
                                   </div>
                                   {/* Event Text */}
                                   <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                    <h4 className="text-base sm:text-lg font-medium text-white  transition-colors line-clamp-1">
+                                    <h4 className="text-base sm:text-lg font-medium text-white  transition-colors line-clamp-1 font-bold">
                                       {event.name}
                                     </h4>
                                     {event.description && (
-                                      <p className="hidden md:line-clamp-2 text-xs sm:text-sm text-gray-400 leading-relaxed mt-0.5 sm:mt-1">
+                                      <p className="hidden md:line-clamp-1 text-xs sm:text-sm text-gray-400 leading-relaxed mt-0.5 sm:mt-1 text-gray-500">
                                         {event.description}
                                       </p>
                                     )}
