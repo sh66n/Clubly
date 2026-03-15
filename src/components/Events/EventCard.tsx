@@ -1,6 +1,5 @@
 "use client";
 
-import { getColorFromString } from "@/lib/utils";
 import { IEvent } from "@/models/event.schema";
 import { Users, MapPin, Calendar, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
@@ -12,10 +11,12 @@ interface EventCardProps {
 export default function EventCard({ event }: EventCardProps) {
   const eventDate = new Date(event.date);
 
-  // Clean logic for the club tag color
-  const clubId =
-    event.organizingClub._id?.toString() || event.organizingClub.toString();
-  const colorClass = getColorFromString(clubId);
+  const currentRegs =
+    event.eventType === "team"
+      ? event.groupRegistrations?.length || 0
+      : event.registrations?.length || 0;
+  const isFull =
+    event.maxRegistrations > 0 && currentRegs >= event.maxRegistrations;
 
   return (
     <Link
@@ -38,6 +39,15 @@ export default function EventCard({ event }: EventCardProps) {
               className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-white/10 backdrop-blur-md bg-black/40 text-white`}
             >
               {event.organizingClub.name}
+            </span>
+          </div>
+        )}
+
+        {/* Full Tag */}
+        {isFull && (
+          <div className="absolute top-3 right-3 z-10 transition-opacity duration-300 group-hover:opacity-0">
+            <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-red-500/30 backdrop-blur-lg bg-red-500/20 text-red-500 shadow-sm">
+              Full
             </span>
           </div>
         )}
