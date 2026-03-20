@@ -25,7 +25,7 @@ export default function ClubHeader({ club }: ClubHeaderProps) {
 
       <div className="flex justify-between w-1/4 text-[#6D6D6D]">
         <span>{club.events.length} Events</span>
-        <span>{club.coreMembers.length + club.volunteers.length} Members</span>
+        <span>{(club as any).totalMembers ?? 0} Members</span>
         <span></span>
       </div>
     </div>

@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import { authConfig } from "./auth.config";
 import { connectToDb } from "./lib/connectToDb";
 import { User } from "./models/user.model";
+import { UserPoints } from "./models/userpoints.model";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
@@ -71,12 +72,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             token.name = dbUser.name.toString();
             token.role = dbUser.role;
             token.adminClub = dbUser.adminClub?.toString();
-            token.points =
-              dbUser.points?.reduce(
-                (sum: number, e: any) => sum + (e.points || 0),
-                0,
-              ) || 0;
             token.image = dbUser.image;
+
+            // Fetch total points from UserPoints collection
+            const userPoints = await UserPoints.find({ userId: dbUser._id });
+            token.points = userPoints.reduce(
+              (sum: number, up: any) => sum + (up.points || 0),
+              0,
+            );
           }
         } catch (error) {
           console.error("JWT Callback DB Error:", error);
@@ -93,7 +96,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.points = token.points as number;
         session.user.image = token.image as string;
 
-        // ✅ Expose adminClub in session
+        // Expose adminClub in session
 
         if (token.adminClub) {
           session.user.adminClub = token.adminClub as string;

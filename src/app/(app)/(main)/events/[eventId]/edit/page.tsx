@@ -20,8 +20,8 @@ const getEventDetails = async (eventId) => {
   );
   if (!res.ok) return null;
 
-  const { event, myGroup, alreadyRegistered } = await res.json();
-  return { event, myGroup, alreadyRegistered };
+  const { event } = await res.json();
+  return { event };
 };
 
 export default async function EditEvent({

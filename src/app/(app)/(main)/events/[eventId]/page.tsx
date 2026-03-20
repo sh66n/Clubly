@@ -27,7 +27,7 @@ const getEventDetails = async (eventId) => {
   if (!res.ok) return null;
 
   const { event, myGroup, alreadyRegistered } = await res.json();
-  return { event, myGroup, alreadyRegistered };
+  return { event: { ...event, alreadyRegistered }, myGroup };
 };
 
 export default async function EventDetailsPage({
@@ -42,7 +42,7 @@ export default async function EventDetailsPage({
     notFound();
   }
 
-  const { event, myGroup, alreadyRegistered } = data;
+  const { event, myGroup } = data;
 
   return (
     <>

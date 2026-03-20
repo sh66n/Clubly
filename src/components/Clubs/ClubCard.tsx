@@ -31,8 +31,8 @@ export default function ClubCard({ club }: ClubCardProps) {
       {/* Stats */}
       <div className="grow flex justify-center items-end gap-4 mt-4 text-xs text-gray-600">
         <span>{club.events?.length || 0} Events</span>
-        <span>{club.coreMembers?.length || 0} Core</span>
-        <span>{club.volunteers?.length || 0} Vols</span>
+        <span>{(club as any).coreTeamCount ?? 0} Core</span>
+        <span>{(club as any).volunteerCount ?? 0} Vols</span>
       </div>
     </Link>
   );

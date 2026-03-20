@@ -1,73 +1,125 @@
-import { Event, User, Group } from "@/models";
+import { Event, Registration, UserPoints } from "@/models";
 import mongoose from "mongoose";
 
 export async function assignPointsForEvent(
   eventId: string,
   present: { _id: string; members?: { _id: string }[] }[],
-  absent: { _id: string; members?: { _id: string }[] }[]
+  absent: { _id: string; members?: { _id: string }[] }[],
 ) {
   const event = await Event.findById(eventId);
   if (!event) throw new Error("Event not found");
 
   const clubId = event.organizingClub;
+  const participationPoints = event.points?.participation ?? 10;
 
-  // Helper to ensure user has a points record for this club
-  async function ensureClubPoints(userId: string) {
-    await User.updateOne(
-      { _id: userId, "points.clubId": { $ne: clubId } },
-      { $push: { points: { clubId, points: 0 } } }
-    );
-  }
+  // Collect all user IDs
+  const presentUserIds: string[] = [];
+  const absentUserIds: string[] = [];
 
-  // Helper to process a list of user IDs
-  async function processUsers(users: string[], addPoints: number) {
-    for (const userId of users) {
-      await ensureClubPoints(userId);
-      await User.findByIdAndUpdate(
-        userId,
-        { $inc: { "points.$[elem].points": addPoints } },
-        { arrayFilters: [{ "elem.clubId": clubId }] }
-      );
+  for (const item of present) {
+    if (event.eventType === "team" && item.members) {
+      presentUserIds.push(...item.members.map((m) => m._id));
+    } else {
+      presentUserIds.push(item._id);
     }
   }
 
-  const presentIds = present.map(p => new mongoose.Types.ObjectId(p._id));
-  const absentIds = absent.map(p => p._id);
-
-  // 1. Process points for present users
-  for (const item of present) {
-    const userIds = event.eventType === "team" && item.members 
-      ? item.members.map(m => m._id) 
-      : [item._id];
-    await processUsers(userIds, 10);
-  }
-
-  // 2. Process points for absent users
   for (const item of absent) {
-    const userIds = event.eventType === "team" && item.members 
-      ? item.members.map(m => m._id) 
-      : [item._id];
-    await processUsers(userIds, -10);
+    if (event.eventType === "team" && item.members) {
+      absentUserIds.push(...item.members.map((m) => m._id));
+    } else {
+      absentUserIds.push(item._id);
+    }
   }
 
-  // 3. Atomically update the Event document
-  if (event.eventType === "team") {
-    return await Event.findByIdAndUpdate(
-      eventId,
-      {
-        $addToSet: { participantGroups: { $each: presentIds } },
-        $pullAll: { participantGroups: absentIds }
+  // Build bulk operations for UserPoints
+  const pointsOps: mongoose.AnyBulkWriteOperation<any>[] = [];
+
+  // Add points for present users
+  for (const userId of presentUserIds) {
+    pointsOps.push({
+      updateOne: {
+        filter: { userId: new mongoose.Types.ObjectId(userId), clubId },
+        update: { $inc: { points: participationPoints } },
+        upsert: true,
       },
-      { new: true }
-    );
-  } else {
-    return await Event.findByIdAndUpdate(
-      eventId,
-      {
-        $addToSet: { participants: { $each: presentIds } },
-        $pullAll: { participants: absentIds }
-      },
-      { new: true }
-    );
+    });
   }
+
+  // Subtract points for absent users
+  for (const userId of absentUserIds) {
+    pointsOps.push({
+      updateOne: {
+        filter: { userId: new mongoose.Types.ObjectId(userId), clubId },
+        update: { $inc: { points: -participationPoints } },
+        upsert: true,
+      },
+    });
+  }
+
+  // Execute bulk points update
+  if (pointsOps.length) {
+    await UserPoints.bulkWrite(pointsOps);
+  }
+
+  // Build registration status updates
+  const registrationOps: mongoose.AnyBulkWriteOperation<any>[] = [];
+  const eventObjectId = new mongoose.Types.ObjectId(eventId);
+
+  if (event.eventType === "team") {
+    // Update group registration status
+    for (const item of present) {
+      registrationOps.push({
+        updateOne: {
+          filter: {
+            eventId: eventObjectId,
+            groupId: new mongoose.Types.ObjectId(item._id),
+          },
+          update: { $set: { status: "attended", attendedAt: new Date() } },
+        },
+      });
+    }
+    for (const item of absent) {
+      registrationOps.push({
+        updateOne: {
+          filter: {
+            eventId: eventObjectId,
+            groupId: new mongoose.Types.ObjectId(item._id),
+          },
+          update: { $set: { status: "absent" } },
+        },
+      });
+    }
+  } else {
+    // Update individual registration status
+    for (const item of present) {
+      registrationOps.push({
+        updateOne: {
+          filter: {
+            eventId: eventObjectId,
+            userId: new mongoose.Types.ObjectId(item._id),
+          },
+          update: { $set: { status: "attended", attendedAt: new Date() } },
+        },
+      });
+    }
+    for (const item of absent) {
+      registrationOps.push({
+        updateOne: {
+          filter: {
+            eventId: eventObjectId,
+            userId: new mongoose.Types.ObjectId(item._id),
+          },
+          update: { $set: { status: "absent" } },
+        },
+      });
+    }
+  }
+
+  // Execute bulk registration update
+  if (registrationOps.length) {
+    await Registration.bulkWrite(registrationOps);
+  }
+
+  return event;
 }

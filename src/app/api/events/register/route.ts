@@ -5,7 +5,125 @@ import { User } from "@/models/user.model";
 import { Event } from "@/models/event.model";
 import { Group } from "@/models/group.model";
 import { Payment } from "@/models/payment.model";
+import { Registration } from "@/models/registration.model";
 import { auth } from "@/auth";
+
+type CustomQuestionAnswerInput = {
+  questionId: string;
+  answer: string | string[];
+};
+
+const validateAndNormalizeAnswers = (
+  event: any,
+  answers: CustomQuestionAnswerInput[],
+):
+  | { valid: true; answers: CustomQuestionAnswerInput[] }
+  | { valid: false; error: string } => {
+  const questions = event.customQuestions ?? [];
+  if (questions.length === 0) {
+    return { valid: true, answers: [] };
+  }
+
+  const answerMap = new Map(
+    answers.map((item) => [item.questionId, item.answer]),
+  );
+
+  for (const question of questions) {
+    const rawAnswer = answerMap.get(question.id);
+    const isMissing =
+      rawAnswer === undefined ||
+      rawAnswer === null ||
+      (typeof rawAnswer === "string" && rawAnswer.trim() === "") ||
+      (Array.isArray(rawAnswer) && rawAnswer.length === 0);
+
+    if (question.required && isMissing) {
+      return {
+        valid: false,
+        error: `Answer required for: ${question.question}`,
+      };
+    }
+
+    if (isMissing) {
+      continue;
+    }
+
+    if (question.type === "text") {
+      if (typeof rawAnswer !== "string") {
+        return {
+          valid: false,
+          error: `Invalid answer type for: ${question.question}`,
+        };
+      }
+      continue;
+    }
+
+    const selectedValues = Array.isArray(rawAnswer) ? rawAnswer : [rawAnswer];
+    const normalizedSelectedValues = selectedValues
+      .map((value) => String(value).trim())
+      .filter(Boolean);
+
+    if (
+      normalizedSelectedValues.some(
+        (value) => !(question.options ?? []).includes(value),
+      )
+    ) {
+      return {
+        valid: false,
+        error: `Invalid option selected for: ${question.question}`,
+      };
+    }
+
+    if (question.type === "select" && normalizedSelectedValues.length > 1) {
+      return {
+        valid: false,
+        error: `Only one option allowed for: ${question.question}`,
+      };
+    }
+  }
+
+  const normalizedAnswers: CustomQuestionAnswerInput[] = questions
+    .map((question) => {
+      const rawAnswer = answerMap.get(question.id);
+      if (
+        rawAnswer === undefined ||
+        rawAnswer === null ||
+        (typeof rawAnswer === "string" && rawAnswer.trim() === "") ||
+        (Array.isArray(rawAnswer) && rawAnswer.length === 0)
+      ) {
+        return null;
+      }
+
+      if (question.type === "multiselect") {
+        const selectedValues = Array.isArray(rawAnswer)
+          ? rawAnswer
+          : [rawAnswer];
+        return {
+          questionId: question.id,
+          answer: selectedValues
+            .map((value) => String(value).trim())
+            .filter(Boolean),
+        };
+      }
+
+      if (question.type === "select") {
+        const selectedValues = Array.isArray(rawAnswer)
+          ? rawAnswer
+          : [rawAnswer];
+        return {
+          questionId: question.id,
+          answer: String(selectedValues[0]).trim(),
+        };
+      }
+
+      return {
+        questionId: question.id,
+        answer: String(rawAnswer).trim(),
+      };
+    })
+    .filter((item): item is CustomQuestionAnswerInput => Boolean(item));
+
+  return { valid: true, answers: normalizedAnswers };
+};
 
 export async function POST(req: Request) {
   try {
@@ -17,7 +135,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { eventId, groupId } = await req.json();
+    const { eventId, groupId, customQuestionAnswers = [] } = await req.json();
+
+    if (!Array.isArray(customQuestionAnswers)) {
+      return NextResponse.json(
+        { error: "customQuestionAnswers must be an array" },
+        { status: 400 },
+      );
+    }
 
     if (!eventId) {
       return NextResponse.json({ error: "Missing eventId" }, { status: 400 });
@@ -28,6 +153,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
+    if (
+      (event.customQuestions?.length ?? 0) > 0 &&
+      customQuestionAnswers.length === 0
+    ) {
+      return NextResponse.json(
+        { error: "Please answer the registration questions" },
+        { status: 400 },
+      );
+    }
+
     if (event.isRegistrationOpen === false) {
       return NextResponse.json(
         { error: "Registrations are currently closed for this event" },
@@ -35,8 +170,27 @@ export async function POST(req: Request) {
       );
     }
 
+    const answersValidation = validateAndNormalizeAnswers(
+      event,
+      customQuestionAnswers,
+    );
+    if (!answersValidation.valid) {
+      return NextResponse.json(
+        { error: answersValidation.error },
+        { status: 400 },
+      );
+    }
+
     // Payment guard: paid events require a verified payment
-    if (event.registrationFee && event.registrationFee > 0) {
+
+    const isPvppcoeUser = session.user.email?.endsWith("@pvppcoe.ac.in");
+    const isSpecialEvent = event._id.toString() === "69a7fa06cd938ddb63b0f06f";
+
+    if (
+      event.registrationFee &&
+      event.registrationFee > 0 &&
+      !(isPvppcoeUser && isSpecialEvent)
+    ) {
       const paidPayment = await Payment.findOne({
         userId: session.user.id,
         eventId,
@@ -52,26 +206,15 @@ export async function POST(req: Request) {
     }
 
     /* ---------------- Registration Limit ---------------- */
-    if (event.eventType === "individual") {
-      if (
-        event.maxRegistrations &&
-        event.registrations.length >= event.maxRegistrations
-      ) {
-        return NextResponse.json(
-          { error: "Registration limit exceeded!" },
-          { status: 400 },
-        );
-      }
-    } else {
-      if (
-        event.maxRegistrations &&
-        event.groupRegistrations.length >= event.maxRegistrations
-      ) {
-        return NextResponse.json(
-          { error: "Registration limit exceeded!" },
-          { status: 400 },
-        );
-      }
+    const currentRegistrations = await Registration.countDocuments({ eventId });
+    if (
+      event.maxRegistrations &&
+      currentRegistrations >= event.maxRegistrations
+    ) {
+      return NextResponse.json(
+        { error: "Registration limit exceeded!" },
+        { status: 400 },
+      );
     }
 
     /* ================= INDIVIDUAL ================= */
@@ -84,20 +227,37 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
 
-      if (event.registrations.includes(userId)) {
+      // Check if already registered
+      const existingRegistration = await Registration.exists({
+        eventId,
+        userId,
+      });
+      if (existingRegistration) {
         return NextResponse.json(
           { error: "Already registered for this event" },
           { status: 400 },
         );
       }
 
-      const updatedEvent = await Event.findByIdAndUpdate(
+      // Create registration
+      await Registration.create({
         eventId,
-        { $addToSet: { registrations: userId } },
-        { new: true },
-      ).populate("registrations", "name email");
+        userId,
+        status: "registered",
+        registeredAt: new Date(),
+        customQuestionAnswers: answersValidation.answers,
+      });
 
-      return NextResponse.json(updatedEvent, { status: 200 });
+      // Return updated registrations
+      const registrations = await Registration.find({ eventId }).populate(
+        "userId",
+        "name email",
+      );
+
+      return NextResponse.json(
+        { event, registeredUsers: registrations.map((r) => r.userId) },
+        { status: 200 },
+      );
     }
 
     /* ================= TEAM ================= */
@@ -123,7 +283,11 @@ export async function POST(req: Request) {
       }
 
       // Duplicate registration check
-      if (event.groupRegistrations.includes(groupId)) {
+      const existingRegistration = await Registration.exists({
+        eventId,
+        groupId,
+      });
+      if (existingRegistration) {
         return NextResponse.json(
           { error: "Already registered for this event" },
           { status: 400 },
@@ -157,16 +321,27 @@ export async function POST(req: Request) {
       }
 
       /* -------- Register Group -------- */
-      const updatedEvent = await Event.findByIdAndUpdate(
+      await Registration.create({
         eventId,
-        { $addToSet: { groupRegistrations: groupId } },
-        { new: true },
-      ).populate({
-        path: "groupRegistrations",
+        groupId,
+        status: "registered",
+        registeredAt: new Date(),
+        customQuestionAnswers: answersValidation.answers,
+      });
+
+      // Return updated group registrations
+      const registrations = await Registration.find({
+        eventId,
+        groupId: { $exists: true },
+      }).populate({
+        path: "groupId",
         populate: { path: "members", select: "name email" },
       });
 
-      return NextResponse.json(updatedEvent, { status: 200 });
+      return NextResponse.json(
+        { event, registeredGroups: registrations.map((r) => r.groupId) },
+        { status: 200 },
+      );
     }
 
     return NextResponse.json({ error: "Unknown event type" }, { status: 400 });

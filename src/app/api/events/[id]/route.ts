@@ -1,8 +1,71 @@
 import { auth } from "@/auth";
 import cloudinary from "@/lib/cloudinary";
 import { connectToDb } from "@/lib/connectToDb";
-import { Event, Group } from "@/models";
+import { Event, Group, Registration } from "@/models";
 import { NextRequest, NextResponse } from "next/server";
+
+type CustomQuestionInput = {
+  id: string;
+  question: string;
+  type: "text" | "select" | "multiselect";
+  required: boolean;
+  options?: string[];
+};
+
+const validateCustomQuestions = (
+  customQuestions: CustomQuestionInput[],
+): { valid: true } | { valid: false; error: string } => {
+  const ids = new Set<string>();
+
+  for (const question of customQuestions) {
+    if (!question.id || !question.question?.trim()) {
+      return { valid: false, error: "Each custom question needs id and text" };
+    }
+
+    if (ids.has(question.id)) {
+      return { valid: false, error: "Custom question ids must be unique" };
+    }
+    ids.add(question.id);
+
+    if (!["text", "select", "multiselect"].includes(question.type)) {
+      return { valid: false, error: "Invalid custom question type" };
+    }
+
+    if (question.type === "text") {
+      continue;
+    }
+
+    const options = (question.options ?? [])
+      .map((opt) => opt.trim())
+      .filter(Boolean);
+    if (options.length === 0) {
+      return {
+        valid: false,
+        error: "Select and multiselect questions require options",
+      };
+    }
+  }
+
+  return { valid: true };
+};
+
+const sanitizeCustomQuestions = (
+  customQuestions: CustomQuestionInput[],
+): CustomQuestionInput[] =>
+  customQuestions
+    .map((question) => ({
+      id: String(question.id ?? "").trim(),
+      question: String(question.question ?? "").trim(),
+      type: question.type,
+      required: Boolean(question.required),
+      options:
+        question.type === "text"
+          ? []
+          : (question.options ?? [])
+              .map((option) => String(option).trim())
+              .filter((option) => option.length > 0),
+    }))
+    .filter((question) => question.id.length > 0 && question.question.length > 0);
 
 export const GET = async (
   req: Request,
@@ -17,26 +80,12 @@ export const GET = async (
 
     await connectToDb();
     const { id } = await params;
+
+    // Fetch event with basic populates
     const event = await Event.findById(id)
-      .populate("registrations")
-      .populate("participants")
       .populate("contact")
       .populate("organizingClub")
       .populate("winner")
-      .populate({
-        path: "groupRegistrations",
-        populate: [
-          { path: "members", select: "name email image" },
-          { path: "leader", select: "name email image" },
-        ],
-      })
-      .populate({
-        path: "participantGroups",
-        populate: [
-          { path: "members", select: "name email image" },
-          { path: "leader", select: "name email image" },
-        ],
-      })
       .populate({
         path: "winnerGroup",
         populate: [
@@ -45,10 +94,51 @@ export const GET = async (
         ],
       });
 
+    if (!event) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    // Fetch registrations/participants from Registration collection
+    let registeredUsers: any[] = [];
+    let attendedUsers: any[] = [];
+    let registeredGroups: any[] = [];
+    let attendedGroups: any[] = [];
+
+    if (event.eventType === "team") {
+      // Team event: fetch group registrations
+      const regs = await Registration.find({
+        eventId: id,
+        groupId: { $exists: true },
+      }).populate({
+        path: "groupId",
+        populate: [
+          { path: "members", select: "name email image" },
+          { path: "leader", select: "name email image" },
+        ],
+      });
+
+      registeredGroups = regs.filter((r) => r.groupId).map((r) => r.groupId);
+
+      attendedGroups = regs
+        .filter((r) => r.status === "attended" && r.groupId)
+        .map((r) => r.groupId);
+    } else {
+      // Individual event: fetch user registrations
+      const regs = await Registration.find({
+        eventId: id,
+        userId: { $exists: true },
+      }).populate("userId", "name email image");
+
+      registeredUsers = regs.filter((r) => r.userId).map((r) => r.userId);
+
+      attendedUsers = regs
+        .filter((r) => r.status === "attended" && r.userId)
+        .map((r) => r.userId);
+    }
+
     // Check if user has a group for this event
     let myGroup = null;
     if (event.eventType === "team" && session?.user.id) {
-      // Only check groups if it's a team event
       myGroup = await Group.findOne({
         event: event._id,
         members: session.user.id,
@@ -57,19 +147,25 @@ export const GET = async (
         .populate("leader", "name email image");
     }
 
-    // Check if user is already individually registered
-    const isIndividuallyRegistered = event.participants?.some(
-      (p: any) => p.toString?.() === session?.user.id,
-    );
-
-    // Check if user is in any registered group
-    const isGroupRegistered = await Group.exists({
-      event: event._id,
-      members: session?.user.id,
-      _id: { $in: event.participantGroups }, // only if you store registered groups here
-    });
-
-    const alreadyRegistered = isIndividuallyRegistered || isGroupRegistered;
+    // Check if user is already registered
+    let alreadyRegistered = false;
+    if (event.eventType === "team") {
+      // Check if user's group is registered
+      if (myGroup) {
+        const groupReg = await Registration.exists({
+          eventId: id,
+          groupId: myGroup._id,
+        });
+        alreadyRegistered = !!groupReg;
+      }
+    } else {
+      // Check if user is individually registered
+      const userReg = await Registration.exists({
+        eventId: id,
+        userId: session.user.id,
+      });
+      alreadyRegistered = !!userReg;
+    }
 
     // temporary fix for changing price according to email
     if (
@@ -79,8 +175,21 @@ export const GET = async (
       event.registrationFee = 0;
     }
 
+    // Build response with registrations attached
+    const eventResponse = {
+      ...event.toObject(),
+      registeredUsers,
+      attendedUsers,
+      registeredGroups,
+      attendedGroups,
+      registrationCount:
+        event.eventType === "team"
+          ? registeredGroups.length
+          : registeredUsers.length,
+    };
+
     return NextResponse.json(
-      { event, myGroup, alreadyRegistered },
+      { event: eventResponse, myGroup, alreadyRegistered },
       { status: 200 },
     );
   } catch (error) {
@@ -88,21 +197,6 @@ export const GET = async (
     return NextResponse.json({ error }, { status: 500 });
   }
 };
-
-// export const PATCH = async (
-//   req: NextRequest,
-//   { params }: { params: Promise<{ id: string }> }
-// ) => {
-//   try {
-//     await connectToDb();
-//     const { id } = await params;
-//     const body = await req.json();
-//     const updatedEvent = await Event.findByIdAndUpdate(id, body, { new: true });
-//     return NextResponse.json({ updatedEvent }, { status: 200 });
-//   } catch (error) {
-//     return NextResponse.json({ error }, { status: 500 });
-//   }
-// };
 
 export const PATCH = async (
   req: NextRequest,
@@ -152,6 +246,7 @@ export const PATCH = async (
       "registrationFee",
       "maxRegistrations",
       "isRegistrationOpen",
+      "customQuestions",
     ];
 
     //  Convert FormData → plain object
@@ -167,7 +262,10 @@ export const PATCH = async (
         continue;
       }
 
-      if (parsedKey === "providesCertificate" || parsedKey === "isRegistrationOpen") {
+      if (
+        parsedKey === "providesCertificate" ||
+        parsedKey === "isRegistrationOpen"
+      ) {
         body[parsedKey] = value === "true";
       } else if (
         [
@@ -204,7 +302,7 @@ export const PATCH = async (
     }
 
     //change date and time
-    // 🕒 Handle date + time properly (IST → UTC)
+    // Handle date + time properly (IST -> UTC)
     if (body.date) {
       const dateStr = body.date; // "2026-02-10"
       const timeStr = body.eventTime || "00:00"; // "10:00"
@@ -216,7 +314,7 @@ export const PATCH = async (
       delete body.eventTime;
     }
 
-    // ✅ Validate maxRegistrations
+    // Validate maxRegistrations
     if (body.maxRegistrations !== undefined && body.maxRegistrations < 1) {
       return NextResponse.json(
         { error: "maxRegistrations must be at least 1" },
@@ -224,10 +322,37 @@ export const PATCH = async (
       );
     }
 
-    // Optional permission check
-    // if (event.createdBy.toString() !== session.user.id) {
-    //   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    // }
+    if (body.customQuestions !== undefined) {
+      let parsedCustomQuestions: CustomQuestionInput[] = [];
+      try {
+        parsedCustomQuestions = JSON.parse(body.customQuestions);
+      } catch {
+        return NextResponse.json(
+          { error: "Invalid customQuestions payload" },
+          { status: 400 },
+        );
+      }
+
+      if (!Array.isArray(parsedCustomQuestions)) {
+        return NextResponse.json(
+          { error: "customQuestions must be an array" },
+          { status: 400 },
+        );
+      }
+
+      parsedCustomQuestions = sanitizeCustomQuestions(parsedCustomQuestions);
+
+      const customQuestionsValidation =
+        validateCustomQuestions(parsedCustomQuestions);
+      if (!customQuestionsValidation.valid) {
+        return NextResponse.json(
+          { error: customQuestionsValidation.error },
+          { status: 400 },
+        );
+      }
+
+      body.customQuestions = parsedCustomQuestions;
+    }
 
     const updatedEvent = await Event.findByIdAndUpdate(
       id,

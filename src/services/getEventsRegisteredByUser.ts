@@ -1,5 +1,5 @@
 import { connectToDb } from "@/lib/connectToDb";
-import { Event } from "@/models/event.model";
+import { Registration } from "@/models/registration.model";
 import { Group } from "@/models/group.model";
 import { Types } from "mongoose";
 
@@ -13,11 +13,11 @@ export async function getEventsRegisteredByUser(userId: string) {
   const groups = await Group.find({ members: userObjectId }, { _id: 1 }).lean();
   const groupIds = groups.map((g) => g._id);
 
-  // 2️⃣ Count events where user is registered individually OR via group
-  return Event.countDocuments({
-    $or: [
-      { registrations: userObjectId },
-      { groupRegistrations: { $in: groupIds } },
-    ],
+  // 2️⃣ Count distinct events where user is currently registered individually OR via group
+  const eventIds = await Registration.distinct("eventId", {
+    status: "registered",
+    $or: [{ userId: userObjectId }, { groupId: { $in: groupIds } }],
   });
+
+  return eventIds.length;
 }

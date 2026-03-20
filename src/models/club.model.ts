@@ -15,30 +15,12 @@ const clubSchema = new Schema<IClub>(
       type: String,
       required: true,
     },
-    coreMembers: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
-    volunteers: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
-    events: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Event",
-      },
-    ],
     logo: {
       type: String,
       required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const Club =

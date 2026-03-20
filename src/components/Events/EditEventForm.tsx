@@ -8,6 +8,10 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import BackButton from "../BackButton";
 import { IEvent } from "@/models/event.schema";
+import CustomQuestionsEditor, {
+  CustomQuestion,
+  normalizeCustomQuestions,
+} from "./CustomQuestionsEditor";
 
 interface EditEventFormProps {
   user: Session["user"];
@@ -26,6 +30,12 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
   const [loading, setLoading] = useState(false);
   const [teamSizeMode, setTeamSizeMode] = useState<"fixed" | "range">(
     event.teamSizeRange ? "range" : "fixed",
+  );
+  const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>(
+    (event.customQuestions ?? []).map((question) => ({
+      ...question,
+      options: question.options ?? [],
+    })),
   );
 
   const d = new Date(event.date);
@@ -67,6 +77,10 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
     if (file) {
       formData.append("image", file);
     }
+    formData.set(
+      "customQuestions",
+      JSON.stringify(normalizeCustomQuestions(customQuestions)),
+    );
 
     try {
       const res = await fetch(`/api/events/${event._id}`, {
@@ -278,6 +292,11 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
             className="rounded-xl border border-gray-700 p-3 bg-gray-800"
           />
         </div>
+
+        <CustomQuestionsEditor
+          value={customQuestions}
+          onChange={setCustomQuestions}
+        />
 
         {/* Submit */}
         <button
