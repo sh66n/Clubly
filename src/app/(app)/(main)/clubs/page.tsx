@@ -2,10 +2,7 @@ import ClubGrid from "@/components/Clubs/ClubGrid";
 import React from "react";
 
 const getAllClubs = async () => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/clubs`, {
-    method: "GET",
-    cache: "no-store",
-  });
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/clubs`);
   if (!res.ok) return [];
   const allClubs = await res.json();
   return allClubs;

@@ -1,20 +1,44 @@
-export async function getLeaderboardRank(clubId: string, userId: string) {
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/clubs/${clubId}/users/${userId}/rank`,
-      {
-        method: "GET",
-        cache: "no-store", // ensures fresh data
-      }
-    );
+import { connectToDb } from "@/lib/connectToDb";
+import { UserPoints } from "@/models/userpoints.model";
+import mongoose from "mongoose";
 
-    if (!res.ok) {
-      throw new Error(`Failed to fetch rank: ${res.statusText}`);
+export async function getLeaderboardRank(clubId: string, userId: string) {
+  if (
+    !clubId ||
+    !userId ||
+    !mongoose.Types.ObjectId.isValid(clubId) ||
+    !mongoose.Types.ObjectId.isValid(userId)
+  ) {
+    return { _id: userId, rank: -1, points: 0, totalUsers: 0 };
+  }
+
+  try {
+    await connectToDb();
+    const clubObjectId = new mongoose.Types.ObjectId(clubId);
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    const [totalUsers, userPoints] = await Promise.all([
+      UserPoints.countDocuments({ clubId: clubObjectId }),
+      UserPoints.findOne({ userId: userObjectId, clubId: clubObjectId }),
+    ]);
+
+    if (!userPoints) {
+      return { _id: userId, points: 0, rank: -1, totalUsers };
     }
 
-    return res.json(); // { _id, rank, points, totalUsers }
+    const usersWithMorePoints = await UserPoints.countDocuments({
+      clubId: clubObjectId,
+      points: { $gt: userPoints.points },
+    });
+
+    return {
+      _id: userId,
+      points: userPoints.points,
+      rank: usersWithMorePoints + 1,
+      totalUsers,
+    };
   } catch (error) {
     console.error("Error fetching club rank:", error);
-    return null;
+    return { _id: userId, rank: -1, points: 0, totalUsers: 0 };
   }
 }

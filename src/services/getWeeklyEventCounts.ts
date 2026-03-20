@@ -1,5 +1,5 @@
+import { connectToDb } from "@/lib/connectToDb";
 import { Event } from "@/models/event.model";
-import { Types } from "mongoose";
 
 function getWeekRange() {
   const now = new Date();
@@ -18,6 +18,7 @@ function getWeekRange() {
 }
 
 export async function getWeeklyEventCounts() {
+  await connectToDb();
   const { startOfWeek, endOfWeek } = getWeekRange();
 
   // Fetch events for this week

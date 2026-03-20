@@ -98,42 +98,59 @@ export const GET = async (
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
+    const canViewInsights =
+      session?.user?.role === "club-admin" &&
+      session?.user?.adminClub?.toString() === event.organizingClub?._id?.toString();
+
     // Fetch registrations/participants from Registration collection
     let registeredUsers: any[] = [];
     let attendedUsers: any[] = [];
     let registeredGroups: any[] = [];
     let attendedGroups: any[] = [];
+    let registrationCount = 0;
 
     if (event.eventType === "team") {
-      // Team event: fetch group registrations
-      const regs = await Registration.find({
+      registrationCount = await Registration.countDocuments({
         eventId: id,
         groupId: { $exists: true },
-      }).populate({
-        path: "groupId",
-        populate: [
-          { path: "members", select: "name email image" },
-          { path: "leader", select: "name email image" },
-        ],
       });
 
-      registeredGroups = regs.filter((r) => r.groupId).map((r) => r.groupId);
+      if (canViewInsights) {
+        const regs = await Registration.find({
+          eventId: id,
+          groupId: { $exists: true },
+        }).populate({
+          path: "groupId",
+          populate: [
+            { path: "members", select: "name email image" },
+            { path: "leader", select: "name email image" },
+          ],
+        });
 
-      attendedGroups = regs
-        .filter((r) => r.status === "attended" && r.groupId)
-        .map((r) => r.groupId);
+        registeredGroups = regs.filter((r) => r.groupId).map((r) => r.groupId);
+
+        attendedGroups = regs
+          .filter((r) => r.status === "attended" && r.groupId)
+          .map((r) => r.groupId);
+      }
     } else {
-      // Individual event: fetch user registrations
-      const regs = await Registration.find({
+      registrationCount = await Registration.countDocuments({
         eventId: id,
         userId: { $exists: true },
-      }).populate("userId", "name email image");
+      });
 
-      registeredUsers = regs.filter((r) => r.userId).map((r) => r.userId);
+      if (canViewInsights) {
+        const regs = await Registration.find({
+          eventId: id,
+          userId: { $exists: true },
+        }).populate("userId", "name email image");
 
-      attendedUsers = regs
-        .filter((r) => r.status === "attended" && r.userId)
-        .map((r) => r.userId);
+        registeredUsers = regs.filter((r) => r.userId).map((r) => r.userId);
+
+        attendedUsers = regs
+          .filter((r) => r.status === "attended" && r.userId)
+          .map((r) => r.userId);
+      }
     }
 
     // Check if user has a group for this event
@@ -182,10 +199,7 @@ export const GET = async (
       attendedUsers,
       registeredGroups,
       attendedGroups,
-      registrationCount:
-        event.eventType === "team"
-          ? registeredGroups.length
-          : registeredUsers.length,
+      registrationCount,
     };
 
     return NextResponse.json(

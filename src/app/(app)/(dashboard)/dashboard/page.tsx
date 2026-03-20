@@ -7,20 +7,23 @@ import { getEventsRegisteredByUser } from "@/services/getEventsRegisteredByUser"
 import { getLeaderboardRank } from "@/services/getLeaderboardRank";
 import { getWeeklyEventCounts } from "@/services/getWeeklyEventCounts";
 import { ChevronRight } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import React from "react";
 
-const getInsights = async (userId) => {
-  const eventsAttended = await getEventsAttendedByUser(userId);
-  const leaderboardData = await getLeaderboardRank(
-    "68ab3c6d14766aa80db61482",
-    userId,
-  );
-  const eventsRegistered = await getEventsRegisteredByUser(userId);
-  const upcomingEvents = await getWeeklyEventCounts();
-  const anyFourClubs = await getAnyFourClubs();
+const getInsights = async (userId: string) => {
+  const [
+    eventsAttended,
+    leaderboardData,
+    eventsRegistered,
+    upcomingEvents,
+    anyFourClubs,
+  ] = await Promise.all([
+    getEventsAttendedByUser(userId),
+    getLeaderboardRank("68ab3c6d14766aa80db61482", userId),
+    getEventsRegisteredByUser(userId),
+    getWeeklyEventCounts(),
+    getAnyFourClubs(),
+  ]);
 
   return {
     eventsAttended,
@@ -33,6 +36,11 @@ const getInsights = async (userId) => {
 
 export default async function Dashboard() {
   const session = await auth();
+  const userId = session?.user?.id;
+
+  if (!userId) {
+    return null;
+  }
 
   const {
     eventsAttended,
@@ -40,7 +48,7 @@ export default async function Dashboard() {
     eventsRegistered,
     upcomingEvents,
     anyFourClubs,
-  } = await getInsights(session?.user?.id);
+  } = await getInsights(userId);
 
   return (
     <div className="h-full flex flex-col">
@@ -74,12 +82,12 @@ export default async function Dashboard() {
             <div className="text-lg sm:text-xl lg:text-2xl font-semibold">
               Leaderboard
             </div>
-            <div className="text-[#5E77F5] font-bold text-3xl sm:text-4xl lg:text-5xl my-3 lg:my-4">
-              {leaderboardData.rank !== -1 ? `#${leaderboardData.rank}` : "N/A"}
-            </div>
-            <div className="text-xs text-[#717171]">
-              out of {leaderboardData.totalUsers} users
-            </div>
+              <div className="text-[#5E77F5] font-bold text-3xl sm:text-4xl lg:text-5xl my-3 lg:my-4">
+                {leaderboardData?.rank !== -1 ? `#${leaderboardData?.rank}` : "N/A"}
+              </div>
+              <div className="text-xs text-[#717171]">
+                out of {leaderboardData?.totalUsers ?? 0} users
+              </div>
           </BorderedDiv>
 
           <BorderedDiv className="w-full sm:col-span-2 lg:col-span-1">

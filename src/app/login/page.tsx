@@ -1,11 +1,13 @@
 import LoginButton from "@/components/LoginButton";
 import LoginErrorToast from "@/components/LoginErrorToast";
-import React from "react";
+import React, { Suspense } from "react";
 
 export default async function Login() {
   return (
     <div className="min-h-screen w-full bg-[#0a0a0a] text-white flex items-center justify-center p-6">
-      <LoginErrorToast />
+      <Suspense fallback={null}>
+        <LoginErrorToast />
+      </Suspense>
 
       {/* Main Container */}
       <div className="w-full max-w-md space-y-8 flex flex-col">
@@ -22,7 +24,9 @@ export default async function Login() {
         {/* Action Section */}
         <div className="flex flex-col items-center justify-center py-10 border border-white/5 bg-white/[0.02] rounded-2xl backdrop-blur-sm">
           <div className="w-full max-w-[280px]">
-            <LoginButton />
+            <Suspense fallback={null}>
+              <LoginButton />
+            </Suspense>
           </div>
 
           <p className="mt-6 text-xs text-[#4a4a4a] text-center px-4">

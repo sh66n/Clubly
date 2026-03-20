@@ -1,6 +1,5 @@
 import { auth } from "@/auth";
 import BorderedDiv from "@/components/BorderedDiv";
-import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 
@@ -10,6 +9,7 @@ export default async function layout({
   children: React.ReactNode;
 }>) {
   const session = await auth();
+
   return (
     <div className="min-h-screen h-full flex flex-col py-2 sm:py-4 gap-2">
       {/* Header Section */}

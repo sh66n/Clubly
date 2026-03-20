@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import cloudinary from "@/lib/cloudinary";
 import { connectToDb } from "@/lib/connectToDb";
-import { Event, Club, Registration } from "@/models";
+import { Event, Registration } from "@/models";
 import { Types } from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -70,48 +70,66 @@ const sanitizeCustomQuestions = (
 export const GET = async (req: NextRequest) => {
   try {
     await connectToDb();
-
-    const allEvents = await Event.find({})
-      .sort({ date: 1 }) // newest first
-      .populate("organizingClub")
-      .lean();
-
     const q = req.nextUrl.searchParams.get("q")?.trim().toLowerCase() || "";
     const clubId = req.nextUrl.searchParams.get("club");
-
-    let filteredEvents = allEvents;
+    const query: Record<string, unknown> = {};
 
     if (q) {
-      filteredEvents = filteredEvents.filter((event) =>
-        event.name.toLowerCase().includes(q),
-      );
+      query.name = { $regex: q, $options: "i" };
     }
 
     if (clubId && Types.ObjectId.isValid(clubId)) {
-      filteredEvents = filteredEvents.filter(
-        (event: any) =>
-          event.organizingClub &&
-          event.organizingClub._id.toString() === clubId,
-      );
+      query.organizingClub = new Types.ObjectId(clubId);
     }
 
-    // Add registration counts from Registration collection
-    const eventsWithCounts = await Promise.all(
-      filteredEvents.map(async (event: any) => {
-        const regCount = await Registration.countDocuments({
-          eventId: event._id,
-          ...(event.eventType === "team"
-            ? { groupId: { $exists: true } }
-            : { userId: { $exists: true } }),
-        });
+    const events = await Event.find(query)
+      .sort({ date: 1 })
+      .populate("organizingClub")
+      .lean();
 
-        // Return normalized count field
-        return {
-          ...event,
-          registrationCount: regCount,
-        };
-      }),
+    const eventIds = events.map((event) => event._id);
+
+    const regCounts = await Registration.aggregate([
+      { $match: { eventId: { $in: eventIds } } },
+      {
+        $group: {
+          _id: "$eventId",
+          individualCount: {
+            $sum: {
+              $cond: [{ $ifNull: ["$userId", false] }, 1, 0],
+            },
+          },
+          teamCount: {
+            $sum: {
+              $cond: [{ $ifNull: ["$groupId", false] }, 1, 0],
+            },
+          },
+        },
+      },
+    ]);
+
+    const regCountMap = new Map(
+      regCounts.map((row) => [
+        row._id.toString(),
+        {
+          individualCount: row.individualCount ?? 0,
+          teamCount: row.teamCount ?? 0,
+        },
+      ]),
     );
+
+    const eventsWithCounts = events.map((event: any) => {
+      const counts = regCountMap.get(event._id.toString());
+      const registrationCount =
+        event.eventType === "team"
+          ? (counts?.teamCount ?? 0)
+          : (counts?.individualCount ?? 0);
+
+      return {
+        ...event,
+        registrationCount,
+      };
+    });
 
     return NextResponse.json(eventsWithCounts, { status: 200 });
   } catch (error) {

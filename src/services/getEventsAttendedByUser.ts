@@ -9,15 +9,18 @@ export async function getEventsAttendedByUser(userId: string) {
   await connectToDb();
   const userObjectId = new Types.ObjectId(userId);
 
-  // Step 1: Find all groups the user is part of
   const groups = await Group.find({ members: userObjectId }, { _id: 1 }).lean();
   const groupIds = groups.map((g) => g._id);
 
-  // Step 2: Count distinct events where user/group attendance is marked as attended
-  const eventIds = await Registration.distinct("eventId", {
-    status: "attended",
-    $or: [{ userId: userObjectId }, { groupId: { $in: groupIds } }],
-  });
+  const filter =
+    groupIds.length > 0
+      ? {
+          status: "attended",
+          $or: [{ userId: userObjectId }, { groupId: { $in: groupIds } }],
+        }
+      : { status: "attended", userId: userObjectId };
+
+  const eventIds = await Registration.distinct("eventId", filter);
 
   return eventIds.length;
 }

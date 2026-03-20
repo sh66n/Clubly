@@ -1,32 +1,30 @@
 import { auth } from "@/auth";
 import EventGrid from "@/components/Events/EventGrid";
 import ScheduleDropdown from "@/components/Events/ScheduleDropdown";
-import ScheduleEventButton from "@/components/Events/ScheduleEventButton";
 import SearchBar from "@/components/Events/SearchBar";
-import ScheduleSuperEventButton from "@/components/SuperEvents/ScheduleSuperEventButton";
 import React from "react";
 
 const getAllEvents = async (query: string | string[], club) => {
+  const queryString = new URLSearchParams({
+    q: String(query ?? ""),
+    club: String(club ?? ""),
+  });
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/events?q=${query}&club=${club}`,
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/events?${queryString.toString()}`,
   );
   if (!res.ok) return null;
   return res.json();
 };
 
 const getAllSuperEvents = async () => {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/superevents`,
-  );
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/superevents`);
   if (!res.ok) return null;
   const data = await res.json();
   return data;
 };
 
 const getAllClubs = async () => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/clubs`, {
-    cache: "no-store",
-  });
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/clubs`);
   if (!res.ok) return null;
   return res.json();
 };
@@ -37,11 +35,14 @@ export default async function Events({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const session = await auth();
-  const query = (await searchParams).q || "";
-  const club = (await searchParams).club || "";
-  const allEvents = await getAllEvents(query, club);
-  const allClubs = await getAllClubs();
-  const allSuperEvents = await getAllSuperEvents();
+  const params = await searchParams;
+  const query = params.q || "";
+  const club = params.club || "";
+  const [allEvents, allClubs, allSuperEvents] = await Promise.all([
+    getAllEvents(query, club),
+    getAllClubs(),
+    getAllSuperEvents(),
+  ]);
 
   return (
     <div className="flex flex-col min-h-full">
