@@ -12,7 +12,7 @@ export default function Podium({ topThree }) {
               src={topThree[1].image}
               alt={topThree[1].name}
             />
-            <div className="mt-2 text-xs md:text-base text-center">
+            <div className="mt-2 text-xs md:text-base text-center line-clamp-1">
               {topThree[1].name}
             </div>
           </div>
@@ -31,7 +31,7 @@ export default function Podium({ topThree }) {
               src={topThree[0].image}
               alt={topThree[0].name}
             />
-            <div className="mt-2 text-xs md:text-base text-center">
+            <div className="mt-2 text-xs md:text-base text-center line-clamp-1">
               {topThree[0].name}
             </div>
           </div>
@@ -50,7 +50,7 @@ export default function Podium({ topThree }) {
               src={topThree[2].image}
               alt={topThree[2].name}
             />
-            <div className="mt-2 text-xs md:text-base text-center">
+            <div className="mt-2 text-xs md:text-base text-center line-clamp-1">
               {topThree[2].name}
             </div>
           </div>
