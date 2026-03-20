@@ -31,14 +31,13 @@ export default async function EditGroup({
   const session = await auth();
   if (!session?.user?.id) return <div>Please login to edit this group</div>;
 
+  if (!group) {
+    return <div className="text-gray-500 p-10 text-center">Group not found</div>;
+  }
+
   if (group.leader._id.toString() !== session.user.id) {
     redirect("/forbidden");
   }
-
-  if (!group)
-    return (
-      <div className="text-gray-500 p-10 text-center">Group not found</div>
-    );
 
   return (
     <EditGroupForm

@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Silkscreen } from "next/font/google";
-import { auth } from "@/auth";
-import MobileNavbar from "@/components/MobileNavbar";
 import { Toaster } from "sonner";
 
 const geistSans = Geist({
@@ -38,7 +35,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth();
   return (
     <html lang="en">
       <body

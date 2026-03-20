@@ -9,15 +9,18 @@ export async function getEventsRegisteredByUser(userId: string) {
   await connectToDb();
   const userObjectId = new Types.ObjectId(userId);
 
-  // 1️⃣ Find all groups the user is part of
   const groups = await Group.find({ members: userObjectId }, { _id: 1 }).lean();
   const groupIds = groups.map((g) => g._id);
 
-  // 2️⃣ Count distinct events where user is currently registered individually OR via group
-  const eventIds = await Registration.distinct("eventId", {
-    status: "registered",
-    $or: [{ userId: userObjectId }, { groupId: { $in: groupIds } }],
-  });
+  const filter =
+    groupIds.length > 0
+      ? {
+          status: "registered",
+          $or: [{ userId: userObjectId }, { groupId: { $in: groupIds } }],
+        }
+      : { status: "registered", userId: userObjectId };
+
+  const eventIds = await Registration.distinct("eventId", filter);
 
   return eventIds.length;
 }

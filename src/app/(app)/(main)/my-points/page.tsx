@@ -1,11 +1,10 @@
 import { auth } from "@/auth";
 import Points from "@/components/Points";
-import { getUserPoints } from "@/services/getUserPoints";
 import React from "react";
 
 export default async function MyPoints() {
   const session = await auth();
-  const points = await getUserPoints(session?.user?.email);
+  const points = session?.user?.points ?? 0;
   return (
     <div className="flex flex-col h-full w-full">
       <h1 className="text-5xl font-semibold">My Points</h1>

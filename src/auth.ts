@@ -62,8 +62,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.id = user.id;
       }
 
-      // 2. Fetch fresh data from DB (This part only runs on the Server, not Edge)
-      if (token.email) {
+      // Refresh from DB on sign in and explicit session update only
+      if (token.email && (user || trigger === "update")) {
         try {
           await connectToDb();
           const dbUser = await User.findOne({ email: token.email });

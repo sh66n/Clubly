@@ -9,16 +9,13 @@ const getEventDetails = async (eventId) => {
   const nextHeaders = await headers();
   const cookieHeader = nextHeaders.get("cookie") ?? "";
 
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/events/${eventId}`,
-    {
-      method: "GET",
-      headers: {
-        cookie: cookieHeader,
-      },
-      cache: "no-store",
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/events/${eventId}`, {
+    method: "GET",
+    headers: {
+      cookie: cookieHeader,
     },
-  );
+    cache: "no-store",
+  });
 
   if (res.status === 401) {
     redirect(`/login?callbackUrl=/events/${eventId}`);

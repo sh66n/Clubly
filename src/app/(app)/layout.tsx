@@ -1,7 +1,6 @@
 import { auth } from "@/auth";
 import MobileNavbar from "@/components/MobileNavbar";
 import Sidebar from "@/components/Sidebar";
-import { getUserPoints } from "@/services/getUserPoints";
 
 export default async function layout({
   children,
@@ -9,7 +8,7 @@ export default async function layout({
   children: React.ReactNode;
 }>) {
   const session = await auth();
-  const points = await getUserPoints(session?.user?.email);
+  const points = session?.user?.points ?? 0;
 
   return (
     <div className="flex">
