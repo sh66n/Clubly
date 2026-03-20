@@ -108,7 +108,22 @@ export const PUT = async (
 async function awardPointsToUser(userId: string, clubId: any, points: number) {
   await UserPoints.updateOne(
     { userId, clubId },
-    { $inc: { points } },
+    [
+      {
+        $set: {
+          userId,
+          clubId,
+          points: {
+            $max: [
+              0,
+              {
+                $add: [{ $ifNull: ["$points", 0] }, points],
+              },
+            ],
+          },
+        },
+      },
+    ],
     { upsert: true },
   );
 }
