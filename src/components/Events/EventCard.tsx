@@ -82,9 +82,7 @@ export default function EventCard({ event }: EventCardProps) {
         <div className="flex items-center justify-between mt-2 pt-3 border-t border-[#1A1A1A]">
           <div className="flex items-center gap-1.5 text-gray-400">
             <Users size={14} className="text-gray-600" />
-            <span className="text-xs font-bold font-mono">
-              {currentRegs}
-            </span>
+            <span className="text-xs font-bold font-mono">{currentRegs}</span>
           </div>
 
           <div className="flex items-center gap-1.5 text-gray-500">

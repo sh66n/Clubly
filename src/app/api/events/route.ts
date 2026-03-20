@@ -49,7 +49,7 @@ export const GET = async (req: NextRequest) => {
           ...event,
           registrationCount: regCount,
         };
-      })
+      }),
     );
 
     return NextResponse.json(eventsWithCounts, { status: 200 });

@@ -20,7 +20,7 @@ const clubSchema = new Schema<IClub>(
       required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const Club =

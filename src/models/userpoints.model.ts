@@ -26,7 +26,7 @@ const userPointsSchema = new Schema<IUserPoints>(
       default: 0,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Indexes

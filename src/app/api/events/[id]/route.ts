@@ -54,13 +54,11 @@ export const GET = async (
         ],
       });
 
-      registeredGroups = regs
-        .filter(r => r.groupId)
-        .map(r => r.groupId);
+      registeredGroups = regs.filter((r) => r.groupId).map((r) => r.groupId);
 
       attendedGroups = regs
-        .filter(r => r.status === "attended" && r.groupId)
-        .map(r => r.groupId);
+        .filter((r) => r.status === "attended" && r.groupId)
+        .map((r) => r.groupId);
     } else {
       // Individual event: fetch user registrations
       const regs = await Registration.find({
@@ -68,13 +66,11 @@ export const GET = async (
         userId: { $exists: true },
       }).populate("userId", "name email image");
 
-      registeredUsers = regs
-        .filter(r => r.userId)
-        .map(r => r.userId);
+      registeredUsers = regs.filter((r) => r.userId).map((r) => r.userId);
 
       attendedUsers = regs
-        .filter(r => r.status === "attended" && r.userId)
-        .map(r => r.userId);
+        .filter((r) => r.status === "attended" && r.userId)
+        .map((r) => r.userId);
     }
 
     // Check if user has a group for this event

@@ -12,7 +12,7 @@ export const getUserPoints = async (email: string) => {
   const userPoints = await UserPoints.find({ userId: dbUser._id });
   const totalPoints = userPoints.reduce(
     (sum, entry) => sum + (entry.points || 0),
-    0
+    0,
   );
 
   return totalPoints;

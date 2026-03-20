@@ -444,14 +444,20 @@ export default function EventDetails({
                       </Link>
                       <div className="relative flex items-center py-2">
                         <div className="flex-grow border-t border-gray-800"></div>
-                        <span className="flex-shrink-0 mx-3 text-[10px] uppercase tracking-widest text-gray-500 font-bold">or</span>
+                        <span className="flex-shrink-0 mx-3 text-[10px] uppercase tracking-widest text-gray-500 font-bold">
+                          or
+                        </span>
                         <div className="flex-grow border-t border-gray-800"></div>
                       </div>
-                      <button 
-                        onClick={() => setIsModalOpen(true)} 
+                      <button
+                        onClick={() => setIsModalOpen(true)}
                         className="w-full py-2 text-sm text-gray-400 hover:text-white transition-colors flex items-center justify-center gap-2 group hover:bg-white/5 rounded-full hover:cursor-pointer"
                       >
-                        Continue with a past group <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                        Continue with a past group{" "}
+                        <ArrowRight
+                          size={14}
+                          className="group-hover:translate-x-1 transition-transform"
+                        />
                       </button>
                       <ContinueWithGroupModal
                         isOpen={isModalOpen}

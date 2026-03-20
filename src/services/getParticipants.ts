@@ -38,7 +38,8 @@ export async function getParticipants(eventId: string) {
           isPublic: group.isPublic,
           leader: group.leader?.toObject?.() ?? group.leader,
           members:
-            group.members?.map((m: any) => (m.toObject ? m.toObject() : m)) ?? [],
+            group.members?.map((m: any) => (m.toObject ? m.toObject() : m)) ??
+            [],
         };
       });
   } else {

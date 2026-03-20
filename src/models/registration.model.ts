@@ -40,7 +40,7 @@ const registrationSchema = new Schema<IRegistration>(
       type: Date,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Indexes
@@ -48,14 +48,15 @@ registrationSchema.index({ eventId: 1, status: 1 });
 // Partial indexes: only index documents where the field exists and is not null
 registrationSchema.index(
   { eventId: 1, userId: 1 },
-  { unique: true, partialFilterExpression: { userId: { $type: "objectId" } } }
+  { unique: true, partialFilterExpression: { userId: { $type: "objectId" } } },
 );
 registrationSchema.index(
   { eventId: 1, groupId: 1 },
-  { unique: true, partialFilterExpression: { groupId: { $type: "objectId" } } }
+  { unique: true, partialFilterExpression: { groupId: { $type: "objectId" } } },
 );
 registrationSchema.index({ userId: 1 });
 registrationSchema.index({ groupId: 1 });
 
 export const Registration =
-  models?.Registration || model<IRegistration>("Registration", registrationSchema);
+  models?.Registration ||
+  model<IRegistration>("Registration", registrationSchema);

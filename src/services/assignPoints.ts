@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 export async function assignPointsForEvent(
   eventId: string,
   present: { _id: string; members?: { _id: string }[] }[],
-  absent: { _id: string; members?: { _id: string }[] }[]
+  absent: { _id: string; members?: { _id: string }[] }[],
 ) {
   const event = await Event.findById(eventId);
   if (!event) throw new Error("Event not found");
@@ -18,7 +18,7 @@ export async function assignPointsForEvent(
 
   for (const item of present) {
     if (event.eventType === "team" && item.members) {
-      presentUserIds.push(...item.members.map(m => m._id));
+      presentUserIds.push(...item.members.map((m) => m._id));
     } else {
       presentUserIds.push(item._id);
     }
@@ -26,7 +26,7 @@ export async function assignPointsForEvent(
 
   for (const item of absent) {
     if (event.eventType === "team" && item.members) {
-      absentUserIds.push(...item.members.map(m => m._id));
+      absentUserIds.push(...item.members.map((m) => m._id));
     } else {
       absentUserIds.push(item._id);
     }

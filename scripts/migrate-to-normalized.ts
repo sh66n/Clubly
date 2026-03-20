@@ -87,7 +87,7 @@ async function migrate() {
         for (const groupId of groupRegistrations) {
           if (!groupId) continue; // Skip null/undefined groupIds
           const isAttended = participantGroups.some(
-            (g: any) => g && g.toString() === groupId.toString()
+            (g: any) => g && g.toString() === groupId.toString(),
           );
           bulkOps.push({
             updateOne: {
@@ -111,7 +111,7 @@ async function migrate() {
         for (const userId of registrations) {
           if (!userId) continue; // Skip null/undefined userIds
           const isAttended = participants.some(
-            (p: any) => p && p.toString() === userId.toString()
+            (p: any) => p && p.toString() === userId.toString(),
           );
           bulkOps.push({
             updateOne: {
@@ -151,7 +151,9 @@ async function migrate() {
     }
 
     // Use native driver to get users with points array
-    const users = await usersCollection.find({ "points.0": { $exists: true } }).toArray();
+    const users = await usersCollection
+      .find({ "points.0": { $exists: true } })
+      .toArray();
     console.log(`Found ${users.length} users with points`);
 
     const pointsOps: mongoose.AnyBulkWriteOperation<any>[] = [];
@@ -237,7 +239,7 @@ async function migrate() {
           groupRegistrations: "",
           participantGroups: "",
         },
-      }
+      },
     );
     console.log(`  Events updated: ${eventResult.modifiedCount}`);
 
@@ -246,7 +248,7 @@ async function migrate() {
 
     const clubResult = await Club.updateMany(
       {},
-      { $unset: { events: "", coreMembers: "", volunteers: "" } }
+      { $unset: { events: "", coreMembers: "", volunteers: "" } },
     );
     console.log(`  Clubs updated: ${clubResult.modifiedCount}`);
 
@@ -300,7 +302,6 @@ async function migrate() {
     console.log(`  - Registration documents: ${regTotal}`);
     console.log(`  - UserPoints documents: ${pointsTotal}`);
     console.log(`  - ClubMember documents: ${membersTotal}`);
-
   } catch (error) {
     console.error("\nMIGRATION FAILED:", error);
     process.exit(1);

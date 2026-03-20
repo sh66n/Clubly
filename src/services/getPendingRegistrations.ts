@@ -21,7 +21,5 @@ export async function getPendingRegistrations(eventId: string) {
     status: "registered",
   }).populate("userId", "name email image");
 
-  return registrations
-    .filter((r) => r.userId)
-    .map((reg) => reg.userId);
+  return registrations.filter((r) => r.userId).map((reg) => reg.userId);
 }

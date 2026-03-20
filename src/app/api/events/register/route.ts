@@ -54,7 +54,10 @@ export async function POST(req: Request) {
 
     /* ---------------- Registration Limit ---------------- */
     const currentRegistrations = await Registration.countDocuments({ eventId });
-    if (event.maxRegistrations && currentRegistrations >= event.maxRegistrations) {
+    if (
+      event.maxRegistrations &&
+      currentRegistrations >= event.maxRegistrations
+    ) {
       return NextResponse.json(
         { error: "Registration limit exceeded!" },
         { status: 400 },
@@ -72,7 +75,10 @@ export async function POST(req: Request) {
       }
 
       // Check if already registered
-      const existingRegistration = await Registration.exists({ eventId, userId });
+      const existingRegistration = await Registration.exists({
+        eventId,
+        userId,
+      });
       if (existingRegistration) {
         return NextResponse.json(
           { error: "Already registered for this event" },
@@ -89,8 +95,10 @@ export async function POST(req: Request) {
       });
 
       // Return updated registrations
-      const registrations = await Registration.find({ eventId })
-        .populate("userId", "name email");
+      const registrations = await Registration.find({ eventId }).populate(
+        "userId",
+        "name email",
+      );
 
       return NextResponse.json(
         { event, registeredUsers: registrations.map((r) => r.userId) },
@@ -121,7 +129,10 @@ export async function POST(req: Request) {
       }
 
       // Duplicate registration check
-      const existingRegistration = await Registration.exists({ eventId, groupId });
+      const existingRegistration = await Registration.exists({
+        eventId,
+        groupId,
+      });
       if (existingRegistration) {
         return NextResponse.json(
           { error: "Already registered for this event" },

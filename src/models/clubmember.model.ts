@@ -27,7 +27,7 @@ const clubMemberSchema = new Schema<IClubMember>(
       required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Indexes
