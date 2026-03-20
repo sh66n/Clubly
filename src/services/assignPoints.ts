@@ -40,7 +40,23 @@ export async function assignPointsForEvent(
     pointsOps.push({
       updateOne: {
         filter: { userId: new mongoose.Types.ObjectId(userId), clubId },
-        update: { $inc: { points: participationPoints } },
+        // Keep points non-negative while allowing atomic upsert updates.
+        update: [
+          {
+            $set: {
+              userId: new mongoose.Types.ObjectId(userId),
+              clubId,
+              points: {
+                $max: [
+                  0,
+                  {
+                    $add: [{ $ifNull: ["$points", 0] }, participationPoints],
+                  },
+                ],
+              },
+            },
+          },
+        ],
         upsert: true,
       },
     });
@@ -51,7 +67,23 @@ export async function assignPointsForEvent(
     pointsOps.push({
       updateOne: {
         filter: { userId: new mongoose.Types.ObjectId(userId), clubId },
-        update: { $inc: { points: -participationPoints } },
+        // Keep points non-negative while allowing atomic upsert updates.
+        update: [
+          {
+            $set: {
+              userId: new mongoose.Types.ObjectId(userId),
+              clubId,
+              points: {
+                $max: [
+                  0,
+                  {
+                    $add: [{ $ifNull: ["$points", 0] }, -participationPoints],
+                  },
+                ],
+              },
+            },
+          },
+        ],
         upsert: true,
       },
     });

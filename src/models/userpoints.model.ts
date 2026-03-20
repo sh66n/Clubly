@@ -24,6 +24,7 @@ const userPointsSchema = new Schema<IUserPoints>(
     points: {
       type: Number,
       default: 0,
+      min: 0,
     },
   },
   { timestamps: true },
