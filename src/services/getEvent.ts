@@ -1,6 +1,6 @@
 // /services/getEvent.ts
 import { connectToDb } from "@/lib/connectToDb";
-import { Event, Group, User } from "@/models";
+import { Event } from "@/models";
 
 export async function getEvent(eventId: string) {
   await connectToDb();
@@ -9,14 +9,14 @@ export async function getEvent(eventId: string) {
   const event = await Event.findById(eventId)
     .populate({
       path: "organizingClub",
-      select: "_id name", // only fields you need
+      select: "_id name",
     })
     .populate({
-      path: "winner", // individual winner
+      path: "winner",
       select: "_id name email image",
     })
     .populate({
-      path: "winnerGroup", // team winner
+      path: "winnerGroup",
       populate: [
         {
           path: "leader",
@@ -31,6 +31,5 @@ export async function getEvent(eventId: string) {
     .lean();
 
   if (!event) throw new Error("Event not found");
-
   return event;
 }

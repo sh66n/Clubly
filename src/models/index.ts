@@ -8,9 +8,22 @@ import { Event } from "./event.model";
 import { Group } from "./group.model";
 import { SuperEvent } from "./superevent.model";
 import { Payment } from "./payment.model";
+import { Registration } from "./registration.model";
+import { UserPoints } from "./userpoints.model";
+import { ClubMember } from "./clubmember.model";
 
 // 2. Export them as a single block.
 // When you import { Event } from "@/models" in your API,
 // the engine is forced to load this entire file, ensuring
 // that User, Club, and Group are registered before any .populate() runs.
-export { User, Club, Event, Group, SuperEvent, Payment };
+export {
+  User,
+  Club,
+  Event,
+  Group,
+  SuperEvent,
+  Payment,
+  Registration,
+  UserPoints,
+  ClubMember,
+};

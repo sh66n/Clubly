@@ -6,8 +6,8 @@ interface Club {
   department: string;
   logo: string;
   events?: string[];
-  coreMembers?: string[];
-  volunteers?: string[];
+  coreTeamCount?: number;
+  volunteerCount?: number;
 }
 
 export default function ClubGrid({ clubs }: { clubs: Club[] }) {

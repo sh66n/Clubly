@@ -30,15 +30,6 @@ export const zUser = z.object({
 
   image: z.string().url(),
 
-  points: z
-    .array(
-      z.object({
-        clubId: z.string().regex(/^[0-9a-fA-F]{24}$/),
-        points: z.number().nonnegative().default(0),
-      }),
-    )
-    .default([]),
-
   adminClub: z
     .string()
     .regex(/^[0-9a-fA-F]{24}$/)
@@ -63,11 +54,6 @@ export interface IUser {
   email: string;
   role: "user" | "club-admin";
   image: string;
-
-  points?: {
-    clubId: Types.ObjectId;
-    points: number;
-  }[];
 
   adminClub?: Types.ObjectId;
   phoneNumber?: string;

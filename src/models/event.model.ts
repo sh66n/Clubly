@@ -60,30 +60,6 @@ const eventSchema = new Schema<IEvent>(
         type: Number,
       },
     },
-    registrations: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
-    groupRegistrations: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Group",
-      },
-    ],
-    participants: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
-    participantGroups: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Group",
-      },
-    ],
     winner: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -114,5 +90,10 @@ const eventSchema = new Schema<IEvent>(
   },
   { timestamps: true },
 );
+
+// Indexes
+eventSchema.index({ organizingClub: 1 });
+eventSchema.index({ date: 1 });
+eventSchema.index({ superEvent: 1 });
 
 export const Event = models?.Event || model<IEvent>("Event", eventSchema);

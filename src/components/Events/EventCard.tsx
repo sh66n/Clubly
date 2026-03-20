@@ -11,10 +11,7 @@ interface EventCardProps {
 export default function EventCard({ event }: EventCardProps) {
   const eventDate = new Date(event.date);
 
-  const currentRegs =
-    event.eventType === "team"
-      ? event.groupRegistrations?.length || 0
-      : event.registrations?.length || 0;
+  const currentRegs = Number((event as any).registrationCount ?? 0);
   const isFull =
     event.maxRegistrations > 0 && currentRegs >= event.maxRegistrations;
 
@@ -86,9 +83,7 @@ export default function EventCard({ event }: EventCardProps) {
           <div className="flex items-center gap-1.5 text-gray-400">
             <Users size={14} className="text-gray-600" />
             <span className="text-xs font-bold font-mono">
-              {event.eventType === "team"
-                ? event.groupRegistrations.length
-                : event.registrations.length}
+              {currentRegs}
             </span>
           </div>
 

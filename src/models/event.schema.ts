@@ -11,13 +11,11 @@ export const zEvent = z.object({
   prize: z.number().optional(),
   providesCertificate: z.boolean(),
   registrationFee: z.number().optional(),
-  contact: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/)), // ObjectId as string
+  contact: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/)),
   points: z.object({
     participation: z.number(),
     winner: z.number(),
   }),
-  registrations: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/)),
-  participants: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/)),
   winner: z.string().regex(/^[0-9a-fA-F]{24}$/),
   image: z.optional(z.string()),
   maxRegistrations: z.number(),
@@ -39,15 +37,11 @@ export interface IEvent {
   prize?: number;
   providesCertificate: boolean;
   registrationFee: number;
-  contact: Types.ObjectId[]; // references User
+  contact: Types.ObjectId[];
   points: {
     participation: number;
     winner: number;
   };
-  registrations: Types.ObjectId[];
-  groupRegistrations: Types.ObjectId[];
-  participants: Types.ObjectId[];
-  participantGroups: Types.ObjectId[];
   winner: Types.ObjectId;
   winnerGroup: Types.ObjectId;
   image: string;
@@ -55,4 +49,6 @@ export interface IEvent {
   superEvent: Types.ObjectId;
   whatsappGroupLink: string;
   isRegistrationOpen: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }

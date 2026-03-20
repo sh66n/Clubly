@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import cloudinary from "@/lib/cloudinary";
 import { connectToDb } from "@/lib/connectToDb";
-import { Event, Club } from "@/models";
+import { Event, Club, Registration } from "@/models";
 import { Types } from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -12,9 +12,8 @@ export const GET = async (req: NextRequest) => {
 
     const allEvents = await Event.find({})
       .sort({ date: 1 }) // newest first
-      .populate("participants")
-      .populate("registrations")
-      .populate("organizingClub");
+      .populate("organizingClub")
+      .lean();
 
     const q = req.nextUrl.searchParams.get("q")?.trim().toLowerCase() || "";
     const clubId = req.nextUrl.searchParams.get("club");
@@ -29,13 +28,31 @@ export const GET = async (req: NextRequest) => {
 
     if (clubId && Types.ObjectId.isValid(clubId)) {
       filteredEvents = filteredEvents.filter(
-        (event) =>
+        (event: any) =>
           event.organizingClub &&
           event.organizingClub._id.toString() === clubId,
       );
     }
 
-    return NextResponse.json(filteredEvents, { status: 200 });
+    // Add registration counts from Registration collection
+    const eventsWithCounts = await Promise.all(
+      filteredEvents.map(async (event: any) => {
+        const regCount = await Registration.countDocuments({
+          eventId: event._id,
+          ...(event.eventType === "team"
+            ? { groupId: { $exists: true } }
+            : { userId: { $exists: true } }),
+        });
+
+        // Return normalized count field
+        return {
+          ...event,
+          registrationCount: regCount,
+        };
+      })
+    );
+
+    return NextResponse.json(eventsWithCounts, { status: 200 });
   } catch (error) {
     console.error(error);
     return NextResponse.json(error, { status: 500 });
@@ -153,10 +170,7 @@ export const POST = async (req: NextRequest) => {
       superEvent: superEvent || undefined,
     });
 
-    /* ---------- Update Club ---------- */
-    await Club.findByIdAndUpdate(organizingClub, {
-      $push: { events: event._id },
-    });
+    // Note: Events are linked to clubs via organizingClub field, no need to maintain club.events array
 
     return NextResponse.json(event, { status: 201 });
   } catch (error) {

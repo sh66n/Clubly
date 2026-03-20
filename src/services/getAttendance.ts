@@ -1,4 +1,4 @@
-import { Event } from "@/models/event.model";
+import { Event, Registration } from "@/models";
 import { connectToDb } from "@/lib/connectToDb";
 
 /**
@@ -8,57 +8,66 @@ import { connectToDb } from "@/lib/connectToDb";
 export async function getAttendance(eventId: string) {
   await connectToDb();
 
-  const event = await Event.findById(eventId)
-    .populate("registrations", "name email image") // individual
-    .populate("participants", "_id") // individual
-    .populate({
-      path: "groupRegistrations", // team
+  const event = await Event.findById(eventId);
+  if (!event) throw new Error("Event not found");
+
+  if (event.eventType === "team") {
+    // Fetch group registrations with populated group data
+    const registrations = await Registration.find({
+      eventId,
+      groupId: { $exists: true },
+    }).populate({
+      path: "groupId",
       populate: [
         { path: "leader", select: "name email image" },
         { path: "members", select: "name email image" },
       ],
-    })
-    .populate("participantGroups", "_id"); // team
+    });
 
-  if (!event) throw new Error("Event not found");
-
-  if (event.eventType === "team") {
-    const participantIds = new Set(
-      event.participantGroups.map((g: any) => g._id.toString())
-    );
-
-    return event.groupRegistrations.map((group: any) => ({
-      _id: group._id.toString(),
-      name: group.name,
-      isPublic: group.isPublic,
-      leader: group.leader
-        ? {
-            _id: group.leader._id.toString(),
-            name: group.leader.name,
-            email: group.leader.email,
-            image: group.leader.image,
-          }
-        : null,
-      members:
-        group.members?.map((m: any) => ({
-          _id: m._id.toString(),
-          name: m.name,
-          email: m.email,
-          image: m.image,
-        })) ?? [],
-      present: participantIds.has(group._id.toString()),
-    }));
+    return registrations
+      .filter((r) => r.groupId)
+      .map((reg) => {
+        const group = reg.groupId as any;
+        return {
+          _id: group._id.toString(),
+          name: group.name,
+          isPublic: group.isPublic,
+          leader: group.leader
+            ? {
+                _id: group.leader._id.toString(),
+                name: group.leader.name,
+                email: group.leader.email,
+                image: group.leader.image,
+              }
+            : null,
+          members:
+            group.members?.map((m: any) => ({
+              _id: m._id.toString(),
+              name: m.name,
+              email: m.email,
+              image: m.image,
+            })) ?? [],
+          present: reg.status === "attended",
+        };
+      });
   } else {
-    const participantIds = new Set(
-      event.participants.map((p: any) => p._id.toString())
-    );
+    // Individual event: fetch user registrations
+    const registrations = await Registration.find({
+      eventId,
+      userId: { $exists: true },
+    }).populate("userId", "name email image");
 
-    return event.registrations.map((user: any) => ({
-      _id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      image: user.image,
-      present: participantIds.has(user._id.toString()),
-    }));
+    return registrations
+      .filter((r) => r.userId)
+      .map((reg) => {
+        const user = reg.userId as any;
+        return {
+          _id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          present: reg.status === "attended",
+        };
+      });
   }
 }

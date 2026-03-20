@@ -57,15 +57,15 @@ export default function EventInsights({ event }: EventInsightsProps) {
             <div className="text-lg mb-4">Registrations</div>
             <div className="flex flex-col gap-2">
               {isTeam ? (
-                event.groupRegistrations?.length > 0 ? (
-                  event.groupRegistrations.map((g: any) => (
+                (event as any).registeredGroups?.length > 0 ? (
+                  (event as any).registeredGroups.map((g: any) => (
                     <GroupCard group={g} eventId={event._id.toString()} key={g._id.toString()} />
                   ))
                 ) : (
                   <div className="text-sm text-[#717171]">None yet</div>
                 )
-              ) : event.registrations?.length > 0 ? (
-                event.registrations.map((u: any) => (
+              ) : (event as any).registeredUsers?.length > 0 ? (
+                (event as any).registeredUsers.map((u: any) => (
                   <UserCard user={u} key={u._id.toString()} />
                 ))
               ) : (
@@ -79,15 +79,15 @@ export default function EventInsights({ event }: EventInsightsProps) {
             <div className="text-lg mb-4">Participants</div>
             <div className="flex flex-col gap-2">
               {isTeam ? (
-                event.participantGroups?.length > 0 ? (
-                  event.participantGroups.map((g: any) => (
+                (event as any).attendedGroups?.length > 0 ? (
+                  (event as any).attendedGroups.map((g: any) => (
                     <GroupCard group={g} eventId={event._id.toString()} key={g._id.toString()} />
                   ))
                 ) : (
                   <div className="text-sm text-[#717171]">None yet</div>
                 )
-              ) : event.participants?.length > 0 ? (
-                event.participants.map((u: any) => <UserCard user={u} key={u._id.toString()} />)
+              ) : (event as any).attendedUsers?.length > 0 ? (
+                (event as any).attendedUsers.map((u: any) => <UserCard user={u} key={u._id.toString()} />)
               ) : (
                 <div className="text-sm text-[#717171]">None yet</div>
               )}

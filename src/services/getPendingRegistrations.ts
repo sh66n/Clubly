@@ -1,5 +1,5 @@
 import { connectToDb } from "@/lib/connectToDb";
-import { Event } from "@/models";
+import { Event, Registration } from "@/models";
 
 /**
  * Get users who are registered but not yet marked as participants.
@@ -9,21 +9,19 @@ import { Event } from "@/models";
 export async function getPendingRegistrations(eventId: string) {
   await connectToDb();
 
-  const event = await Event.findById(eventId)
-    .populate("registrations", "name email image") // only fetch needed fields
-    .populate("participants", "_id"); // only need IDs here
-
+  const event = await Event.findById(eventId);
   if (!event) {
     throw new Error("Event not found");
   }
 
-  const participantIds = new Set(
-    event.participants.map((p: any) => p._id.toString())
-  );
+  // Fetch registrations that are still in "registered" status (not attended yet)
+  const registrations = await Registration.find({
+    eventId,
+    userId: { $exists: true },
+    status: "registered",
+  }).populate("userId", "name email image");
 
-  const pending = event.registrations.filter(
-    (r: any) => !participantIds.has(r._id.toString())
-  );
-
-  return pending;
+  return registrations
+    .filter((r) => r.userId)
+    .map((reg) => reg.userId);
 }

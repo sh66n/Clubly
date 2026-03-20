@@ -1,15 +1,37 @@
 import { connectToDb } from "@/lib/connectToDb";
-import { Club } from "@/models";
+import { Club, Event, ClubMember } from "@/models";
 
 export const getClub = async (clubId: string) => {
   // Ensure database is connected
   await connectToDb();
 
-  // Find club by ID and populate all referenced fields
-  const club = await Club.findById(clubId)
-    .populate("coreMembers") // populate User references
-    .populate("volunteers") // populate User references
-    .populate("events"); // populate Event references
+  // Find club by ID
+  const club = await Club.findById(clubId);
 
-  return club;
+  if (!club) {
+    return null;
+  }
+
+  // Fetch members from ClubMember collection
+  const coreTeamDocs = await ClubMember.find({
+    clubId,
+    role: "core",
+  }).populate("userId");
+
+  const volunteerDocs = await ClubMember.find({
+    clubId,
+    role: "volunteer",
+  }).populate("userId");
+
+  // Fetch events for this club
+  const events = await Event.find({ organizingClub: clubId });
+
+  // Return combined data
+  return {
+    ...club.toObject(),
+    coreTeamMembers: coreTeamDocs.map((m) => m.userId),
+    volunteerMembers: volunteerDocs.map((m) => m.userId),
+    totalMembers: coreTeamDocs.length + volunteerDocs.length,
+    events,
+  };
 };

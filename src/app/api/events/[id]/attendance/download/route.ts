@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { connectToDb } from "@/lib/connectToDb";
-import { Event, User, Group } from "@/models"; // Ensure Group and User are imported
+import { Event, User, Registration } from "@/models";
 import { NextResponse } from "next/server";
 
 export async function GET(
@@ -17,20 +17,8 @@ export async function GET(
 
     await connectToDb();
 
-    // 1. Fetch event and populate based on type
-    const event = await Event.findById(id)
-      .populate({
-        path: "registrations",
-        model: User,
-      })
-      .populate({
-        path: "groupRegistrations",
-        model: "Group",
-        populate: {
-          path: "members",
-          model: User,
-        },
-      });
+    // 1. Fetch event
+    const event = await Event.findById(id);
 
     if (!event)
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
@@ -41,7 +29,34 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // 2. Helper function to calculate year
+    // 2. Fetch registrations from Registration collection
+    let registeredUsers: any[] = [];
+    let registeredGroups: any[] = [];
+
+    if (event.eventType === "team") {
+      const regs = await Registration.find({
+        eventId: id,
+        groupId: { $exists: true },
+      }).populate({
+        path: "groupId",
+        populate: {
+          path: "members",
+          model: User,
+        },
+      });
+      registeredGroups = regs.filter((r) => r.groupId).map((r) => r.groupId);
+    } else {
+      const regs = await Registration.find({
+        eventId: id,
+        userId: { $exists: true },
+      }).populate({
+        path: "userId",
+        model: User,
+      });
+      registeredUsers = regs.filter((r) => r.userId).map((r) => r.userId);
+    }
+
+    // 3. Helper function to calculate year
     const getYearFromEmail = (email: string) => {
       if (!email || !email.endsWith("@pvppcoe.ac.in")) return "External";
 
@@ -87,7 +102,7 @@ export async function GET(
       return deptMap[prefix] || "External";
     };
 
-    // 3. Define CSV Headers (Updated Order)
+    // 4. Define CSV Headers (Updated Order)
     const headers = [
       "Team Name",
       "Name",
@@ -98,9 +113,9 @@ export async function GET(
     ];
     let rows: string[] = [];
 
-    // 4. Logic for handling Individual vs Team events
+    // 5. Logic for handling Individual vs Team events
     if (event.eventType === "team") {
-      (event.groupRegistrations || []).forEach((group: any) => {
+      (registeredGroups || []).forEach((group: any) => {
         const teamName = group.name || "Unnamed Team";
         group.members.forEach((member: any) => {
           const studentYear = getYearFromEmail(member.email);
@@ -119,7 +134,7 @@ export async function GET(
       });
     } else {
       // Individual Event
-      (event.registrations || []).forEach((user: any) => {
+      (registeredUsers || []).forEach((user: any) => {
         const studentYear = getYearFromEmail(user.email);
         const department = getDepartmentFromEmail(user.email);
         rows.push(

@@ -1,7 +1,7 @@
 import { connectToDb } from "@/lib/connectToDb";
-import { User } from "@/models";
+import { User, UserPoints } from "@/models";
 
-export const getUserPoints = async (email) => {
+export const getUserPoints = async (email: string) => {
   if (!email) return null;
 
   await connectToDb();
@@ -9,7 +9,8 @@ export const getUserPoints = async (email) => {
   const dbUser = await User.findOne({ email: email });
   if (!dbUser) return null;
 
-  const totalPoints = dbUser.points.reduce(
+  const userPoints = await UserPoints.find({ userId: dbUser._id });
+  const totalPoints = userPoints.reduce(
     (sum, entry) => sum + (entry.points || 0),
     0
   );

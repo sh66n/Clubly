@@ -1,11 +1,10 @@
-import { Club } from "@/models/club.model";
-import { Types } from "mongoose";
+import { ClubMember } from "@/models/clubmember.model";
 
 export async function getClubsJoined(userId: string) {
-  return Club.find({
-    $or: [
-      { coreMembers: new Types.ObjectId(userId) },
-      { volunteers: new Types.ObjectId(userId) },
-    ],
-  }).select("name department logo");
+  const memberships = await ClubMember.find({ userId }).populate(
+    "clubId",
+    "name department logo",
+  );
+
+  return memberships.map((m) => m.clubId);
 }

@@ -1,5 +1,5 @@
 import { connectToDb } from "@/lib/connectToDb";
-import { Event } from "@/models/event.model";
+import { Registration } from "@/models/registration.model";
 import { Group } from "@/models/group.model";
 import { Types } from "mongoose";
 
@@ -13,11 +13,11 @@ export async function getEventsAttendedByUser(userId: string) {
   const groups = await Group.find({ members: userObjectId }, { _id: 1 }).lean();
   const groupIds = groups.map((g) => g._id);
 
-  // Step 2: Count events where the user is a participant or in one of their groups
-  return Event.countDocuments({
-    $or: [
-      { participants: userObjectId },
-      { participantGroups: { $in: groupIds } },
-    ],
+  // Step 2: Count distinct events where user/group attendance is marked as attended
+  const eventIds = await Registration.distinct("eventId", {
+    status: "attended",
+    $or: [{ userId: userObjectId }, { groupId: { $in: groupIds } }],
   });
+
+  return eventIds.length;
 }

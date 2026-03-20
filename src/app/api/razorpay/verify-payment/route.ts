@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import { auth } from "@/auth";
-import { Event, Payment } from "@/models";
+import { Event, Payment, Registration } from "@/models";
 import { connectToDb } from "@/lib/connectToDb";
 
 const razorpay = new Razorpay({
@@ -93,13 +93,27 @@ export async function POST(request: Request) {
     const event = await Event.findById(payment.eventId);
     if (event) {
       if (event.eventType === "individual") {
-        await Event.findByIdAndUpdate(payment.eventId, {
-          $addToSet: { registrations: session.user.id },
-        });
+        await Registration.updateOne(
+          { eventId: payment.eventId, userId: session.user.id },
+          {
+            $setOnInsert: {
+              status: "registered",
+              registeredAt: new Date(),
+            },
+          },
+          { upsert: true },
+        );
       } else if (event.eventType === "team" && payment.groupId) {
-        await Event.findByIdAndUpdate(payment.eventId, {
-          $addToSet: { groupRegistrations: payment.groupId },
-        });
+        await Registration.updateOne(
+          { eventId: payment.eventId, groupId: payment.groupId },
+          {
+            $setOnInsert: {
+              status: "registered",
+              registeredAt: new Date(),
+            },
+          },
+          { upsert: true },
+        );
       }
     }
 

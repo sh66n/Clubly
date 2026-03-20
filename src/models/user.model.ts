@@ -35,12 +35,6 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: true,
     },
-    points: [
-      {
-        clubId: { type: Schema.Types.ObjectId, ref: "Club" },
-        points: { type: Number, default: 0 },
-      },
-    ],
     adminClub: {
       type: Schema.Types.ObjectId,
       ref: "Club",
@@ -124,6 +118,9 @@ userSchema.pre("validate", function (next) {
 
   next();
 });
+
+// Indexes
+userSchema.index({ email: 1 }, { unique: true });
 
 export const User =
   mongoose.models?.User || mongoose.model<IUser>("User", userSchema);

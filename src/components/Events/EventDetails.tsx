@@ -91,25 +91,13 @@ export default function EventDetails({
     }
   };
 
-  // ✅ Check if already registered
-  const isAlreadyRegistered = (() => {
-    if (!user) return false;
-    if (event.eventType === "individual") {
-      return event.registrations?.some((u: any) => u._id === user.id) ?? false;
-    } else {
-      return (
-        event.groupRegistrations?.some((g: any) => g._id === group?._id) ??
-        false
-      );
-    }
-  })();
+  const isAlreadyRegistered = Boolean((event as any).alreadyRegistered);
 
   //  Check if event has passed
   const hasEventPassed = differenceInCalendarDays(today, eventDate) > 0;
 
   const registrationsFull =
-    event.registrations.length >= event.maxRegistrations ||
-    event.groupRegistrations.length >= event.maxRegistrations;
+    Number((event as any).registrationCount ?? 0) >= event.maxRegistrations;
 
   //  Disable register logic
   const isRegisterDisabled =

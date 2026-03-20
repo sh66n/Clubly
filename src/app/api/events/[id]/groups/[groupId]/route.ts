@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDb } from "@/lib/connectToDb";
-import { Event, Group } from "@/models";
+import { Event, Group, Registration } from "@/models";
 import { auth } from "@/auth";
 import mongoose from "mongoose";
 import crypto from "crypto";
@@ -172,13 +172,13 @@ export const DELETE = async (
       );
     }
 
-    // 🧹 Remove group references from Event
+    // 🧹 Remove group registration from Registration collection
+    await Registration.deleteOne({ eventId: group.event, groupId: group._id });
+
+    // Clear winnerGroup if this group was the winner
     await Event.updateOne(
-      { _id: group.event },
-      {
-        $pull: { groupRegistrations: group._id, participantGroups: group._id },
-        $set: { winnerGroup: null },
-      },
+      { _id: group.event, winnerGroup: group._id },
+      { $set: { winnerGroup: null } },
     );
 
     // ❌ Delete the group

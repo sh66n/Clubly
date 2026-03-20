@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { connectToDb } from "@/lib/connectToDb";
-import { Event, User, Group } from "@/models";
+import { Event, Group, UserPoints } from "@/models";
 import { NextRequest, NextResponse } from "next/server";
 
 // PUT /api/events/:id/winners
@@ -104,24 +104,11 @@ export const PUT = async (
   }
 };
 
-// Helper to award points (+/-)
+// Helper to award points (+/-) using UserPoints collection
 async function awardPointsToUser(userId: string, clubId: any, points: number) {
-  const user = await User.findById(userId);
-  if (!user) return;
-
-  const existing = user.points.find(
-    (p: any) => p.clubId.toString() === clubId.toString(),
+  await UserPoints.updateOne(
+    { userId, clubId },
+    { $inc: { points } },
+    { upsert: true },
   );
-  if (existing) {
-    await User.updateOne(
-      { _id: userId, "points.clubId": clubId },
-      { $inc: { "points.$.points": points } },
-    );
-  } else if (points > 0) {
-    // Only push if awarding positive points
-    await User.updateOne(
-      { _id: userId },
-      { $push: { points: { clubId, points } } },
-    );
-  }
 }
