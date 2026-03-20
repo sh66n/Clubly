@@ -109,7 +109,7 @@ export default function Sidebar({ isLoggedIn, points }: SidebarProps) {
             </div>
             <ul>
               <Link
-                href={"/settings"}
+                href={"/me"}
                 className="mb-2 flex items-center gap-4 text-[#9F9F9F] hover:text-white cursor-pointer"
               >
                 <Bolt />

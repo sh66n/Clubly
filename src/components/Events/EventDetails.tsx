@@ -61,7 +61,9 @@ export default function EventDetails({
     [],
   );
 
-  const handleRegister = async (customQuestionAnswers: CustomQuestionAnswer[] = []) => {
+  const handleRegister = async (
+    customQuestionAnswers: CustomQuestionAnswer[] = [],
+  ) => {
     try {
       setRegistrationStatus("processing");
 
@@ -302,37 +304,41 @@ export default function EventDetails({
           </div>
 
           {/* Event Capacity */}
-          <div className="mb-4">
-            <h2 className="text-xl mb-2">Registration Limit</h2>
-            <BorderedDiv className="flex-1 p-4">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
-                  <Users />
+          {event.maxRegistrations && (
+            <div className="mb-4">
+              <h2 className="text-xl mb-2">Registration Limit</h2>
+              <BorderedDiv className="flex-1 p-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
+                    <Users />
+                  </div>
+                  <p>Up to {event.maxRegistrations} participants</p>
                 </div>
-                <p>Up to {event.maxRegistrations} participants</p>
-              </div>
-            </BorderedDiv>
-          </div>
+              </BorderedDiv>
+            </div>
+          )}
 
           {/* Points */}
-          <div className="mb-4">
-            <h2 className="text-xl mb-2">Points</h2>
-            <BorderedDiv className="flex-1 flex flex-col gap-4 p-4">
-              <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
-                  <Award />
+          {event._id != "69a7fa06cd938ddb63b0f06f" && (
+            <div className="mb-4">
+              <h2 className="text-xl mb-2">Points</h2>
+              <BorderedDiv className="flex-1 flex flex-col gap-4 p-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
+                    <Award />
+                  </div>
+                  Participation: +10
                 </div>
-                Participation: +10
-              </div>
 
-              <div className="flex items-center gap-2">
-                <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
-                  <Award />
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
+                    <Award />
+                  </div>
+                  Winner: +50
                 </div>
-                Winner: +50
-              </div>
-            </BorderedDiv>
-          </div>
+              </BorderedDiv>
+            </div>
+          )}
         </div>
 
         {/* Right side sticky card */}
@@ -364,48 +370,46 @@ export default function EventDetails({
                           ? "Registering..."
                           : "Register"}
                   </button>
+                ) : hasCustomQuestions && !hasSubmittedQuestions ? (
+                  <button
+                    onClick={() => {
+                      setPendingAnswers([]);
+                      setIsQuestionsModalOpen(true);
+                    }}
+                    disabled={isRegisterDisabled}
+                    className={`w-full py-2 rounded-lg font-semibold mb-2 ${
+                      isRegisterDisabled
+                        ? "bg-[#000F57] opacity-50 cursor-not-allowed"
+                        : "bg-[#000F57] text-white"
+                    }`}
+                  >
+                    {ctaText}
+                  </button>
                 ) : (
-                  hasCustomQuestions && !hasSubmittedQuestions ? (
-                    <button
-                      onClick={() => {
-                        setPendingAnswers([]);
-                        setIsQuestionsModalOpen(true);
-                      }}
-                      disabled={isRegisterDisabled}
-                      className={`w-full py-2 rounded-lg font-semibold mb-2 ${
-                        isRegisterDisabled
-                          ? "bg-[#000F57] opacity-50 cursor-not-allowed"
-                          : "bg-[#000F57] text-white"
-                      }`}
-                    >
-                      {ctaText}
-                    </button>
-                  ) : (
-                    <Payment
-                      amount={event.registrationFee || 0}
-                      eventId={event._id.toString()}
-                      groupId={group?._id?.toString()}
-                      customQuestionAnswers={pendingAnswers}
-                      autoStartTrigger={paymentAutoStartTrigger}
-                      text={ctaText}
-                      disabled={
-                        isRegisterDisabled ||
-                        isAlreadyRegistered ||
-                        hasEventPassed ||
-                        isLoading
-                      }
-                      className={`w-full py-2 rounded-lg font-semibold mb-2 ${
-                        isRegisterDisabled
-                          ? "bg-[#000F57] opacity-50 cursor-not-allowed"
-                          : "bg-[#000F57] text-white"
-                      }`}
-                      onSuccess={() => {
-                        toast.success("Payment successful! You are registered.");
-                        setRegistrationStatus("registered");
-                        router.replace(`/events/${event._id}/success`);
-                      }}
-                    />
-                  )
+                  <Payment
+                    amount={event.registrationFee || 0}
+                    eventId={event._id.toString()}
+                    groupId={group?._id?.toString()}
+                    customQuestionAnswers={pendingAnswers}
+                    autoStartTrigger={paymentAutoStartTrigger}
+                    text={ctaText}
+                    disabled={
+                      isRegisterDisabled ||
+                      isAlreadyRegistered ||
+                      hasEventPassed ||
+                      isLoading
+                    }
+                    className={`w-full py-2 rounded-lg font-semibold mb-2 ${
+                      isRegisterDisabled
+                        ? "bg-[#000F57] opacity-50 cursor-not-allowed"
+                        : "bg-[#000F57] text-white"
+                    }`}
+                    onSuccess={() => {
+                      toast.success("Payment successful! You are registered.");
+                      setRegistrationStatus("registered");
+                      router.replace(`/events/${event._id}/success`);
+                    }}
+                  />
                 )}
 
                 <div className="flex ml-auto items-center gap-2 text-[#717171] my-2">
