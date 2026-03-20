@@ -200,7 +200,7 @@ export default function EventDetails({
       <div className="xl:flex relative">
         <div className="xl:w-[70%]">
           {/* Event Header */}
-          <div className="relative w-full h-64 md:h-[26rem] overflow-hidden mb-8 rounded-sm">
+          <div className="relative w-full h-64 md:h-[26rem] overflow-hidden mb-8 rounded-lg">
             {/* Image */}
             <img
               src={event.image || "/images/default-banner.png"}

@@ -65,7 +65,9 @@ const sanitizeCustomQuestions = (
               .map((option) => String(option).trim())
               .filter((option) => option.length > 0),
     }))
-    .filter((question) => question.id.length > 0 && question.question.length > 0);
+    .filter(
+      (question) => question.id.length > 0 && question.question.length > 0,
+    );
 
 export const GET = async (
   req: Request,
@@ -100,7 +102,8 @@ export const GET = async (
 
     const canViewInsights =
       session?.user?.role === "club-admin" &&
-      session?.user?.adminClub?.toString() === event.organizingClub?._id?.toString();
+      session?.user?.adminClub?.toString() ===
+        event.organizingClub?._id?.toString();
 
     // Fetch registrations/participants from Registration collection
     let registeredUsers: any[] = [];
@@ -184,7 +187,8 @@ export const GET = async (
       alreadyRegistered = !!userReg;
     }
 
-    // temporary fix for changing price according to email
+    // temporary fix for changing price according to email.
+    // Keep club-admin edit flows on the canonical stored event fee.
     if (
       event._id.toString() === "69a7fa06cd938ddb63b0f06f" &&
       session?.user?.email?.endsWith("@pvppcoe.ac.in")
@@ -356,8 +360,9 @@ export const PATCH = async (
 
       parsedCustomQuestions = sanitizeCustomQuestions(parsedCustomQuestions);
 
-      const customQuestionsValidation =
-        validateCustomQuestions(parsedCustomQuestions);
+      const customQuestionsValidation = validateCustomQuestions(
+        parsedCustomQuestions,
+      );
       if (!customQuestionsValidation.valid) {
         return NextResponse.json(
           { error: customQuestionsValidation.error },

@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import BackButton from "@/components/BackButton";
 import BorderedDiv from "@/components/BorderedDiv";
 import ProfileEditForm from "@/components/User/ProfileEditForm";
 import { User } from "lucide-react";
@@ -20,9 +21,10 @@ export default async function Settings() {
 
   return (
     <div className="min-h-full">
-      <h1 className="text-5xl font-semibold">Your Settings</h1>
+      <BackButton />
+      <h1 className="text-5xl font-semibold">Edit Profile</h1>
       <div className="mt-2 mb-6 text-[#717171]">
-        Manage your profile and account preferences
+        Update your profile details and information
       </div>
 
       <ProfileEditForm user={user} />

@@ -17,7 +17,9 @@ const getAllEvents = async (query: string | string[], club) => {
 };
 
 const getAllSuperEvents = async () => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/superevents`);
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/superevents`,
+  );
   if (!res.ok) return null;
   const data = await res.json();
   return data;
