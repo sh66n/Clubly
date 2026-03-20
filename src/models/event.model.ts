@@ -87,6 +87,33 @@ const eventSchema = new Schema<IEvent>(
       type: Boolean,
       default: true,
     },
+    customQuestions: [
+      {
+        id: {
+          type: String,
+          required: true,
+        },
+        question: {
+          type: String,
+          required: true,
+        },
+        type: {
+          type: String,
+          enum: ["text", "select", "multiselect"],
+          required: true,
+        },
+        required: {
+          type: Boolean,
+          default: false,
+          required: true,
+        },
+        options: [
+          {
+            type: String,
+          },
+        ],
+      },
+    ],
   },
   { timestamps: true },
 );

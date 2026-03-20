@@ -1,6 +1,6 @@
 "use client";
 import Script from "next/script";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 declare global {
@@ -13,6 +13,11 @@ interface PaymentProps {
   amount: number;
   eventId: string;
   groupId?: string;
+  customQuestionAnswers?: {
+    questionId: string;
+    answer: string | string[];
+  }[];
+  autoStartTrigger?: number;
   text?: React.ReactNode;
   className?: string;
   disabled?: boolean;
@@ -23,19 +28,32 @@ export default function Payment({
   amount,
   eventId,
   groupId,
+  customQuestionAnswers,
+  autoStartTrigger,
   text,
   className,
   disabled,
   onSuccess,
 }: PaymentProps) {
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [isRazorpayReady, setIsRazorpayReady] = useState(false);
+  const [queuedAutoStart, setQueuedAutoStart] = useState(false);
+  const lastAutoStartTrigger = useRef<number | undefined>(undefined);
 
-  const handlePayment = async () => {
-    if (typeof window === "undefined" || !window.Razorpay) {
-      alert("Payment gateway is still loading. Please try again in a moment.");
+  const handlePayment = async (suppressNotReadyAlert = false) => {
+    if (typeof window === "undefined" || !window.Razorpay || !isRazorpayReady) {
+      if (!suppressNotReadyAlert) {
+        alert("Payment gateway is still loading. Please try again in a moment.");
+      }
+      setQueuedAutoStart(true);
       return;
     }
 
+    if (paymentLoading) {
+      return;
+    }
+
+    setQueuedAutoStart(false);
     setPaymentLoading(true);
 
     try {
@@ -48,6 +66,7 @@ export default function Payment({
         body: JSON.stringify({
           eventId,
           groupId: groupId || undefined,
+          customQuestionAnswers: customQuestionAnswers ?? [],
         }),
       });
 
@@ -63,6 +82,7 @@ export default function Payment({
             body: JSON.stringify({
               eventId,
               ...(groupId ? { groupId } : {}),
+              customQuestionAnswers: customQuestionAnswers ?? [],
             }),
           });
           onSuccess?.();
@@ -122,8 +142,30 @@ export default function Payment({
       console.error("Payment error:", error);
       setPaymentLoading(false);
       alert(error.message || "Payment failed. Please try again.");
+      return;
     }
   };
+
+  useEffect(() => {
+    if (!isRazorpayReady || !queuedAutoStart || disabled || paymentLoading) {
+      return;
+    }
+    void handlePayment(true);
+  }, [isRazorpayReady, queuedAutoStart, disabled, paymentLoading]);
+
+  useEffect(() => {
+    if (
+      autoStartTrigger === undefined ||
+      autoStartTrigger === lastAutoStartTrigger.current
+    ) {
+      return;
+    }
+
+    lastAutoStartTrigger.current = autoStartTrigger;
+    if (!disabled && !paymentLoading) {
+      void handlePayment(true);
+    }
+  }, [autoStartTrigger, disabled, paymentLoading]);
 
   return (
     <>
@@ -131,9 +173,12 @@ export default function Payment({
         id="razorpay-checkout-js"
         src="https://checkout.razorpay.com/v1/checkout.js"
         strategy="afterInteractive"
+        onLoad={() => setIsRazorpayReady(true)}
       />
       <button
-        onClick={handlePayment}
+        onClick={() => {
+          void handlePayment();
+        }}
         disabled={disabled || paymentLoading}
         className={`${className || ""} ${
           paymentLoading ? "opacity-50 cursor-not-allowed" : ""

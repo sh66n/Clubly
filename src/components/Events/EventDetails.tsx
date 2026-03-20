@@ -26,6 +26,7 @@ import Payment from "../Payment/Payment";
 import BackButton from "../BackButton";
 import CopyCodeButton from "../Groups/CopyCodeButton";
 import ContinueWithGroupModal from "../Groups/ContinueWithGroupModal";
+import RegistrationQuestionsModal from "./RegistrationQuestionsModal";
 
 interface EventDetailsProps {
   event: IEvent;
@@ -34,6 +35,10 @@ interface EventDetailsProps {
 }
 
 type RegistrationStatus = "idle" | "processing" | "registered";
+type CustomQuestionAnswer = {
+  questionId: string;
+  answer: string | string[];
+};
 
 export default function EventDetails({
   event,
@@ -49,8 +54,14 @@ export default function EventDetails({
 
   const [registrationStatus, setRegistrationStatus] =
     useState<RegistrationStatus>("idle");
+  const [isQuestionsModalOpen, setIsQuestionsModalOpen] = useState(false);
+  const [hasSubmittedQuestions, setHasSubmittedQuestions] = useState(false);
+  const [paymentAutoStartTrigger, setPaymentAutoStartTrigger] = useState(0);
+  const [pendingAnswers, setPendingAnswers] = useState<CustomQuestionAnswer[]>(
+    [],
+  );
 
-  const handleRegister = async () => {
+  const handleRegister = async (customQuestionAnswers: CustomQuestionAnswer[] = []) => {
     try {
       setRegistrationStatus("processing");
 
@@ -71,6 +82,7 @@ export default function EventDetails({
         }
         payload.groupId = group._id;
       }
+      payload.customQuestionAnswers = customQuestionAnswers;
 
       const res = await fetch("/api/events/register", {
         method: "POST",
@@ -171,6 +183,14 @@ export default function EventDetails({
   const ctaText = getCTA();
 
   const hasRewards = event.prize || event.providesCertificate;
+  const hasCustomQuestions = Boolean(event.customQuestions?.length);
+  const openRegistrationFlow = () => {
+    if (hasCustomQuestions) {
+      setIsQuestionsModalOpen(true);
+      return;
+    }
+    handleRegister();
+  };
 
   return (
     <>
@@ -328,7 +348,7 @@ export default function EventDetails({
 
                 {event.registrationFee <= 0 ? (
                   <button
-                    onClick={handleRegister}
+                    onClick={openRegistrationFlow}
                     disabled={isRegisterDisabled}
                     className={`w-full py-2 rounded-lg font-semibold mb-2 ${
                       isRegisterDisabled
@@ -345,28 +365,47 @@ export default function EventDetails({
                           : "Register"}
                   </button>
                 ) : (
-                  <Payment
-                    amount={event.registrationFee || 0}
-                    eventId={event._id.toString()}
-                    groupId={group?._id?.toString()}
-                    text={ctaText}
-                    disabled={
-                      isRegisterDisabled ||
-                      isAlreadyRegistered ||
-                      hasEventPassed ||
-                      isLoading
-                    }
-                    className={`w-full py-2 rounded-lg font-semibold mb-2 ${
-                      isRegisterDisabled
-                        ? "bg-[#000F57] opacity-50 cursor-not-allowed"
-                        : "bg-[#000F57] text-white"
-                    }`}
-                    onSuccess={() => {
-                      toast.success("Payment successful! You are registered.");
-                      setRegistrationStatus("registered");
-                      router.replace(`/events/${event._id}/success`);
-                    }}
-                  />
+                  hasCustomQuestions && !hasSubmittedQuestions ? (
+                    <button
+                      onClick={() => {
+                        setPendingAnswers([]);
+                        setIsQuestionsModalOpen(true);
+                      }}
+                      disabled={isRegisterDisabled}
+                      className={`w-full py-2 rounded-lg font-semibold mb-2 ${
+                        isRegisterDisabled
+                          ? "bg-[#000F57] opacity-50 cursor-not-allowed"
+                          : "bg-[#000F57] text-white"
+                      }`}
+                    >
+                      {ctaText}
+                    </button>
+                  ) : (
+                    <Payment
+                      amount={event.registrationFee || 0}
+                      eventId={event._id.toString()}
+                      groupId={group?._id?.toString()}
+                      customQuestionAnswers={pendingAnswers}
+                      autoStartTrigger={paymentAutoStartTrigger}
+                      text={ctaText}
+                      disabled={
+                        isRegisterDisabled ||
+                        isAlreadyRegistered ||
+                        hasEventPassed ||
+                        isLoading
+                      }
+                      className={`w-full py-2 rounded-lg font-semibold mb-2 ${
+                        isRegisterDisabled
+                          ? "bg-[#000F57] opacity-50 cursor-not-allowed"
+                          : "bg-[#000F57] text-white"
+                      }`}
+                      onSuccess={() => {
+                        toast.success("Payment successful! You are registered.");
+                        setRegistrationStatus("registered");
+                        router.replace(`/events/${event._id}/success`);
+                      }}
+                    />
+                  )
                 )}
 
                 <div className="flex ml-auto items-center gap-2 text-[#717171] my-2">
@@ -486,6 +525,28 @@ export default function EventDetails({
           </div>
         )}
       </div>
+      {hasCustomQuestions && (
+        <RegistrationQuestionsModal
+          isOpen={isQuestionsModalOpen}
+          onClose={() => {
+            setIsQuestionsModalOpen(false);
+            setHasSubmittedQuestions(false);
+            setPendingAnswers([]);
+          }}
+          questions={event.customQuestions ?? []}
+          isSubmitting={registrationStatus === "processing"}
+          onSubmit={async (answers) => {
+            setPendingAnswers(answers);
+            setHasSubmittedQuestions(true);
+            setIsQuestionsModalOpen(false);
+            if (event.registrationFee > 0) {
+              setPaymentAutoStartTrigger((prev) => prev + 1);
+              return;
+            }
+            await handleRegister(answers);
+          }}
+        />
+      )}
     </>
   );
 }

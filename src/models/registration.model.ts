@@ -8,6 +8,10 @@ export interface IRegistration {
   status: "registered" | "attended" | "absent";
   registeredAt: Date;
   attendedAt?: Date;
+  customQuestionAnswers?: {
+    questionId: string;
+    answer: string | string[];
+  }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,6 +43,18 @@ const registrationSchema = new Schema<IRegistration>(
     attendedAt: {
       type: Date,
     },
+    customQuestionAnswers: [
+      {
+        questionId: {
+          type: String,
+          required: true,
+        },
+        answer: {
+          type: Schema.Types.Mixed,
+          required: true,
+        },
+      },
+    ],
   },
   { timestamps: true },
 );

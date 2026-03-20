@@ -99,6 +99,7 @@ export async function POST(request: Request) {
             $setOnInsert: {
               status: "registered",
               registeredAt: new Date(),
+              customQuestionAnswers: payment.customQuestionAnswers ?? [],
             },
           },
           { upsert: true },
@@ -110,6 +111,7 @@ export async function POST(request: Request) {
             $setOnInsert: {
               status: "registered",
               registeredAt: new Date(),
+              customQuestionAnswers: payment.customQuestionAnswers ?? [],
             },
           },
           { upsert: true },

@@ -30,8 +30,8 @@ export async function GET(
     }
 
     // 2. Fetch registrations from Registration collection
-    let registeredUsers: any[] = [];
-    let registeredGroups: any[] = [];
+    let individualRegistrations: any[] = [];
+    let teamRegistrations: any[] = [];
 
     if (event.eventType === "team") {
       const regs = await Registration.find({
@@ -44,7 +44,7 @@ export async function GET(
           model: User,
         },
       });
-      registeredGroups = regs.filter((r) => r.groupId).map((r) => r.groupId);
+      teamRegistrations = regs.filter((r) => r.groupId);
     } else {
       const regs = await Registration.find({
         eventId: id,
@@ -53,7 +53,7 @@ export async function GET(
         path: "userId",
         model: User,
       });
-      registeredUsers = regs.filter((r) => r.userId).map((r) => r.userId);
+      individualRegistrations = regs.filter((r) => r.userId);
     }
 
     // 3. Helper function to calculate year
@@ -103,7 +103,7 @@ export async function GET(
     };
 
     // 4. Define CSV Headers (Updated Order)
-    const headers = [
+    const baseHeaders = [
       "Team Name",
       "Name",
       "Year",
@@ -111,12 +111,28 @@ export async function GET(
       "Email",
       "Phone number",
     ];
+    const customQuestionHeaders = (event.customQuestions ?? []).map(
+      (question: any) => question.question,
+    );
+    const headers = [...baseHeaders, ...customQuestionHeaders];
     let rows: string[] = [];
 
     // 5. Logic for handling Individual vs Team events
     if (event.eventType === "team") {
-      (registeredGroups || []).forEach((group: any) => {
+      (teamRegistrations || []).forEach((registration: any) => {
+        const group = registration.groupId;
         const teamName = group.name || "Unnamed Team";
+        const answersByQuestionId = new Map(
+          (registration.customQuestionAnswers ?? []).map((answer: any) => [
+            answer.questionId,
+            Array.isArray(answer.answer)
+              ? answer.answer.join(" | ")
+              : String(answer.answer ?? ""),
+          ]),
+        );
+        const questionAnswerCells = (event.customQuestions ?? []).map(
+          (question: any) => `"${(answersByQuestionId.get(question.id) ?? "").replace(/"/g, '""')}"`,
+        );
         group.members.forEach((member: any) => {
           const studentYear = getYearFromEmail(member.email);
           const department = getDepartmentFromEmail(member.email);
@@ -128,15 +144,28 @@ export async function GET(
               `"${department}"`,
               `"${member.email}"`,
               `"\t${member.phoneNumber ? member.phoneNumber : "---"}"`,
+              ...questionAnswerCells,
             ].join(","),
           );
         });
       });
     } else {
       // Individual Event
-      (registeredUsers || []).forEach((user: any) => {
+      (individualRegistrations || []).forEach((registration: any) => {
+        const user = registration.userId;
         const studentYear = getYearFromEmail(user.email);
         const department = getDepartmentFromEmail(user.email);
+        const answersByQuestionId = new Map(
+          (registration.customQuestionAnswers ?? []).map((answer: any) => [
+            answer.questionId,
+            Array.isArray(answer.answer)
+              ? answer.answer.join(" | ")
+              : String(answer.answer ?? ""),
+          ]),
+        );
+        const questionAnswerCells = (event.customQuestions ?? []).map(
+          (question: any) => `"${(answersByQuestionId.get(question.id) ?? "").replace(/"/g, '""')}"`,
+        );
         rows.push(
           [
             `"N/A"`,
@@ -145,6 +174,7 @@ export async function GET(
             `"${department}"`,
             `"${user.email}"`,
             `"\t${user.phoneNumber ? user.phoneNumber : "---"}"`,
+            ...questionAnswerCells,
           ].join(","),
         );
       });

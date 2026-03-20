@@ -23,6 +23,10 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import CustomQuestionsEditor, {
+  CustomQuestion,
+  normalizeCustomQuestions,
+} from "./CustomQuestionsEditor";
 
 interface NewEventFormProps {
   user: Session["user"];
@@ -54,6 +58,7 @@ export default function NewEventForm({ user }: NewEventFormProps) {
   const [superEvents, setSuperEvents] = useState<SuperEvent[]>([]);
   const [selectedSuperEvent, setSelectedSuperEvent] = useState("");
   const [providesCertificate, setProvidesCertificate] = useState(true);
+  const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
 
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
@@ -127,6 +132,10 @@ export default function NewEventForm({ user }: NewEventFormProps) {
     if (maxReg) formData.set("maxRegistrations", maxReg);
     if (selectedSuperEvent) formData.set("superEvent", selectedSuperEvent);
     if (file) formData.set("image", file);
+    formData.set(
+      "customQuestions",
+      JSON.stringify(normalizeCustomQuestions(customQuestions)),
+    );
 
     if (eventType === "individual") {
       formData.set("teamSize", "1");
@@ -564,6 +573,11 @@ export default function NewEventForm({ user }: NewEventFormProps) {
                 </div>
               </Field>
 
+              <CustomQuestionsEditor
+                value={customQuestions}
+                onChange={setCustomQuestions}
+              />
+
               {/* Summary */}
               <div className="rounded-xl bg-gradient-to-br from-gray-900 to-gray-800/60 border border-gray-700 p-4 space-y-2">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
@@ -592,6 +606,10 @@ export default function NewEventForm({ user }: NewEventFormProps) {
                 <SummaryRow
                   label="Cap"
                   value={maxReg ? `${maxReg} slots` : "Unlimited"}
+                />
+                <SummaryRow
+                  label="Questions"
+                  value={`${customQuestions.length}`}
                 />
               </div>
             </div>

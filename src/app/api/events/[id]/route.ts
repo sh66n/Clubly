@@ -4,6 +4,69 @@ import { connectToDb } from "@/lib/connectToDb";
 import { Event, Group, Registration } from "@/models";
 import { NextRequest, NextResponse } from "next/server";
 
+type CustomQuestionInput = {
+  id: string;
+  question: string;
+  type: "text" | "select" | "multiselect";
+  required: boolean;
+  options?: string[];
+};
+
+const validateCustomQuestions = (
+  customQuestions: CustomQuestionInput[],
+): { valid: true } | { valid: false; error: string } => {
+  const ids = new Set<string>();
+
+  for (const question of customQuestions) {
+    if (!question.id || !question.question?.trim()) {
+      return { valid: false, error: "Each custom question needs id and text" };
+    }
+
+    if (ids.has(question.id)) {
+      return { valid: false, error: "Custom question ids must be unique" };
+    }
+    ids.add(question.id);
+
+    if (!["text", "select", "multiselect"].includes(question.type)) {
+      return { valid: false, error: "Invalid custom question type" };
+    }
+
+    if (question.type === "text") {
+      continue;
+    }
+
+    const options = (question.options ?? [])
+      .map((opt) => opt.trim())
+      .filter(Boolean);
+    if (options.length === 0) {
+      return {
+        valid: false,
+        error: "Select and multiselect questions require options",
+      };
+    }
+  }
+
+  return { valid: true };
+};
+
+const sanitizeCustomQuestions = (
+  customQuestions: CustomQuestionInput[],
+): CustomQuestionInput[] =>
+  customQuestions
+    .map((question) => ({
+      id: String(question.id ?? "").trim(),
+      question: String(question.question ?? "").trim(),
+      type: question.type,
+      required: Boolean(question.required),
+      options:
+        question.type === "text"
+          ? []
+          : (question.options ?? [])
+              .map((option) => String(option).trim())
+              .filter((option) => option.length > 0),
+    }))
+    .filter((question) => question.id.length > 0 && question.question.length > 0);
+
 export const GET = async (
   req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -183,6 +246,7 @@ export const PATCH = async (
       "registrationFee",
       "maxRegistrations",
       "isRegistrationOpen",
+      "customQuestions",
     ];
 
     //  Convert FormData → plain object
@@ -256,6 +320,38 @@ export const PATCH = async (
         { error: "maxRegistrations must be at least 1" },
         { status: 400 },
       );
+    }
+
+    if (body.customQuestions !== undefined) {
+      let parsedCustomQuestions: CustomQuestionInput[] = [];
+      try {
+        parsedCustomQuestions = JSON.parse(body.customQuestions);
+      } catch {
+        return NextResponse.json(
+          { error: "Invalid customQuestions payload" },
+          { status: 400 },
+        );
+      }
+
+      if (!Array.isArray(parsedCustomQuestions)) {
+        return NextResponse.json(
+          { error: "customQuestions must be an array" },
+          { status: 400 },
+        );
+      }
+
+      parsedCustomQuestions = sanitizeCustomQuestions(parsedCustomQuestions);
+
+      const customQuestionsValidation =
+        validateCustomQuestions(parsedCustomQuestions);
+      if (!customQuestionsValidation.valid) {
+        return NextResponse.json(
+          { error: customQuestionsValidation.error },
+          { status: 400 },
+        );
+      }
+
+      body.customQuestions = parsedCustomQuestions;
     }
 
     const updatedEvent = await Event.findByIdAndUpdate(

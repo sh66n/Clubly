@@ -20,7 +20,26 @@ export const zEvent = z.object({
   image: z.optional(z.string()),
   maxRegistrations: z.number(),
   isRegistrationOpen: z.boolean().default(true),
+  customQuestions: z
+    .array(
+      z.object({
+        id: z.string(),
+        question: z.string(),
+        type: z.enum(["text", "select", "multiselect"]),
+        required: z.boolean(),
+        options: z.array(z.string()).optional(),
+      }),
+    )
+    .optional(),
 });
+
+export interface ICustomQuestion {
+  id: string;
+  question: string;
+  type: "text" | "select" | "multiselect";
+  required: boolean;
+  options?: string[];
+}
 
 export interface IEvent {
   _id: Types.ObjectId;
@@ -49,6 +68,7 @@ export interface IEvent {
   superEvent: Types.ObjectId;
   whatsappGroupLink: string;
   isRegistrationOpen: boolean;
+  customQuestions?: ICustomQuestion[];
   createdAt: Date;
   updatedAt: Date;
 }

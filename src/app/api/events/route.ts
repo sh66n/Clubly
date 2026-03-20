@@ -5,6 +5,67 @@ import { Event, Club, Registration } from "@/models";
 import { Types } from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
+type CustomQuestionInput = {
+  id: string;
+  question: string;
+  type: "text" | "select" | "multiselect";
+  required: boolean;
+  options?: string[];
+};
+
+const validateCustomQuestions = (
+  customQuestions: CustomQuestionInput[],
+): { valid: true } | { valid: false; error: string } => {
+  const ids = new Set<string>();
+
+  for (const question of customQuestions) {
+    if (!question.id || !question.question?.trim()) {
+      return { valid: false, error: "Each custom question needs id and text" };
+    }
+
+    if (ids.has(question.id)) {
+      return { valid: false, error: "Custom question ids must be unique" };
+    }
+    ids.add(question.id);
+
+    if (!["text", "select", "multiselect"].includes(question.type)) {
+      return { valid: false, error: "Invalid custom question type" };
+    }
+
+    if (question.type === "text") {
+      continue;
+    }
+
+    const options = (question.options ?? []).map((opt) => opt.trim()).filter(Boolean);
+    if (options.length === 0) {
+      return {
+        valid: false,
+        error: "Select and multiselect questions require options",
+      };
+    }
+  }
+
+  return { valid: true };
+};
+
+const sanitizeCustomQuestions = (
+  customQuestions: CustomQuestionInput[],
+): CustomQuestionInput[] =>
+  customQuestions
+    .map((question) => ({
+      id: String(question.id ?? "").trim(),
+      question: String(question.question ?? "").trim(),
+      type: question.type,
+      required: Boolean(question.required),
+      options:
+        question.type === "text"
+          ? []
+          : (question.options ?? [])
+              .map((option) => String(option).trim())
+              .filter((option) => option.length > 0),
+    }))
+    .filter((question) => question.id.length > 0 && question.question.length > 0);
+
 /* ======================= GET ======================= */
 export const GET = async (req: NextRequest) => {
   try {
@@ -106,6 +167,36 @@ export const POST = async (req: NextRequest) => {
     const registrationFee = formData.get("registrationFee") as string | null;
     const maxRegistrations = formData.get("maxRegistrations") as string | null;
     const superEvent = formData.get("superEvent") as string | null;
+    const customQuestionsRaw = formData.get("customQuestions") as string | null;
+    let customQuestions: CustomQuestionInput[] = [];
+
+    if (customQuestionsRaw) {
+      try {
+        const parsed = JSON.parse(customQuestionsRaw);
+        if (!Array.isArray(parsed)) {
+          return NextResponse.json(
+            { error: "customQuestions must be an array" },
+            { status: 400 },
+          );
+        }
+        customQuestions = parsed;
+      } catch {
+        return NextResponse.json(
+          { error: "Invalid customQuestions payload" },
+          { status: 400 },
+        );
+      }
+    }
+
+    customQuestions = sanitizeCustomQuestions(customQuestions);
+
+    const customQuestionsValidation = validateCustomQuestions(customQuestions);
+    if (!customQuestionsValidation.valid) {
+      return NextResponse.json(
+        { error: customQuestionsValidation.error },
+        { status: 400 },
+      );
+    }
 
     /* ---------- Image Upload ---------- */
     const file = formData.get("image") as unknown as File | null;
@@ -168,6 +259,7 @@ export const POST = async (req: NextRequest) => {
       image: imageUrl,
       maxRegistrations: maxRegistrations ? Number(maxRegistrations) : undefined,
       superEvent: superEvent || undefined,
+      customQuestions,
     });
 
     // Note: Events are linked to clubs via organizingClub field, no need to maintain club.events array

@@ -9,6 +9,10 @@ export interface IPayment {
   amount: number; // in paise
   currency: string;
   status: "created" | "paid" | "failed";
+  customQuestionAnswers?: {
+    questionId: string;
+    answer: string | string[];
+  }[];
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -52,6 +56,18 @@ const paymentSchema = new Schema<IPayment>(
       default: "created",
       required: true,
     },
+    customQuestionAnswers: [
+      {
+        questionId: {
+          type: String,
+          required: true,
+        },
+        answer: {
+          type: Schema.Types.Mixed,
+          required: true,
+        },
+      },
+    ],
   },
   { timestamps: true },
 );
