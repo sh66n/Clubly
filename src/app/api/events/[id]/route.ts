@@ -1,4 +1,9 @@
 import { auth } from "@/auth";
+import {
+  getDefaultCertificateLayout,
+  parseCertificateLayoutFromFormData,
+  validateCertificateTemplateFile,
+} from "@/lib/certificate";
 import cloudinary from "@/lib/cloudinary";
 import { connectToDb } from "@/lib/connectToDb";
 import { Event, Group, Registration } from "@/models";
@@ -265,6 +270,13 @@ export const PATCH = async (
       "maxRegistrations",
       "isRegistrationOpen",
       "customQuestions",
+      "certificateLayout",
+      "certificateNamePreset",
+      "certificateNameXOffset",
+      "certificateNameYOffset",
+      "certificateNameFontSize",
+      "certificateNameColor",
+      "removeCertificateTemplate",
     ];
 
     //  Convert FormData → plain object
@@ -276,7 +288,29 @@ export const PATCH = async (
       const parsedKey = key.replace(/\[/g, ".").replace(/\]/g, "");
 
       // Strictly allow-list to prevent mass-assignment vulnerability
-      if (!ALLOWED_FIELDS.includes(parsedKey) && parsedKey !== "image") {
+      if (
+        !ALLOWED_FIELDS.includes(parsedKey) &&
+        parsedKey !== "image" &&
+        parsedKey !== "certificateTemplateImage"
+      ) {
+        continue;
+      }
+
+      if (parsedKey === "certificateTemplateImage") {
+        continue;
+      }
+
+      if (
+        [
+          "certificateNamePreset",
+          "certificateNameXOffset",
+          "certificateNameYOffset",
+          "certificateNameFontSize",
+          "certificateNameColor",
+          "removeCertificateTemplate",
+          "certificateLayout",
+        ].includes(parsedKey)
+      ) {
         continue;
       }
 
@@ -373,11 +407,97 @@ export const PATCH = async (
       body.customQuestions = parsedCustomQuestions;
     }
 
-    const updatedEvent = await Event.findByIdAndUpdate(
-      id,
-      { $set: body },
-      { new: true, runValidators: true },
-    );
+    const certificateLayoutResult =
+      parseCertificateLayoutFromFormData(formData);
+    if (!certificateLayoutResult.valid) {
+      return NextResponse.json(
+        { error: certificateLayoutResult.error },
+        { status: 400 },
+      );
+    }
+
+    const certificateTemplateFile = formData.get(
+      "certificateTemplateImage",
+    ) as File | null;
+    const removeCertificateTemplate =
+      formData.get("removeCertificateTemplate") === "true";
+
+    const shouldUpdateNameConfigOnly =
+      formData.has("certificateLayout") ||
+      formData.has("certificateNamePreset") ||
+      formData.has("certificateNameXOffset") ||
+      formData.has("certificateNameYOffset") ||
+      formData.has("certificateNameFontSize") ||
+      formData.has("certificateNameColor");
+
+    if (removeCertificateTemplate || body.providesCertificate === false) {
+      body.certificateTemplate = undefined;
+    }
+
+    if (certificateTemplateFile && certificateTemplateFile.size > 0) {
+      const certificateValidation = validateCertificateTemplateFile(
+        certificateTemplateFile,
+      );
+      if (!certificateValidation.valid) {
+        return NextResponse.json(
+          { error: certificateValidation.error },
+          { status: 400 },
+        );
+      }
+
+      const certBuffer = Buffer.from(
+        await certificateTemplateFile.arrayBuffer(),
+      );
+
+      const certUploadResult: any = await new Promise((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream(
+            {
+              resource_type: "image",
+              folder: "certificates",
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            },
+          )
+          .end(certBuffer);
+      });
+
+      body.certificateTemplate = {
+        url: certUploadResult.secure_url,
+        publicId: certUploadResult.public_id,
+        uploadedAt: new Date(),
+        layout: certificateLayoutResult.layout ?? getDefaultCertificateLayout(),
+      };
+    } else if (
+      shouldUpdateNameConfigOnly &&
+      event.certificateTemplate &&
+      !removeCertificateTemplate
+    ) {
+      body["certificateTemplate.layout"] =
+        certificateLayoutResult.layout ??
+        event.certificateTemplate.layout ??
+        getDefaultCertificateLayout();
+    }
+
+    const unsetBody: Record<string, 1> = {};
+    if (body.certificateTemplate === undefined) {
+      delete body.certificateTemplate;
+      unsetBody.certificateTemplate = 1;
+    }
+
+    const updatePayload: Record<string, any> = { $set: body };
+    if (Object.keys(unsetBody).length > 0) {
+      updatePayload.$unset = unsetBody;
+    }
+
+    event.set(body);
+    if (updatePayload.$unset?.certificateTemplate) {
+      event.set("certificateTemplate", undefined);
+    }
+
+    const updatedEvent = await event.save();
 
     return NextResponse.json({ event: updatedEvent }, { status: 200 });
   } catch (error) {

@@ -114,6 +114,87 @@ const eventSchema = new Schema<IEvent>(
         ],
       },
     ],
+    certificateTemplate: {
+      url: {
+        type: String,
+      },
+      publicId: {
+        type: String,
+      },
+      uploadedAt: {
+        type: Date,
+      },
+      layout: {
+        tokens: [
+          {
+            id: {
+              type: String,
+            },
+            variable: {
+              type: String,
+              enum: ["$name", "$year", "$rank"],
+            },
+            x: {
+              type: Number,
+              default: 0.5,
+            },
+            y: {
+              type: Number,
+              default: 0.5,
+            },
+            fontSize: {
+              type: Number,
+              default: 44,
+            },
+            colorHex: {
+              type: String,
+              default: "#111111",
+            },
+            fontFamily: {
+              type: String,
+              enum: ["helvetica", "times", "courier"],
+              default: "helvetica",
+            },
+            bold: {
+              type: Boolean,
+              default: true,
+            },
+            italic: {
+              type: Boolean,
+              default: false,
+            },
+            align: {
+              type: String,
+              enum: ["left", "center", "right"],
+              default: "center",
+            },
+          },
+        ],
+      },
+      nameConfig: {
+        preset: {
+          type: String,
+          enum: ["center", "lower-third", "top-center"],
+          default: "center",
+        },
+        xOffset: {
+          type: Number,
+          default: 0,
+        },
+        yOffset: {
+          type: Number,
+          default: 0,
+        },
+        fontSize: {
+          type: Number,
+          default: 48,
+        },
+        colorHex: {
+          type: String,
+          default: "#111111",
+        },
+      },
+    },
   },
   { timestamps: true },
 );
