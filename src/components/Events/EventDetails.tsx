@@ -27,6 +27,7 @@ import BackButton from "../BackButton";
 import CopyCodeButton from "../Groups/CopyCodeButton";
 import ContinueWithGroupModal from "../Groups/ContinueWithGroupModal";
 import RegistrationQuestionsModal from "./RegistrationQuestionsModal";
+import DownloadCertificateButton from "./DownloadCertificateButton";
 
 interface EventDetailsProps {
   event: IEvent;
@@ -274,6 +275,18 @@ export default function EventDetails({
                       <FileBadge />
                     </div>
                     Certificate
+                  </div>
+                )}
+
+                {event.providesCertificate && (
+                  <div className="pt-2">
+                    <DownloadCertificateButton
+                      eventId={String(event._id)}
+                      eventName={event.name}
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      Available once your attendance is marked.
+                    </p>
                   </div>
                 )}
               </BorderedDiv>

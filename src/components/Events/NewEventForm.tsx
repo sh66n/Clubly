@@ -27,6 +27,8 @@ import CustomQuestionsEditor, {
   CustomQuestion,
   normalizeCustomQuestions,
 } from "./CustomQuestionsEditor";
+import CertificateLayoutEditor from "./CertificateLayoutEditor";
+import { getDefaultCertificateLayout } from "@/lib/certificate";
 
 interface NewEventFormProps {
   user: Session["user"];
@@ -45,6 +47,7 @@ const STEPS = [
 export default function NewEventForm({ user }: NewEventFormProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const certificateTemplateInputRef = useRef<HTMLInputElement>(null);
   const today = new Date().toISOString().split("T")[0];
 
   const [step, setStep] = useState(1);
@@ -59,6 +62,14 @@ export default function NewEventForm({ user }: NewEventFormProps) {
   const [selectedSuperEvent, setSelectedSuperEvent] = useState("");
   const [providesCertificate, setProvidesCertificate] = useState(true);
   const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
+  const [certificateTemplateFile, setCertificateTemplateFile] =
+    useState<File | null>(null);
+  const [certificateTemplatePreview, setCertificateTemplatePreview] = useState<
+    string | null
+  >(null);
+  const [certificateLayout, setCertificateLayout] = useState(
+    getDefaultCertificateLayout(),
+  );
 
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
@@ -94,6 +105,26 @@ export default function NewEventForm({ user }: NewEventFormProps) {
     }
     setFile(picked);
     setPreviewUrl(URL.createObjectURL(picked));
+  };
+
+  const handleCertificateTemplateChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const picked = e.target.files?.[0];
+    if (!picked) return;
+    if (!picked.type.startsWith("image/")) {
+      toast.error("Certificate template must be an image");
+      e.target.value = "";
+      return;
+    }
+    if (picked.size > 4 * 1024 * 1024) {
+      toast.error("Certificate template must be less than 4MB");
+      e.target.value = "";
+      return;
+    }
+
+    setCertificateTemplateFile(picked);
+    setCertificateTemplatePreview(URL.createObjectURL(picked));
   };
 
   // Step validation before advancing
@@ -132,6 +163,10 @@ export default function NewEventForm({ user }: NewEventFormProps) {
     if (maxReg) formData.set("maxRegistrations", maxReg);
     if (selectedSuperEvent) formData.set("superEvent", selectedSuperEvent);
     if (file) formData.set("image", file);
+    if (providesCertificate && certificateTemplateFile) {
+      formData.set("certificateTemplateImage", certificateTemplateFile);
+    }
+    formData.set("certificateLayout", JSON.stringify(certificateLayout));
     formData.set(
       "customQuestions",
       JSON.stringify(normalizeCustomQuestions(customQuestions)),
@@ -573,6 +608,64 @@ export default function NewEventForm({ user }: NewEventFormProps) {
                 </div>
               </Field>
 
+              {providesCertificate && (
+                <>
+                  <Field
+                    label="Certificate Template"
+                    icon={<ImageIcon className="w-4 h-4" />}
+                  >
+                    <div
+                      onClick={() =>
+                        certificateTemplateInputRef.current?.click()
+                      }
+                      className={`border-2 border-dashed rounded-xl p-5 flex flex-col items-center gap-2 cursor-pointer transition-all
+                    ${certificateTemplatePreview ? "border-blue-500/40 bg-blue-500/5" : "border-gray-700 hover:border-gray-500 bg-gray-800/20"}`}
+                    >
+                      {certificateTemplatePreview ? (
+                        <>
+                          <img
+                            src={certificateTemplatePreview}
+                            alt="Certificate Template Preview"
+                            className="w-full h-28 object-cover rounded-lg"
+                          />
+                          <p className="text-xs text-blue-400">
+                            {certificateTemplateFile?.name}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-6 h-6 text-gray-500" />
+                          <p className="text-sm text-gray-400">
+                            Click to upload certificate template
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            PNG, JPG, WEBP · Max 4MB
+                          </p>
+                        </>
+                      )}
+                    </div>
+                    <input
+                      ref={certificateTemplateInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCertificateTemplateChange}
+                      className="hidden"
+                    />
+                  </Field>
+
+                  <Field
+                    label="Certificate Variables"
+                    icon={<Tag className="w-4 h-4" />}
+                  >
+                    <CertificateLayoutEditor
+                      templatePreviewUrl={certificateTemplatePreview}
+                      layout={certificateLayout}
+                      onChange={setCertificateLayout}
+                    />
+                  </Field>
+                </>
+              )}
+
               <CustomQuestionsEditor
                 value={customQuestions}
                 onChange={setCustomQuestions}
@@ -603,6 +696,14 @@ export default function NewEventForm({ user }: NewEventFormProps) {
                   label="Certificate"
                   value={providesCertificate ? "Yes ✓" : "No"}
                 />
+                {providesCertificate && (
+                  <SummaryRow
+                    label="Template"
+                    value={
+                      certificateTemplateFile ? "Uploaded" : "Not uploaded"
+                    }
+                  />
+                )}
                 <SummaryRow
                   label="Cap"
                   value={maxReg ? `${maxReg} slots` : "Unlimited"}

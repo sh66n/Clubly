@@ -6,6 +6,7 @@ import { MessageCircle, ArrowLeft, ExternalLink } from "lucide-react";
 import { getEvent } from "@/services/getEvent";
 import { IEvent } from "@/models/event.schema";
 import SuccessIcon from "@/components/Events/SuccessIcon";
+import DownloadCertificateButton from "@/components/Events/DownloadCertificateButton";
 import { auth } from "@/auth";
 
 export default async function RegistrationSuccess({
@@ -126,6 +127,18 @@ export default async function RegistrationSuccess({
         )}
 
         {/* Back */}
+        {event.providesCertificate && (
+          <div className="space-y-2">
+            <DownloadCertificateButton
+              eventId={String(event._id)}
+              eventName={event.name}
+            />
+            <p className="text-xs text-zinc-500 text-center">
+              Certificate unlocks after attendance is marked.
+            </p>
+          </div>
+        )}
+
         <div className="flex justify-center pt-4">
           <Link
             href="/events"

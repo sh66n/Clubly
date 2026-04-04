@@ -1,4 +1,9 @@
 import { auth } from "@/auth";
+import {
+  getDefaultCertificateLayout,
+  parseCertificateLayoutFromFormData,
+  validateCertificateTemplateFile,
+} from "@/lib/certificate";
 import cloudinary from "@/lib/cloudinary";
 import { connectToDb } from "@/lib/connectToDb";
 import { Event, Registration } from "@/models";
@@ -36,7 +41,9 @@ const validateCustomQuestions = (
       continue;
     }
 
-    const options = (question.options ?? []).map((opt) => opt.trim()).filter(Boolean);
+    const options = (question.options ?? [])
+      .map((opt) => opt.trim())
+      .filter(Boolean);
     if (options.length === 0) {
       return {
         valid: false,
@@ -64,7 +71,9 @@ const sanitizeCustomQuestions = (
               .map((option) => String(option).trim())
               .filter((option) => option.length > 0),
     }))
-    .filter((question) => question.id.length > 0 && question.question.length > 0);
+    .filter(
+      (question) => question.id.length > 0 && question.question.length > 0,
+    );
 
 /* ======================= GET ======================= */
 export const GET = async (req: NextRequest) => {
@@ -216,6 +225,15 @@ export const POST = async (req: NextRequest) => {
       );
     }
 
+    const certificateLayoutResult =
+      parseCertificateLayoutFromFormData(formData);
+    if (!certificateLayoutResult.valid) {
+      return NextResponse.json(
+        { error: certificateLayoutResult.error },
+        { status: 400 },
+      );
+    }
+
     /* ---------- Image Upload ---------- */
     const file = formData.get("image") as unknown as File | null;
     let imageUrl = "";
@@ -233,6 +251,82 @@ export const POST = async (req: NextRequest) => {
       });
 
       imageUrl = uploadResult.secure_url;
+    }
+
+    /* ---------- Certificate Template Upload ---------- */
+    const certificateTemplateFile = formData.get(
+      "certificateTemplateImage",
+    ) as File | null;
+
+    let certificateTemplate:
+      | {
+          url: string;
+          publicId: string;
+          uploadedAt: Date;
+          nameConfig: {
+            preset: "center" | "lower-third" | "top-center";
+            xOffset: number;
+            yOffset: number;
+            fontSize: number;
+            colorHex: string;
+          };
+          layout?: {
+            tokens: {
+              id: string;
+              variable: "$name" | "$year" | "$rank";
+              x: number;
+              y: number;
+              fontSize: number;
+              colorHex: string;
+              fontFamily: "helvetica" | "times" | "courier";
+              bold: boolean;
+              italic: boolean;
+              align: "left" | "center" | "right";
+            }[];
+          };
+        }
+      | undefined;
+
+    if (
+      providesCertificate &&
+      certificateTemplateFile &&
+      certificateTemplateFile.size > 0
+    ) {
+      const certificateValidation = validateCertificateTemplateFile(
+        certificateTemplateFile,
+      );
+      if (!certificateValidation.valid) {
+        return NextResponse.json(
+          { error: certificateValidation.error },
+          { status: 400 },
+        );
+      }
+
+      const certBuffer = Buffer.from(
+        await certificateTemplateFile.arrayBuffer(),
+      );
+
+      const certUploadResult: any = await new Promise((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream(
+            {
+              resource_type: "image",
+              folder: "certificates",
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            },
+          )
+          .end(certBuffer);
+      });
+
+      certificateTemplate = {
+        url: certUploadResult.secure_url,
+        publicId: certUploadResult.public_id,
+        uploadedAt: new Date(),
+        layout: certificateLayoutResult.layout ?? getDefaultCertificateLayout(),
+      };
     }
 
     /* ---------- Team Size Logic ---------- */
@@ -278,6 +372,7 @@ export const POST = async (req: NextRequest) => {
       maxRegistrations: maxRegistrations ? Number(maxRegistrations) : undefined,
       superEvent: superEvent || undefined,
       customQuestions,
+      certificateTemplate,
     });
 
     // Note: Events are linked to clubs via organizingClub field, no need to maintain club.events array
