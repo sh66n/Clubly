@@ -38,7 +38,7 @@ export default function Payment({
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [isRazorpayReady, setIsRazorpayReady] = useState(false);
   const [queuedAutoStart, setQueuedAutoStart] = useState(false);
-  const lastAutoStartTrigger = useRef<number | undefined>(undefined);
+  const lastAutoStartTrigger = useRef<number | undefined>(autoStartTrigger);
 
   const handlePayment = async (suppressNotReadyAlert = false) => {
     if (typeof window === "undefined" || !window.Razorpay || !isRazorpayReady) {
