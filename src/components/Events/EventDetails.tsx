@@ -57,7 +57,9 @@ export default function EventDetails({
     useState<RegistrationStatus>("idle");
   const [isQuestionsModalOpen, setIsQuestionsModalOpen] = useState(false);
   const [hasSubmittedQuestions, setHasSubmittedQuestions] = useState(false);
-  const [paymentAutoStartTrigger, setPaymentAutoStartTrigger] = useState(0);
+  const [paymentAutoStartTrigger, setPaymentAutoStartTrigger] = useState<
+    number | undefined
+  >(undefined);
   const [pendingAnswers, setPendingAnswers] = useState<CustomQuestionAnswer[]>(
     [],
   );
@@ -557,7 +559,7 @@ export default function EventDetails({
             setHasSubmittedQuestions(true);
             setIsQuestionsModalOpen(false);
             if (event.registrationFee > 0) {
-              setPaymentAutoStartTrigger((prev) => prev + 1);
+              setPaymentAutoStartTrigger((prev) => (prev ?? 0) + 1);
               return;
             }
             await handleRegister(answers);
