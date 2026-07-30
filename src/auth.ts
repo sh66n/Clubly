@@ -21,37 +21,41 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       //   return "/login?error=unauthorized-domain";
       // }
 
-      await connectToDb();
+      try {
+        await connectToDb();
 
-      const existingUser = await User.findOne({ email: user.email });
+        const existingUser = await User.findOne({ email: user.email });
 
-      if (!existingUser) {
-        //uploads google pfp to cloudinary
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/api/upload-avatar`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-internal-secret": process.env.AUTH_SECRET || "",
+        if (!existingUser) {
+          // uploads google pfp to cloudinary
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_BASE_URL}/api/upload-avatar`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-internal-secret": process.env.AUTH_SECRET || "",
+              },
+              body: JSON.stringify({
+                url: user.image,
+                publicId: user.email?.split("@")[0],
+              }),
             },
-            body: JSON.stringify({
-              url: user.image,
-              publicId: user.email?.split("@")[0],
-            }),
-          },
-        );
-        const data = await res.json();
-        let imageUrl = user.image;
-        if (data.success) {
-          imageUrl = data.url;
+          );
+          const data = await res.json();
+          let imageUrl = user.image;
+          if (data.success) {
+            imageUrl = data.url;
+          }
+          await User.create({
+            name: user.name,
+            email: user.email,
+            image: imageUrl, // use Cloudinary instead of Google URL
+            role: "user",
+          });
         }
-        await User.create({
-          name: user.name,
-          email: user.email,
-          image: imageUrl, // use Cloudinary instead of Google URL
-          role: "user",
-        });
+      } catch (error) {
+        console.error("Sign-in DB sync failed, allowing login anyway:", error);
       }
       return true;
     },

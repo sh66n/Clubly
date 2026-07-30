@@ -12,18 +12,31 @@ import React from "react";
 
 const getInsights = async (userId: string) => {
   const [
-    eventsAttended,
-    leaderboardData,
-    eventsRegistered,
-    upcomingEvents,
-    anyFourClubs,
-  ] = await Promise.all([
+    eventsAttendedResult,
+    leaderboardDataResult,
+    eventsRegisteredResult,
+    upcomingEventsResult,
+    anyFourClubsResult,
+  ] = await Promise.allSettled([
     getEventsAttendedByUser(userId),
     getLeaderboardRank("68ab3c6d14766aa80db61482", userId),
     getEventsRegisteredByUser(userId),
     getWeeklyEventCounts(),
     getAnyFourClubs(),
   ]);
+
+  const eventsAttended =
+    eventsAttendedResult.status === "fulfilled" ? eventsAttendedResult.value : 0;
+  const leaderboardData =
+    leaderboardDataResult.status === "fulfilled"
+      ? leaderboardDataResult.value
+      : { _id: userId, rank: -1, points: 0, totalUsers: 0 };
+  const eventsRegistered =
+    eventsRegisteredResult.status === "fulfilled" ? eventsRegisteredResult.value : 0;
+  const upcomingEvents =
+    upcomingEventsResult.status === "fulfilled" ? upcomingEventsResult.value : [0, 0, 0, 0, 0, 0, 0];
+  const anyFourClubs =
+    anyFourClubsResult.status === "fulfilled" ? anyFourClubsResult.value : [];
 
   return {
     eventsAttended,

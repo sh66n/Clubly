@@ -188,6 +188,7 @@ export default function EventDetails({
   const ctaText = getCTA();
 
   const hasRewards = event.prize || event.providesCertificate;
+  const hasCertificateTemplate = Boolean(event.certificateTemplate?.url);
   const hasCustomQuestions = Boolean(event.customQuestions?.length);
   const openRegistrationFlow = () => {
     if (hasCustomQuestions) {
@@ -271,7 +272,7 @@ export default function EventDetails({
                   </div>
                 )}
 
-                {event.providesCertificate && (
+                {event.providesCertificate && hasCertificateTemplate && (
                   <div className="flex items-center gap-2">
                     <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
                       <FileBadge />
@@ -280,7 +281,7 @@ export default function EventDetails({
                   </div>
                 )}
 
-                {event.providesCertificate && (
+                {event.providesCertificate && hasCertificateTemplate && (
                   <div className="pt-2">
                     <DownloadCertificateButton
                       eventId={String(event._id)}
