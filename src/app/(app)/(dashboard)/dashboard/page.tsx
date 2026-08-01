@@ -26,15 +26,21 @@ const getInsights = async (userId: string) => {
   ]);
 
   const eventsAttended =
-    eventsAttendedResult.status === "fulfilled" ? eventsAttendedResult.value : 0;
+    eventsAttendedResult.status === "fulfilled"
+      ? eventsAttendedResult.value
+      : 0;
   const leaderboardData =
     leaderboardDataResult.status === "fulfilled"
       ? leaderboardDataResult.value
       : { _id: userId, rank: -1, points: 0, totalUsers: 0 };
   const eventsRegistered =
-    eventsRegisteredResult.status === "fulfilled" ? eventsRegisteredResult.value : 0;
+    eventsRegisteredResult.status === "fulfilled"
+      ? eventsRegisteredResult.value
+      : 0;
   const upcomingEvents =
-    upcomingEventsResult.status === "fulfilled" ? upcomingEventsResult.value : [0, 0, 0, 0, 0, 0, 0];
+    upcomingEventsResult.status === "fulfilled"
+      ? upcomingEventsResult.value
+      : [0, 0, 0, 0, 0, 0, 0];
   const anyFourClubs =
     anyFourClubsResult.status === "fulfilled" ? anyFourClubsResult.value : [];
 
@@ -95,12 +101,14 @@ export default async function Dashboard() {
             <div className="text-lg sm:text-xl lg:text-2xl font-semibold">
               Leaderboard
             </div>
-              <div className="text-[#5E77F5] font-bold text-3xl sm:text-4xl lg:text-5xl my-3 lg:my-4">
-                {leaderboardData?.rank !== -1 ? `#${leaderboardData?.rank}` : "N/A"}
-              </div>
-              <div className="text-xs text-[#717171]">
-                out of {leaderboardData?.totalUsers ?? 0} users
-              </div>
+            <div className="text-[#5E77F5] font-bold text-3xl sm:text-4xl lg:text-5xl my-3 lg:my-4">
+              {leaderboardData?.rank !== -1
+                ? `#${leaderboardData?.rank}`
+                : "N/A"}
+            </div>
+            <div className="text-xs text-[#717171]">
+              out of {leaderboardData?.totalUsers ?? 0} users
+            </div>
           </BorderedDiv>
 
           <BorderedDiv className="w-full sm:col-span-2 lg:col-span-1">

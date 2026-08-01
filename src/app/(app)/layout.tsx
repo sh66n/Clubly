@@ -13,10 +13,12 @@ export default async function layout({
   return (
     <div className="flex">
       {/* Sidebar */}
-      <Sidebar isLoggedIn={session ? true : false} points={points} />
+      <Sidebar isLoggedIn={session ? true : false} points={points} user={session?.user} />
       <MobileNavbar user={session?.user} />
       {/* Main content */}
-      <div className="flex-1 pl-2 pr-2 pb-20 md:pb-0 md:ml-64">{children}</div>
+      <div className="flex-1 pl-2 pr-2 pb-20 md:pb-0 md:ml-[var(--sidebar-width,16rem)] transition-all duration-300">
+        {children}
+      </div>
     </div>
   );
 }
