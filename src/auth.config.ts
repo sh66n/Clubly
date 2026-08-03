@@ -2,6 +2,9 @@ import Google from "next-auth/providers/google";
 import type { NextAuthConfig } from "next-auth";
 
 export const authConfig: NextAuthConfig = {
+  session: {
+    maxAge: 3 * 24 * 60 * 60, // 3 days in seconds
+  },
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,

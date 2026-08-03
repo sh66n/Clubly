@@ -1,13 +1,13 @@
 import Leaderboard from "@/components/Leaderboard/Leaderboard";
-import axios from "axios";
+
 import React from "react";
 
-const getLbRankings = async (clubId) => {
+const getLbRankings = async (clubId: string) => {
   try {
-    const { data } = await axios.get(
+    const res = await fetch(
       `${process.env.NEXT_PUBLIC_BASE_URL}/api/leaderboard?clubId=${clubId}&limit=5`,
     );
-    return data;
+    return await res.json();
   } catch (error) {
     console.error(error);
     return null;
