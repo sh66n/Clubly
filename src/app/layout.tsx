@@ -28,6 +28,9 @@ const silkscreen = Silkscreen({
 
 export const metadata: Metadata = {
   title: "Clubly",
+  verification: {
+    google: "XIWiVu5dUmHaYTa9OrZAyrt_PP6MFGvYsG3W-tlH_VY",
+  },
 };
 
 export default async function RootLayout({
