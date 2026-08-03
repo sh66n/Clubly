@@ -4,6 +4,7 @@ import "./globals.css";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { Silkscreen } from "next/font/google";
 import { Toaster } from "sonner";
+import SplashScreen from "@/components/SplashScreen";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,7 +40,18 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (sessionStorage.getItem('hasSeenSplash')) {
+                document.documentElement.classList.add('splash-seen');
+              }
+            `,
+          }}
+        />
+      </head>
       <body
         className={`${jakarta.variable} ${silkscreen.variable} antialiased`}
       >
@@ -54,6 +66,7 @@ export default async function RootLayout({
           }}
           visibleToasts={8}
         />
+        <SplashScreen />
         {children}
       </body>
     </html>

@@ -30,3 +30,7 @@ body {
 .w-inherit {
   width: inherit;
 }
+
+html.splash-seen #splash-screen {
+  display: none !important;
+}
