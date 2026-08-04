@@ -8,6 +8,8 @@ export const zClub = z.object({
   logo: z.string(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
+  followers: z.array(z.string().or(z.any())).optional(),
+  bellFollowers: z.array(z.string().or(z.any())).optional(),
 });
 
 export interface IClub {
@@ -18,4 +20,6 @@ export interface IClub {
   logo: string;
   createdAt: Date;
   updatedAt: Date;
+  followers?: Types.ObjectId[];
+  bellFollowers?: Types.ObjectId[];
 }

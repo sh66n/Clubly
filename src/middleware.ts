@@ -96,6 +96,15 @@ export default auth(async (req) => {
     // verify event.organizingClub === user.adminClub
   }
 
+  /* ------------------------------
+     Club-admin dashboard routes
+  ------------------------------ */
+  if (pathname.startsWith("/club-admin")) {
+    if (role !== "club-admin") {
+      return NextResponse.redirect(new URL("/forbidden", req.url));
+    }
+  }
+
   return NextResponse.next();
 });
 

@@ -26,7 +26,7 @@ export default async function ClubDetails({
     <div className="h-full w-full">
       <Panorama />
       <ClubLogo club={club} />
-      <ClubHeader club={club} />
+      <ClubHeader club={club} user={serializedUser} />
       <EventGrid events={serializedEvents} user={serializedUser} />
     </div>
   );

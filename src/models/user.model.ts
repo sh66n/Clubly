@@ -119,6 +119,29 @@ userSchema.pre("validate", function (next) {
   next();
 });
 
+const updateDynamicYear = (doc: any) => {
+  if (doc && doc.email) {
+    const { year } = inferStudentInfo(doc.email);
+    if (year) {
+      doc.year = year;
+    }
+  }
+};
+
+userSchema.post(['find', 'findOne', 'findOneAndUpdate'], function (res) {
+  if (!res) return;
+  if (Array.isArray(res)) {
+    res.forEach(updateDynamicYear);
+  } else {
+    updateDynamicYear(res);
+  }
+});
+
+userSchema.post('aggregate', function (res) {
+  if (!res || !Array.isArray(res)) return;
+  res.forEach(updateDynamicYear);
+});
+
 // Indexes
 userSchema.index({ email: 1 }, { unique: true });
 

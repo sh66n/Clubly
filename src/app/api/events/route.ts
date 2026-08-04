@@ -6,7 +6,7 @@ import {
 } from "@/lib/certificate";
 import cloudinary from "@/lib/cloudinary";
 import { connectToDb } from "@/lib/connectToDb";
-import { Event, Registration } from "@/models";
+import { Event, Registration, Club, User } from "@/models";
 import { Types } from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -378,6 +378,36 @@ export const POST = async (req: NextRequest) => {
     });
 
     // Note: Events are linked to clubs via organizingClub field, no need to maintain club.events array
+
+    // Send email to bell followers asynchronously
+    const sendEventNotification = async () => {
+      try {
+        const club = await Club.findById(organizingClub).populate("bellFollowers");
+        if (!club || !club.bellFollowers || club.bellFollowers.length === 0) return;
+
+        const emails = club.bellFollowers.map((u: any) => u.email).filter(Boolean);
+        if (emails.length === 0) return;
+
+        const transporter = require("nodemailer").createTransport({
+          service: "gmail",
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+          },
+        });
+
+        await transporter.sendMail({
+          from: process.env.EMAIL_USER,
+          to: emails,
+          subject: `New Event by ${club.name}: ${name}`,
+          text: `Hello!\n\n${club.name} just added a new event: ${name} which is scheduled for ${eventDate.toDateString()}.\n\nCheck it out on Clubly!`,
+        });
+      } catch (err) {
+        console.error("Failed to send email notification", err);
+      }
+    };
+
+    sendEventNotification();
 
     return NextResponse.json(event, { status: 201 });
   } catch (error) {

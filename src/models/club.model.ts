@@ -19,6 +19,18 @@ const clubSchema = new Schema<IClub>(
       type: String,
       required: true,
     },
+    followers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    bellFollowers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   { timestamps: true },
 );
