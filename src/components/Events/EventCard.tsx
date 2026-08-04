@@ -146,8 +146,8 @@ export default function EventCard({ event, userId }: EventCardProps) {
         <div className="flex items-center justify-between mt-2 pt-3 border-t border-[#1A1A1A]">
           <div className="flex items-center gap-4 text-gray-400">
             <div className="flex items-center gap-1.5 text-gray-600">
-              <Users size={14} />
-              <span className="text-xs font-bold font-mono">{currentRegs}</span>
+              <Users className="w-4 h-4 md:w-3.5 md:h-3.5" />
+              <span className="text-sm md:text-xs font-bold font-mono">{currentRegs}</span>
             </div>
           </div>
 
@@ -159,21 +159,20 @@ export default function EventCard({ event, userId }: EventCardProps) {
                 className={`transition-colors flex items-center justify-center cursor-pointer group/like ${isLiking ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 <Heart
-                  size={14}
-                  className={`transition-all duration-300 ${
+                  className={`w-4 h-4 md:w-3.5 md:h-3.5 transition-all duration-300 ${
                     isLiked
                       ? "fill-pink-400 text-pink-400"
                       : "text-gray-500 group-hover/like:text-pink-400"
                   } ${isAnimating ? "scale-150 rotate-12" : "scale-100"}`}
                 />
               </button>
-              <span className="text-[11px] font-semibold tracking-wide uppercase text-gray-500">
+              <span className="text-xs md:text-[11px] font-semibold tracking-wide uppercase text-gray-500">
                 {likes}
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-gray-500">
-              <Eye size={14} />
-              <span className="text-xs font-bold font-mono">
+              <Eye className="w-4 h-4 md:w-3.5 md:h-3.5" />
+              <span className="text-sm md:text-xs font-bold font-mono">
                 {event.views ?? 0}
               </span>
             </div>
