@@ -11,6 +11,7 @@ const getAllEvents = async (query: string | string[], club) => {
   });
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/api/events?${queryString.toString()}`,
+    { cache: "no-store" }
   );
   if (!res.ok) return null;
   return res.json();
@@ -75,7 +76,7 @@ export default async function Events({
             <ScheduleDropdown />
           </div>
         )}
-        <EventGrid events={allEvents} superEvents={allSuperEvents} />
+        <EventGrid events={allEvents} superEvents={allSuperEvents} userId={session?.user?.id} />
       </div>
     </div>
   );

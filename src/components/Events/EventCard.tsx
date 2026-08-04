@@ -1,14 +1,78 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { IEvent } from "@/models/event.schema";
-import { Users, MapPin, Calendar, ArrowUpRight } from "lucide-react";
+import { Users, Calendar, ArrowUpRight, Heart, Eye } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface EventCardProps {
   event: IEvent;
+  userId?: string;
 }
 
-export default function EventCard({ event }: EventCardProps) {
+export default function EventCard({ event, userId }: EventCardProps) {
+  const initialIsLiked = userId
+    ? (event.likedBy?.map((id) => String(id)) || []).includes(userId)
+    : false;
+  const [likes, setLikes] = useState(event.likes ?? 0);
+  const [isLiked, setIsLiked] = useState(initialIsLiked);
+
+  useEffect(() => {
+    setLikes(event.likes ?? 0);
+    setIsLiked(
+      userId
+        ? (event.likedBy?.map((id) => String(id)) || []).includes(userId)
+        : false,
+    );
+  }, [event.likes, event.likedBy, userId]);
+
+  const router = useRouter();
+
+  const [isLiking, setIsLiking] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const handleLike = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!userId) {
+      router.push(`/login?callbackUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
+
+    if (isLiking) return;
+
+    const newIsLiked = !isLiked;
+    setIsLiking(true);
+
+    try {
+      const res = await fetch(`/api/events/${event._id}/like`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: newIsLiked ? "like" : "unlike" }),
+      });
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+
+      // Update state only after successful API response
+      setIsLiked(newIsLiked);
+      setLikes((prev) => (newIsLiked ? prev + 1 : prev - 1));
+
+      if (newIsLiked) {
+        setIsAnimating(true);
+        setTimeout(() => setIsAnimating(false), 300);
+      }
+    } catch (error) {
+      console.error("Failed to update like status", error);
+      toast.error("Failed to update like status");
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
   const eventDate = new Date(event.date);
 
   const currentRegs = Number((event as any).registrationCount ?? 0);
@@ -80,16 +144,39 @@ export default function EventCard({ event }: EventCardProps) {
 
         {/* Bottom Metadata Row */}
         <div className="flex items-center justify-between mt-2 pt-3 border-t border-[#1A1A1A]">
-          <div className="flex items-center gap-1.5 text-gray-400">
-            <Users size={14} className="text-gray-600" />
-            <span className="text-xs font-bold font-mono">{currentRegs}</span>
+          <div className="flex items-center gap-4 text-gray-400">
+            <div className="flex items-center gap-1.5 text-gray-600">
+              <Users size={14} />
+              <span className="text-xs font-bold font-mono">{currentRegs}</span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-1.5 text-gray-500">
-            <MapPin size={14} />
-            <span className="text-[11px] font-semibold tracking-wide uppercase">
-              TBD
-            </span>
+          <div className="flex items-center gap-4 z-20">
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={handleLike}
+                disabled={isLiking}
+                className={`transition-colors flex items-center justify-center cursor-pointer group/like ${isLiking ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <Heart
+                  size={14}
+                  className={`transition-all duration-300 ${
+                    isLiked
+                      ? "fill-pink-400 text-pink-400"
+                      : "text-gray-500 group-hover/like:text-pink-400"
+                  } ${isAnimating ? "scale-150 rotate-12" : "scale-100"}`}
+                />
+              </button>
+              <span className="text-[11px] font-semibold tracking-wide uppercase text-gray-500">
+                {likes}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-gray-500">
+              <Eye size={14} />
+              <span className="text-xs font-bold font-mono">
+                {event.views ?? 0}
+              </span>
+            </div>
           </div>
         </div>
       </div>

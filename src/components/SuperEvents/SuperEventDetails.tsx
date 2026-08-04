@@ -8,6 +8,7 @@ import Link from "next/link";
 export default function SuperEventDetails({
   superEvent,
   eventsInSuperEvent = [],
+  userId,
 }) {
   const now = new Date();
 
@@ -206,7 +207,7 @@ export default function SuperEventDetails({
             Events ({eventsInSuperEvent.length})
           </h3>
         </div>
-        <EventGrid events={eventsInSuperEvent} detailed={false} />
+        <EventGrid events={eventsInSuperEvent} detailed={false} userId={userId} />
       </div>
 
       {/* Rewards */}

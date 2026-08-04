@@ -10,6 +10,8 @@ import { Event, Registration } from "@/models";
 import { Types } from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 type CustomQuestionInput = {
   id: string;
   question: string;

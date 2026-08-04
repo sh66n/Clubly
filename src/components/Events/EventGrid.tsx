@@ -8,12 +8,14 @@ interface EventGridProps {
   events: IEvent[];
   superEvents?: ISuperEvent[];
   detailed?: boolean;
+  userId?: string;
 }
 
 export default function EventGrid({
   events,
   superEvents,
   detailed = true,
+  userId,
 }: EventGridProps) {
   if (!events || events.length === 0) {
     return <div className="text-[#6D6D6D] my-6">No events found.</div>;
@@ -31,7 +33,7 @@ export default function EventGrid({
     return (
       <div className={`${gridClasses} w-full`}>
         {events.map((event) => (
-          <EventCard key={event._id} event={event} />
+          <EventCard key={event._id} event={event} userId={userId} />
         ))}
       </div>
     );
@@ -59,7 +61,7 @@ export default function EventGrid({
           <h2 className="text-2xl font-semibold mt-4 mb-8">Upcoming</h2>
           <div className={gridClasses}>
             {upcomingEvents.map((event) => (
-              <EventCard key={event._id} event={event} />
+              <EventCard key={event._id} event={event} userId={userId} />
             ))}
           </div>
         </section>
@@ -71,7 +73,7 @@ export default function EventGrid({
           <h2 className="text-2xl font-semibold mt-4 mb-8">Completed</h2>
           <div className={gridClasses}>
             {completedEvents.map((event) => (
-              <EventCard key={event._id} event={event} />
+              <EventCard key={event._id} event={event} userId={userId} />
             ))}
           </div>
         </section>

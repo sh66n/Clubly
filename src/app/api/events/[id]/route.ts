@@ -9,6 +9,8 @@ import { connectToDb } from "@/lib/connectToDb";
 import { Event, Group, Registration } from "@/models";
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 type CustomQuestionInput = {
   id: string;
   question: string;

@@ -1,3 +1,4 @@
+import { auth } from "@/auth";
 import BackButton from "@/components/BackButton";
 import EventGrid from "@/components/Events/EventGrid";
 import SuperEventDetails from "@/components/SuperEvents/SuperEventDetails";
@@ -28,6 +29,7 @@ export default async function SuperEventPage({
   params: Promise<{ superEventId: string }>;
 }) {
   const { superEventId } = await params;
+  const session = await auth();
   const superEvent = await fetchSuperEvent(superEventId);
   const eventsInSuperEvent = await fetchEvents(superEventId);
 
@@ -37,6 +39,7 @@ export default async function SuperEventPage({
       <SuperEventDetails
         superEvent={superEvent}
         eventsInSuperEvent={eventsInSuperEvent}
+        userId={session?.user?.id}
       />
     </div>
   );

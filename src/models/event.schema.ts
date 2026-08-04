@@ -65,6 +65,9 @@ export const zEvent = z.object({
     )
     .optional(),
   certificateTemplate: zCertificateTemplate.optional(),
+  likes: z.number().default(0),
+  views: z.number().default(0),
+  likedBy: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/)).optional(),
 });
 
 export interface ICustomQuestion {
@@ -131,4 +134,7 @@ export interface IEvent {
   };
   createdAt: Date;
   updatedAt: Date;
+  likes: number;
+  views: number;
+  likedBy: Types.ObjectId[];
 }

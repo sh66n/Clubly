@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { format, differenceInCalendarDays } from "date-fns";
 import { IEvent } from "@/models/event.schema";
 import {
@@ -41,6 +41,8 @@ type CustomQuestionAnswer = {
   answer: string | string[];
 };
 
+const viewLoggedEvents = new Set<string>();
+
 export default function EventDetails({
   event,
   group,
@@ -52,6 +54,24 @@ export default function EventDetails({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (viewLoggedEvents.has(event._id)) return;
+    viewLoggedEvents.add(event._id);
+
+    fetch(`/api/events/${event._id}/view`, { method: "POST" })
+      .then(async (res) => {
+        const data = await res.json();
+        // If the view count was updated, refresh the router cache so that 
+        // when the user navigates back to the event list, they see the new count
+        if (data.views) {
+          router.refresh();
+        }
+      })
+      .catch((err) =>
+        console.error("Failed to record view", err),
+      );
+  }, [event._id]);
 
   const [registrationStatus, setRegistrationStatus] =
     useState<RegistrationStatus>("idle");
