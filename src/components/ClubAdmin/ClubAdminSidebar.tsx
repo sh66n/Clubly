@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   LayoutGrid,
-  Briefcase,
+  Tickets,
   UsersRound,
   ChevronLeft,
   ChevronRight,
@@ -39,7 +39,7 @@ export default function ClubAdminSidebar({ user }: ClubAdminSidebarProps) {
     },
     {
       name: "My Events",
-      icon: <Briefcase size={20} />,
+      icon: <Tickets size={20} />,
       href: "/club-admin/events",
     },
     {

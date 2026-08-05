@@ -87,6 +87,11 @@ const eventSchema = new Schema<IEvent>(
       type: Boolean,
       default: true,
     },
+    status: {
+      type: String,
+      enum: ["draft", "live", "completed"],
+      default: "live",
+    },
     customQuestions: [
       {
         id: {

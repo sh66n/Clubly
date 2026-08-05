@@ -2,11 +2,23 @@
 
 import { useEffect, useState } from "react";
 
+const TIPS = [
+  "Tip: You can discover local community events and clubs in your feed.",
+  "Tip: Connect with like-minded members by joining public groups.",
+  "Tip: Customize your profile to showcase your interests and hobbies.",
+  "Tip: Turn on notifications so you never miss an upcoming event."
+];
+
 export default function SplashScreen() {
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
   const [shouldUnmount, setShouldUnmount] = useState(false);
+  const [tip, setTip] = useState("");
 
   useEffect(() => {
+    // Pick a random tip on mount
+    const randomTip = TIPS[Math.floor(Math.random() * TIPS.length)];
+    setTip(randomTip);
+
     const alreadySeen = sessionStorage.getItem("hasSeenSplash");
     if (alreadySeen) {
       setShouldUnmount(true);
@@ -15,8 +27,7 @@ export default function SplashScreen() {
 
     sessionStorage.setItem("hasSeenSplash", "true");
 
-    // Trigger slide-up exit after the intro animation completes + brief hold
-    // Logo intro: 0s–0.8s, text reveal: 0.8s–1.4s, hold: ~0.6s → exit at ~2.0s
+    // Trigger slide-up exit after 2 seconds
     const timer = setTimeout(() => {
       setIsAnimatingOut(true);
     }, 2000);
@@ -30,17 +41,19 @@ export default function SplashScreen() {
     <div
       id="splash-screen"
       onTransitionEnd={() => isAnimatingOut && setShouldUnmount(true)}
-      className={`fixed inset-0 z-[9999] bg-black flex items-center justify-center transition-transform duration-700 ease-in-out ${
+      className={`fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-between py-12 transition-transform duration-700 ease-in-out ${
         isAnimatingOut ? "-translate-y-full" : "translate-y-0"
       }`}
     >
+      <div />
+
       <div className="flex items-center justify-center">
         {/* Logo — starts fully invisible via inline style to prevent flash */}
         <img
           src="/images/logo-without-text.png"
           alt="Clubly Logo"
           style={{ opacity: 0, transform: "scale(0.6)" }}
-          className="h-20 w-20 object-contain logo-animate"
+          className="h-16 w-16 object-contain logo-animate"
         />
 
         {/* Text container — overflow-x only so descenders (y) aren't clipped */}
@@ -50,6 +63,11 @@ export default function SplashScreen() {
         >
           <h1 style={{ color: "#ffffff" }} className="text-5xl font-bold">Clubly</h1>
         </div>
+      </div>
+
+      {/* Tip at bottom */}
+      <div className="text-center px-6 text-sm text-neutral-400 max-w-2xl">
+        {tip}
       </div>
 
       <style jsx global>{`
@@ -92,3 +110,4 @@ export default function SplashScreen() {
     </div>
   );
 }
+

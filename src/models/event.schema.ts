@@ -53,6 +53,7 @@ export const zEvent = z.object({
   image: z.optional(z.string()),
   maxRegistrations: z.number(),
   isRegistrationOpen: z.boolean().default(true),
+  status: z.enum(["draft", "live", "completed"]).default("live"),
   customQuestions: z
     .array(
       z.object({
@@ -105,6 +106,7 @@ export interface IEvent {
   superEvent: Types.ObjectId;
   whatsappGroupLink: string;
   isRegistrationOpen: boolean;
+  status: "draft" | "live" | "completed";
   customQuestions?: ICustomQuestion[];
   certificateTemplate?: {
     url: string;

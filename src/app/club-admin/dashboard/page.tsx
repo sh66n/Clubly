@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
+import ClublyLoader from "@/components/ClubAdmin/ClublyLoader";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -29,6 +30,7 @@ import {
   ToggleLeft,
   Download,
   Users,
+  Loader2,
 } from "lucide-react";
 
 // Register Chart.js modules
@@ -45,108 +47,39 @@ ChartJS.register(
   Filler,
 );
 
-/* ═══════════════════════════════════════════
-   Mock Data
-   ═══════════════════════════════════════════ */
-const statsCards = [
-  {
-    label: "Total Registrations",
-    value: "129",
-    trend: "up" as const,
-    change: "+32",
-    since: "since yesterday",
-  },
-  {
-    label: "Total Revenue",
-    value: "₹39,345",
-    trend: "up" as const,
-    change: "+32",
-    since: "since yesterday",
-  },
-  {
-    label: "Total Views",
-    value: "45",
-    trend: "up" as const,
-    change: "+32",
-    since: "since yesterday",
-  },
-  {
-    label: "Followers",
-    value: "19",
-    trend: "down" as const,
-    change: "-1",
-    since: "since yesterday",
-  },
-];
-
-const registrationChartData = {
-  labels: ["03 Aug", "04 Aug", "05 Aug", "06 Aug", "06 Aug", "06 Aug", "06 Aug"],
-  values: [7, 8, 12, 11, 14, 13, 15],
-};
-
-const eventsStatusData = {
-  live: 14,
-  upcoming: 8,
-  completed: 6,
-};
-
-const mockEvents = [
-  {
-    id: "1",
-    name: "AI Innovators 2025",
-    image: "/images/default.png",
-    teams: 120,
-    submissions: 98,
-    status: "Live" as const,
-    dates: "10-20 Jul 2025",
-    mode: "Hybrid",
-  },
-  {
-    id: "2",
-    name: "CodeSprint X",
-    image: "/images/default.png",
-    teams: 85,
-    submissions: 76,
-    status: "Upcoming" as const,
-    dates: "25-30 Aug 2025",
-    mode: "Online",
-  },
-  {
-    id: "3",
-    name: "HealthHack 4.0",
-    image: "/images/default.png",
-    teams: 142,
-    submissions: 132,
-    status: "Live" as const,
-    dates: "01-05 Sep 2025",
-    mode: "Offline",
-  },
-  {
-    id: "4",
-    name: "BuildForIndia",
-    image: "/images/default.png",
-    teams: 67,
-    submissions: 51,
-    status: "Completed" as const,
-    dates: "12-18 Jun 2025",
-    mode: "Hybrid",
-  },
-  {
-    id: "5",
-    name: "Gemini AI Hackathon 2025",
-    image: "/images/default.png",
-    teams: 95,
-    submissions: 88,
-    status: "Completed" as const,
-    dates: "15-22 May 2025",
-    mode: "Hybrid",
-  },
-];
-
-const revenueChartData = {
-  labels: ["M", "T", "W", "M", "T", "W", "M"],
-  values: [180, 220, 150, 280, 345, 200, 260],
-};
+interface DashboardData {
+  stats: {
+    totalRegistrations: number;
+    registrationsChange: number;
+    totalRevenue: number;
+    revenueChange: number;
+    followers: number;
+  };
+  registrationChart: {
+    labels: string[];
+    values: number[];
+  };
+  revenueChart: {
+    labels: string[];
+    values: number[];
+  };
+  eventsStatus: {
+    live: number;
+    draft: number;
+    completed: number;
+  };
+  recentEvents: Array<{
+    id: string;
+    name: string;
+    image: string;
+    teams: number;
+    submissions: number;
+    status: "Live" | "Upcoming" | "Completed";
+    dates: string;
+    mode: string;
+  }>;
+  availableAcademicYears?: string[];
+}
 
 /* ═══════════════════════════════════════════
    Sub-components
@@ -160,15 +93,13 @@ function StatCard({
   since,
 }: {
   label: string;
-  value: string;
+  value: string | number;
   trend: "up" | "down";
   change: string;
   since: string;
 }) {
   return (
-    <div
-      className="group rounded-xl p-4 md:p-5 flex flex-col justify-between min-h-[120px] bg-white text-[#222] border border-[#eaeaea] hover:bg-[#091800] hover:text-white hover:border-[#091800] transition-all duration-300 cursor-pointer"
-    >
+    <div className="group rounded-xl p-4 md:p-5 flex flex-col justify-between min-h-[120px] bg-white text-[#222] border border-[#eaeaea] hover:bg-[#091800] hover:text-white hover:border-[#091800] transition-all duration-300 cursor-pointer">
       <div className="text-xs font-semibold uppercase tracking-wide text-[#888] group-hover:text-[#7CB342] transition-colors duration-300">
         {label}
       </div>
@@ -214,9 +145,7 @@ function StatusBadge({ status }: { status: "Live" | "Upcoming" | "Completed" }) 
     Completed: "bg-[#e3f2fd] text-[#1565c0]",
   };
   return (
-    <span
-      className={`text-xs font-semibold px-2.5 py-1 rounded-full ${styles[status]}`}
-    >
+    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${styles[status]}`}>
       {status}
     </span>
   );
@@ -226,8 +155,54 @@ function StatusBadge({ status }: { status: "Live" | "Upcoming" | "Completed" }) 
    Main Dashboard Page
    ═══════════════════════════════════════════ */
 export default function ClubAdminDashboardPage() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [pageSize, setPageSize] = useState(5);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [academicYear, setAcademicYear] = useState<string>("");
+  const [availableYears, setAvailableYears] = useState<string[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Default to current academic year on mount
+  useEffect(() => {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth(); // July is 6
+    const defaultAcadYear = currentMonth >= 6 
+      ? `${currentYear}-${currentYear + 1}` 
+      : `${currentYear - 1}-${currentYear}`;
+    setAcademicYear(defaultAcadYear);
+  }, []);
+
+  const fetchDashboardData = async () => {
+    if (!academicYear) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch(`/api/club-admin/dashboard?academicYear=${academicYear}`);
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || "Failed to load dashboard data");
+      }
+      const json = await res.json();
+      setData(json);
+      if (json.availableAcademicYears) {
+        setAvailableYears(json.availableAcademicYears);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to load dashboard data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [academicYear]);
 
   // Close menu on outside click
   useEffect(() => {
@@ -240,24 +215,80 @@ export default function ClubAdminDashboardPage() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] w-full">
+        <ClublyLoader />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="bg-white rounded-xl border border-red-200 p-6 text-center text-red-600">
+        <p className="font-semibold">{error || "Failed to load data"}</p>
+        <button
+          onClick={fetchDashboardData}
+          className="mt-4 px-4 py-2 bg-[#7CB342] text-white rounded-lg text-sm font-medium hover:bg-[#689F38] transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  const { stats, registrationChart, revenueChart, eventsStatus, recentEvents } = data;
+
+  const statsCards = [
+    {
+      label: "Total Registrations",
+      value: stats.totalRegistrations.toLocaleString(),
+      trend: "up" as const,
+      change: `+${stats.registrationsChange}`,
+      since: "since yesterday",
+    },
+    {
+      label: "Total Revenue",
+      value: `₹${stats.totalRevenue.toLocaleString()}`,
+      trend: "up" as const,
+      change: `+₹${stats.revenueChange}`,
+      since: "since yesterday",
+    },
+    {
+      label: "Total Events",
+      value: (eventsStatus.live + eventsStatus.draft + eventsStatus.completed).toLocaleString(),
+      trend: "up" as const,
+      change: `${eventsStatus.draft} Drafts`,
+      since: "currently managed",
+    },
+    {
+      label: "Followers",
+      value: stats.followers.toLocaleString(),
+      trend: "up" as const,
+      change: "Active",
+      since: "community members",
+    },
+  ];
+
   /* ── Line chart (Total Registrations) ── */
   const lineChartData = {
-    labels: registrationChartData.labels,
+    labels: registrationChart.labels.length > 0 ? registrationChart.labels : ["No Data"],
     datasets: [
       {
         label: "Registrations",
-        data: registrationChartData.values,
+        data: registrationChart.values.length > 0 ? registrationChart.values : [0],
         borderColor: "#7CB342",
         backgroundColor: "rgba(124,179,66,0.08)",
         tension: 0.4,
         fill: true,
-        pointRadius: 0,
-        pointHoverRadius: 5,
+        pointRadius: 3,
+        pointHoverRadius: 6,
         borderWidth: 2,
       },
     ],
   };
 
+  const maxRegValue = Math.max(...(registrationChart.values.length ? registrationChart.values : [5]), 5);
   const lineChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -269,22 +300,22 @@ export default function ClubAdminDashboardPage() {
       },
       y: {
         grid: { color: "#eee", borderDash: [4, 4] as [number, number] },
-        ticks: { color: "#999", font: { size: 11 }, stepSize: 5 },
+        ticks: { color: "#999", font: { size: 11 }, precision: 0 },
         min: 0,
-        max: 15,
+        suggestedMax: Math.ceil(maxRegValue * 1.2),
       },
     },
   };
 
   /* ── Doughnut chart (Events Status) ── */
   const doughnutData = {
-    labels: ["Live Events", "Upcoming Events", "Completed Events"],
+    labels: ["Live Events", "Draft Events", "Completed Events"],
     datasets: [
       {
         data: [
-          eventsStatusData.live,
-          eventsStatusData.upcoming,
-          eventsStatusData.completed,
+          eventsStatus.live,
+          eventsStatus.draft,
+          eventsStatus.completed,
         ],
         backgroundColor: ["#2e3a1f", "#7CB342", "#a5d610"],
         borderWidth: 0,
@@ -302,14 +333,15 @@ export default function ClubAdminDashboardPage() {
   };
 
   /* ── Bar chart (Total Revenue) ── */
+  const maxRevenueVal = Math.max(...(revenueChart.values.length ? revenueChart.values : [1]), 1);
   const barChartData = {
-    labels: revenueChartData.labels,
+    labels: revenueChart.labels.length > 0 ? revenueChart.labels : ["Mon"],
     datasets: [
       {
         label: "Revenue",
-        data: revenueChartData.values,
-        backgroundColor: revenueChartData.values.map((v) =>
-          v === Math.max(...revenueChartData.values)
+        data: revenueChart.values.length > 0 ? revenueChart.values : [0],
+        backgroundColor: revenueChart.values.map((v) =>
+          v === maxRevenueVal && v > 0
             ? "#7CB342"
             : "#c5e1a5",
         ),
@@ -333,6 +365,19 @@ export default function ClubAdminDashboardPage() {
       },
     },
   };
+
+  // Filter & Paginate Events
+  const filteredEvents = recentEvents.filter((ev) =>
+    ev.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+  const totalFiltered = filteredEvents.length;
+  const totalPages = Math.ceil(totalFiltered / pageSize) || 1;
+  const startIdx = (currentPage - 1) * pageSize;
+  const paginatedEvents = filteredEvents.slice(startIdx, startIdx + pageSize);
+
+  const avgReg = registrationChart.values.length
+    ? Math.round(registrationChart.values.reduce((a, b) => a + b, 0) / registrationChart.values.length)
+    : 0;
 
   return (
     <div className="space-y-5">
@@ -358,25 +403,41 @@ export default function ClubAdminDashboardPage() {
                   Total Registrations
                 </h3>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-[#999]">Avg:</span>
+                  <span className="text-xs text-[#999]">Avg / day:</span>
                   <span className="text-xs font-bold bg-[#7CB342] text-white px-2 py-0.5 rounded-full">
-                    13
+                    {avgReg}
                   </span>
                   <span className="text-xs font-semibold text-[#7CB342] bg-[#e8f5e9] px-2 py-0.5 rounded-full inline-flex items-center gap-0.5">
                     <TrendingUp size={10} />
-                    +32
+                    +{stats.registrationsChange}
                   </span>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button className="flex items-center gap-1.5 text-xs font-medium text-[#555] bg-white border border-[#e0e0e0] rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">
-                <Calendar size={13} />
-                Time
+              {availableYears.length > 0 && (
+                <select
+                  value={academicYear}
+                  onChange={(e) => setAcademicYear(e.target.value)}
+                  className="px-2 py-1.5 text-xs bg-white border border-[#e0e0e0] rounded-lg text-slate-600 outline-none font-semibold hover:border-slate-300 transition-colors"
+                >
+                  {availableYears.map((yearOption) => (
+                    <option key={yearOption} value={yearOption}>
+                      {yearOption}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <button
+                onClick={fetchDashboardData}
+                className="flex items-center gap-1.5 text-xs font-medium text-[#555] bg-white border border-[#e0e0e0] rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
+              >
+                <RefreshCw size={13} />
+                Refresh
               </button>
               <span className="text-xs text-[#999] flex items-center gap-1">
                 <Calendar size={12} />
-                03 Aug, 2026 - 10 Aug, 2026
+                Last 7 Days
               </span>
             </div>
           </div>
@@ -392,7 +453,10 @@ export default function ClubAdminDashboardPage() {
             <h3 className="text-base font-bold text-[#222]">
               Events Status Overview
             </h3>
-            <button className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
+            <button
+              onClick={fetchDashboardData}
+              className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            >
               <RefreshCw size={15} className="text-[#999]" />
             </button>
           </div>
@@ -403,7 +467,7 @@ export default function ClubAdminDashboardPage() {
               {/* Center label */}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-2xl font-bold text-[#222]">
-                  {eventsStatusData.live}
+                  {eventsStatus.live}
                 </span>
                 <span className="text-[10px] text-[#999] font-medium">
                   Live Events
@@ -413,9 +477,9 @@ export default function ClubAdminDashboardPage() {
           </div>
           {/* Legend */}
           <div className="flex flex-col gap-2 mt-4">
-            <LegendItem color="#2e3a1f" label="Live Events" />
-            <LegendItem color="#7CB342" label="Upcoming Events" />
-            <LegendItem color="#a5d610" label="Completed Events" />
+            <LegendItem color="#2e3a1f" label={`Live Events (${eventsStatus.live})`} />
+            <LegendItem color="#7CB342" label={`Draft Events (${eventsStatus.draft})`} />
+            <LegendItem color="#a5d610" label={`Completed Events (${eventsStatus.completed})`} />
           </div>
         </div>
       </div>
@@ -435,13 +499,14 @@ export default function ClubAdminDashboardPage() {
                 <input
                   type="text"
                   placeholder="Search here…"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="bg-transparent text-xs text-[#333] placeholder:text-[#999] outline-none w-32"
                 />
               </div>
-              <button className="flex items-center gap-1 text-xs font-medium text-[#555] bg-white border border-[#e0e0e0] rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">
-                <Filter size={13} />
-                Filter
-              </button>
             </div>
           </div>
 
@@ -450,153 +515,148 @@ export default function ClubAdminDashboardPage() {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-[#eaeaea] text-[#999] text-xs">
-                  <th className="py-2 pr-2 font-medium w-8">
-                    <input type="checkbox" className="rounded" />
+                  <th className="py-2 pr-3 font-medium">
+                    Event Name
                   </th>
                   <th className="py-2 pr-3 font-medium">
-                    <span className="inline-flex items-center gap-1">
-                      ↕ Event Name
-                    </span>
+                    Teams / Regs
                   </th>
                   <th className="py-2 pr-3 font-medium">
-                    <span className="inline-flex items-center gap-1">
-                      ↕ Teams
-                    </span>
+                    Attended
                   </th>
                   <th className="py-2 pr-3 font-medium">
-                    <span className="inline-flex items-center gap-1">
-                      ↕ Submissions
-                    </span>
+                    Status
                   </th>
                   <th className="py-2 pr-3 font-medium">
-                    <span className="inline-flex items-center gap-1">
-                      ↕ Status
-                    </span>
+                    Event Date
                   </th>
                   <th className="py-2 pr-3 font-medium">
-                    <span className="inline-flex items-center gap-1">
-                      ↕ Event Dates
-                    </span>
-                  </th>
-                  <th className="py-2 pr-3 font-medium">
-                    <span className="inline-flex items-center gap-1">
-                      ↕ Mode
-                    </span>
+                    Mode
                   </th>
                   <th className="py-2 font-medium w-10"></th>
                 </tr>
               </thead>
               <tbody>
-                {mockEvents.map((event) => (
-                  <tr
-                    key={event.id}
-                    className="border-b border-[#f5f5f5] hover:bg-[#fafafa] transition-colors"
-                  >
-                    <td className="py-3 pr-2">
-                      <input type="checkbox" className="rounded" />
-                    </td>
-                    <td className="py-3 pr-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-[#f0f0f0] flex-shrink-0 overflow-hidden">
-                          <img
-                            src={event.image}
-                            alt=""
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <span className="font-medium text-[#222] whitespace-nowrap">
-                          {event.name}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3 pr-3 text-[#555]">{event.teams}</td>
-                    <td className="py-3 pr-3 text-[#555]">
-                      {event.submissions}
-                    </td>
-                    <td className="py-3 pr-3">
-                      <StatusBadge status={event.status} />
-                    </td>
-                    <td className="py-3 pr-3 text-[#555] whitespace-nowrap text-xs">
-                      {event.dates}
-                    </td>
-                    <td className="py-3 pr-3 text-[#555] text-xs">
-                      {event.mode}
-                    </td>
-                    <td className="py-3 relative" ref={openMenuId === event.id ? menuRef : null}>
-                      <button
-                        onClick={() =>
-                          setOpenMenuId(
-                            openMenuId === event.id ? null : event.id,
-                          )
-                        }
-                        className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-                      >
-                        <MoreVertical size={16} className="text-[#999]" />
-                      </button>
-                      {openMenuId === event.id && (
-                        <div className="absolute right-0 top-10 z-20 bg-white border border-[#e0e0e0] rounded-xl shadow-lg py-1.5 min-w-[180px]">
-                          <DropdownItem
-                            icon={<Pencil size={14} />}
-                            label="Edit"
-                          />
-                          <DropdownItem
-                            icon={<Eye size={14} />}
-                            label="View Details"
-                          />
-                          <DropdownItem
-                            icon={<ToggleLeft size={14} />}
-                            label="Change Status"
-                          />
-                          <DropdownItem
-                            icon={<Download size={14} />}
-                            label="Download Teams List"
-                          />
-                        </div>
-                      )}
+                {paginatedEvents.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-6 text-center text-xs text-[#999]">
+                      No events found.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  paginatedEvents.map((event) => (
+                    <tr
+                      key={event.id}
+                      className="border-b border-[#f5f5f5] hover:bg-[#fafafa] transition-colors"
+                    >
+                      <td className="py-3 pr-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-[#f0f0f0] flex-shrink-0 overflow-hidden">
+                            <img
+                              src={event.image}
+                              alt=""
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <span className="font-medium text-[#222] whitespace-nowrap">
+                            {event.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 pr-3 text-[#555]">{event.teams}</td>
+                      <td className="py-3 pr-3 text-[#555]">
+                        {event.submissions}
+                      </td>
+                      <td className="py-3 pr-3">
+                        <StatusBadge status={event.status} />
+                      </td>
+                      <td className="py-3 pr-3 text-[#555] whitespace-nowrap text-xs">
+                        {event.dates}
+                      </td>
+                      <td className="py-3 pr-3 text-[#555] text-xs">
+                        {event.mode}
+                      </td>
+                      <td className="py-3 relative" ref={openMenuId === event.id ? menuRef : null}>
+                        <button
+                          onClick={() =>
+                            setOpenMenuId(
+                              openMenuId === event.id ? null : event.id,
+                            )
+                          }
+                          className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                        >
+                          <MoreVertical size={16} className="text-[#999]" />
+                        </button>
+                        {openMenuId === event.id && (
+                          <div className="absolute right-0 top-10 z-20 bg-white border border-[#e0e0e0] rounded-xl shadow-lg py-1.5 min-w-[180px]">
+                            <DropdownItem
+                              icon={<Eye size={14} />}
+                              label="View Event Details"
+                              onClick={() => {
+                                window.location.href = `/club-admin/events/${event.id}`;
+                              }}
+                            />
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-end gap-3 mt-4 text-xs text-[#999]">
-            <span>Show per page</span>
-            <select className="bg-white border border-[#e0e0e0] rounded px-2 py-1 text-xs text-[#555]">
-              <option>5</option>
-              <option>10</option>
-              <option>25</option>
-            </select>
-            <span>1-10 of 1,445</span>
-            <div className="flex gap-1">
-              <button className="w-6 h-6 flex items-center justify-center rounded border border-[#e0e0e0] hover:bg-gray-50">
-                <ChevronLeft size={14} />
-              </button>
-              <button className="w-6 h-6 flex items-center justify-center rounded border border-[#e0e0e0] hover:bg-gray-50">
-                <ChevronRight size={14} />
-              </button>
+          {totalFiltered > 0 && (
+            <div className="flex items-center justify-end gap-3 mt-4 text-xs text-[#999]">
+              <span>Show per page</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-white border border-[#e0e0e0] rounded px-2 py-1 text-xs text-[#555]"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+              </select>
+              <span>
+                {startIdx + 1}-{Math.min(startIdx + pageSize, totalFiltered)} of {totalFiltered}
+              </span>
+              <div className="flex gap-1">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="w-6 h-6 flex items-center justify-center rounded border border-[#e0e0e0] hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-transparent"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <button
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="w-6 h-6 flex items-center justify-center rounded border border-[#e0e0e0] hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-transparent"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Total Revenue Bar Chart */}
         <div className="bg-white rounded-xl border border-[#eaeaea] p-5 flex flex-col">
           <h3 className="text-base font-bold text-[#222] mb-4">
-            Total Revenue
+            Total Revenue (7 days)
           </h3>
           <div className="flex-1 min-h-[220px] relative">
             <Bar data={barChartData} options={barChartOptions} />
-            {/* Highlight label on tallest bar */}
           </div>
           <div className="flex items-center gap-2 mt-4 justify-center">
-            <span className="text-xs text-[#999]">Avg:</span>
+            <span className="text-xs text-[#999]">Total Revenue:</span>
             <span className="text-xs font-bold bg-[#7CB342] text-white px-2 py-0.5 rounded-full">
-              13
-            </span>
-            <span className="text-xs font-semibold text-[#7CB342] bg-[#e8f5e9] px-2 py-0.5 rounded-full inline-flex items-center gap-0.5">
-              <TrendingUp size={10} />
-              +32
+              ₹{stats.totalRevenue.toLocaleString()}
             </span>
           </div>
         </div>
@@ -621,14 +681,20 @@ function LegendItem({ color, label }: { color: string; label: string }) {
 function DropdownItem({
   icon,
   label,
+  onClick,
 }: {
   icon: React.ReactNode;
   label: string;
+  onClick?: () => void;
 }) {
   return (
-    <button className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-[#555] hover:bg-[#f5f5f5] transition-colors">
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-[#555] hover:bg-[#f5f5f5] transition-colors"
+    >
       {icon}
       {label}
     </button>
   );
 }
+

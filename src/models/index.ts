@@ -11,6 +11,7 @@ import { Payment } from "./payment.model";
 import { Registration } from "./registration.model";
 import { UserPoints } from "./userpoints.model";
 import { ClubMember } from "./clubmember.model";
+import { Feedback } from "./feedback.model";
 
 // 2. Export them as a single block.
 // When you import { Event } from "@/models" in your API,
@@ -26,4 +27,5 @@ export {
   Registration,
   UserPoints,
   ClubMember,
+  Feedback,
 };
