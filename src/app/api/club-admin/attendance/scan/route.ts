@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { connectToDb } from "@/lib/connectToDb";
-import { Event, Registration, Group, User } from "@/models";
+import { Event, Registration, Group, User, Badge } from "@/models";
 
 export async function POST(request: Request) {
   try {
@@ -59,6 +59,13 @@ export async function POST(request: Request) {
       registration.status = "attended";
       registration.attendedAt = new Date();
       await registration.save();
+      
+      // Award participation badge
+      await Badge.findOneAndUpdate(
+        { userId, eventId },
+        { type: "participation" },
+        { upsert: true }
+      );
 
       return NextResponse.json({ 
         success: true, 
@@ -91,6 +98,18 @@ export async function POST(request: Request) {
       registration.status = "attended";
       registration.attendedAt = new Date();
       await registration.save();
+      
+      // Award participation badges to all group members
+      const badgeOps = group.members.map((memberId: any) => ({
+        updateOne: {
+          filter: { userId: memberId, eventId },
+          update: { $set: { type: "participation" } },
+          upsert: true
+        }
+      }));
+      if (badgeOps.length > 0) {
+        await Badge.bulkWrite(badgeOps);
+      }
 
       return NextResponse.json({ 
         success: true, 

@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import QRCode from "react-qr-code";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Award, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface EventQRTicketProps {
@@ -38,6 +38,31 @@ export default function EventQRTicket({
   }, [isOpen]);
 
   const qrValue = `clubly:att:${eventId}:${userId}`;
+
+  const [attendanceStatus, setAttendanceStatus] = React.useState("registered");
+
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    if (isOpen && attendanceStatus !== "attended") {
+      intervalId = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/events/${eventId}/attendance/status`);
+          const data = await res.json();
+          if (data.status === "attended") {
+            setAttendanceStatus("attended");
+          }
+        } catch (err) {}
+      }, 3000);
+    }
+    return () => clearInterval(intervalId);
+  }, [isOpen, eventId, attendanceStatus]);
+
+  // Reset status when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setAttendanceStatus("registered");
+    }
+  }, [isOpen]);
 
   // Format date nicely if it's a valid date string
   let formattedDate = eventDate;
@@ -92,24 +117,61 @@ export default function EventQRTicket({
 
             {/* Ticket Body / QR Section */}
             <div className="flex flex-col items-center p-8">
-              <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-100">
-                <QRCode
-                  value={qrValue}
-                  size={200}
-                  level="Q"
-                />
-              </div>
+              <style>{`
+                @keyframes spinY {
+                  from { transform: rotateY(0deg); }
+                  to { transform: rotateY(360deg); }
+                }
+              `}</style>
               
-              <div className="mt-6 text-center">
-                <p className="text-sm text-gray-500 mb-1">Attendee</p>
-                <p className="text-lg font-bold text-gray-900">{userName}</p>
-                
-                <div className="mt-4 rounded-lg bg-blue-50 px-4 py-2">
-                  <p className="text-sm font-medium text-blue-700">
-                    Show this to volunteers at entry
-                  </p>
-                </div>
-              </div>
+              {attendanceStatus === "attended" ? (
+                <motion.div
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="flex flex-col items-center justify-center py-4 w-full"
+                >
+                  <div className="relative w-36 h-36 [transform-style:preserve-3d] animate-[spinY_3s_linear_infinite]">
+                    {/* Front of coin */}
+                    <div className="absolute inset-0 rounded-full border-4 border-[#7CB342]/40 bg-gradient-to-tr from-[#f0f7e6] via-white to-[#dcedc8] flex flex-col items-center justify-center p-3 shadow-inner [backface-visibility:hidden]">
+                      <Award className="text-[#7CB342] mb-1" size={32} />
+                      <span className="text-[10px] font-bold text-[#558b2f] uppercase tracking-widest text-center leading-tight">Participation<br/>Badge</span>
+                    </div>
+                    {/* Back of coin */}
+                    <div className="absolute inset-0 rounded-full border-4 border-[#7CB342]/40 bg-gradient-to-bl from-[#f0f7e6] via-white to-[#dcedc8] flex flex-col items-center justify-center p-3 shadow-inner [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                      <span className="text-xs font-bold text-[#558b2f] text-center line-clamp-3 px-2">{eventName}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-8 text-center flex flex-col items-center">
+                    <div className="flex items-center justify-center gap-2 text-[#7CB342] mb-2">
+                      <CheckCircle2 size={20} />
+                      <p className="font-bold">Attendance Marked!</p>
+                    </div>
+                    <p className="text-sm text-gray-500 font-medium">You earned the Participation Badge</p>
+                  </div>
+                </motion.div>
+              ) : (
+                <>
+                  <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-100">
+                    <QRCode
+                      value={qrValue}
+                      size={200}
+                      level="Q"
+                    />
+                  </div>
+                  
+                  <div className="mt-6 text-center">
+                    <p className="text-sm text-gray-500 mb-1">Attendee</p>
+                    <p className="text-lg font-bold text-gray-900">{userName}</p>
+                    
+                    <div className="mt-4 rounded-lg bg-blue-50 px-4 py-2">
+                      <p className="text-sm font-medium text-blue-700">
+                        Show this to volunteers at entry
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Ticket Footer */}
