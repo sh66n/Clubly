@@ -14,12 +14,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (!email) {
         return "/login?error=missing-email";
       }
-      // const normalizedEmail = email.toLowerCase().trim();
-      // // 🔒 Enforce college domain
-      // if (!normalizedEmail.endsWith("@pvppcoe.ac.in")) {
-      //   console.warn("Blocked non-college email:", normalizedEmail);
-      //   return "/login?error=unauthorized-domain";
-      // }
+      const normalizedEmail = email.toLowerCase().trim();
 
       try {
         await connectToDb();
@@ -27,6 +22,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const existingUser = await User.findOne({ email: user.email });
 
         if (!existingUser) {
+          // New signup: 🔒 Enforce college domain
+          if (!normalizedEmail.endsWith("@pvppcoe.ac.in")) {
+            console.warn("Blocked non-college email signup:", normalizedEmail);
+            return "/login?error=unauthorized-domain";
+          }
+
           // uploads google pfp to cloudinary
           const res = await fetch(
             `${process.env.NEXT_PUBLIC_BASE_URL}/api/upload-avatar`,
