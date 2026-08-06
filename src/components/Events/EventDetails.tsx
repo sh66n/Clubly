@@ -28,6 +28,7 @@ import CopyCodeButton from "../Groups/CopyCodeButton";
 import ContinueWithGroupModal from "../Groups/ContinueWithGroupModal";
 import RegistrationQuestionsModal from "./RegistrationQuestionsModal";
 import DownloadCertificateButton from "./DownloadCertificateButton";
+import LeaveGroupButton from "../Groups/LeaveGroupButton";
 
 interface EventDetailsProps {
   event: IEvent;
@@ -507,6 +508,12 @@ export default function EventDetails({
                       />
                       {!group.isPublic && (
                         <CopyCodeButton code={group.joinCode} />
+                      )}
+                      {!isAlreadyRegistered && (
+                        <LeaveGroupButton
+                          eventId={String(event._id)}
+                          groupId={String(group._id)}
+                        />
                       )}
                     </>
                   ) : (
