@@ -74,7 +74,7 @@ export async function POST(request: Request) {
         userEmail: user?.email
       }, { status: 200 });
     } else if (event.eventType === "team") {
-      const group = await Group.findOne({ eventId, members: userId });
+      const group = await Group.findOne({ event: eventId, members: userId });
       
       if (!group) {
         return NextResponse.json({ error: "User not in any group for this event" }, { status: 404 });

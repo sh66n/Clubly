@@ -30,7 +30,7 @@ export async function GET(
       }
       return NextResponse.json({ status: registration.status }, { status: 200 });
     } else {
-      const group = await Group.findOne({ eventId, members: userId });
+      const group = await Group.findOne({ event: eventId, members: userId });
       if (!group) {
         return NextResponse.json({ status: "unregistered" }, { status: 200 });
       }
