@@ -2,7 +2,18 @@ import { auth } from "@/auth";
 import EventGrid from "@/components/Events/EventGrid";
 import ScheduleDropdown from "@/components/Events/ScheduleDropdown";
 import SearchBar from "@/components/Events/SearchBar";
+import ProfileCompletenessBanner from "@/components/User/ProfileCompletenessBanner";
 import React from "react";
+
+const getUser = async (userId: string) => {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/users/${userId}`,
+    { cache: "no-store" }
+  );
+
+  if (!res.ok) return null;
+  return res.json();
+};
 
 const getAllEvents = async (query: string | string[], club) => {
   const queryString = new URLSearchParams({
@@ -46,6 +57,7 @@ export default async function Events({
     getAllClubs(),
     getAllSuperEvents(),
   ]);
+  const dbUser = session?.user?.id ? await getUser(session.user.id) : null;
 
   return (
     <div className="flex flex-col min-h-full">
@@ -53,6 +65,8 @@ export default async function Events({
       <div className="my-2 text-[#717171]">
         Explore club activities and upcoming opportunities.
       </div>
+
+      <ProfileCompletenessBanner user={dbUser} />
 
       {/* <form className="mt-4 flex gap-2">
         <input

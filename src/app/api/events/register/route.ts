@@ -7,6 +7,7 @@ import { Group } from "@/models/group.model";
 import { Payment } from "@/models/payment.model";
 import { Registration } from "@/models/registration.model";
 import { auth } from "@/auth";
+import { getProfileStatus } from "@/lib/utils";
 
 type CustomQuestionAnswerInput = {
   questionId: string;
@@ -133,6 +134,21 @@ export async function POST(req: Request) {
     const session = await auth();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const dbUser = await User.findById(session.user.id);
+    if (!dbUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const { isComplete, missingFields } = getProfileStatus(dbUser);
+    if (!isComplete) {
+      return NextResponse.json(
+        {
+          error: `Please complete your profile to register. Missing fields: ${missingFields.join(", ")}`,
+        },
+        { status: 400 },
+      );
     }
 
     const { eventId, groupId, customQuestionAnswers = [] } = await req.json();

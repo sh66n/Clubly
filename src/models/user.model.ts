@@ -3,10 +3,11 @@ import { IUser } from "./user.schema";
 
 export enum Department {
   COMPUTER_ENGINEERING = "Computer Engineering",
-  ARTIFICIAL_INTELLIGENCE = "Artificial Intelligence",
-  ELECTRONICS_AND_COMPUTER_SCIENCE = "Electronics and Computer Science",
   INFORMATION_TECHNOLOGY = "Information Technology",
+  COMPUTER_SCIENCE_AND_ENGINEERING_AIML = "Computer Science and Engineering (AI & ML)",
+  ELECTRONICS_AND_COMPUTER_SCIENCE_ECS = "Electronics and Computer Science (ECS)",
   MECHATRONICS = "Mechatronics",
+  ELECTRONICS_AND_TELECOMMUNICATIONS = "Electronics & Telecommunications",
 }
 
 export enum Year {
@@ -66,8 +67,8 @@ function inferStudentInfo(email: string) {
 
   const deptMap: Record<string, Department> = {
     vu1: Department.COMPUTER_ENGINEERING,
-    vu2: Department.ARTIFICIAL_INTELLIGENCE,
-    vu3: Department.ELECTRONICS_AND_COMPUTER_SCIENCE,
+    vu2: Department.COMPUTER_SCIENCE_AND_ENGINEERING_AIML,
+    vu3: Department.ELECTRONICS_AND_COMPUTER_SCIENCE_ECS,
     vu4: Department.INFORMATION_TECHNOLOGY,
     vu7: Department.MECHATRONICS,
   };
@@ -109,8 +110,12 @@ userSchema.pre("validate", function (next) {
   if (user.email) {
     const { department, year } = inferStudentInfo(user.email);
 
-    if (department) user.department = department;
-    if (year) user.year = year;
+    if (department && (user.department === undefined || user.department === null || user.department === "Not Assigned")) {
+      user.department = department;
+    }
+    if (year && (user.year === undefined || user.year === null)) {
+      user.year = year;
+    }
     if (user.email.endsWith("@pvppcoe.ac.in") && !user.college) {
       user.college = "PVPPCOE";
     }
@@ -122,7 +127,7 @@ userSchema.pre("validate", function (next) {
 const updateDynamicYear = (doc: any) => {
   if (doc && doc.email) {
     const { year } = inferStudentInfo(doc.email);
-    if (year) {
+    if (year && (doc.year === undefined || doc.year === null)) {
       doc.year = year;
     }
   }

@@ -71,6 +71,8 @@ export async function PATCH(
     const name = formData.get("name") as string;
     const phoneNumber = formData.get("phoneNumber") as string;
     const college = formData.get("college") as string;
+    const department = formData.get("department") as string;
+    const year = formData.get("year") as string;
     const file = formData.get("avatar") as unknown as File | null; // Key matches frontend input name
 
     const updateData: Record<string, any> = {};
@@ -79,6 +81,13 @@ export async function PATCH(
     if (name) updateData.name = name;
     if (phoneNumber) updateData.phoneNumber = phoneNumber;
     if (college !== null && college !== undefined) updateData.college = college;
+    if (department !== null && department !== undefined) updateData.department = department;
+    if (year !== null && year !== undefined) {
+      const parsedYear = parseInt(year, 10);
+      if (!isNaN(parsedYear)) {
+        updateData.year = parsedYear;
+      }
+    }
 
     // 4. Cloudinary Image Upload (Same logic as events)
     if (file && file.size > 0) {

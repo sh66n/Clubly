@@ -3,10 +3,11 @@ import { z } from "zod";
 
 export const DepartmentEnum = z.enum([
   "Computer Engineering",
-  "Artificial Intelligence",
-  "Electronics and Computer Science",
   "Information Technology",
+  "Computer Science and Engineering (AI & ML)",
+  "Electronics and Computer Science (ECS)",
   "Mechatronics",
+  "Electronics & Telecommunications",
 ]);
 
 export const YearEnum = z.union([
@@ -61,10 +62,11 @@ export interface IUser {
 
   department?:
     | "Computer Engineering"
-    | "Artificial Intelligence"
-    | "Electronics and Computer Science"
     | "Information Technology"
-    | "Mechatronics";
+    | "Computer Science and Engineering (AI & ML)"
+    | "Electronics and Computer Science (ECS)"
+    | "Mechatronics"
+    | "Electronics & Telecommunications";
 
   year?: 1 | 2 | 3 | 4;
 

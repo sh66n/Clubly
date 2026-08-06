@@ -23,3 +23,54 @@ export function getColorFromString(str: string) {
   }
   return CLUB_COLORS[Math.abs(hash) % CLUB_COLORS.length];
 }
+
+export function getProfileStatus(user: any) {
+  let score = 0;
+  const missing: string[] = [];
+
+  if (user?.name) {
+    score += 20;
+  } else {
+    missing.push("Name");
+  }
+
+  if (user?.email) {
+    score += 20;
+  } else {
+    missing.push("Email Address");
+  }
+
+  if (user?.image) {
+    score += 10;
+  } else {
+    missing.push("Profile Picture");
+  }
+
+  if (user?.phoneNumber && user.phoneNumber.trim() !== "") {
+    score += 20;
+  } else {
+    missing.push("Phone Number");
+  }
+
+  if (
+    user?.department &&
+    user.department.trim() !== "" &&
+    user.department !== "Not Assigned"
+  ) {
+    score += 20;
+  } else {
+    missing.push("Department");
+  }
+
+  if (user?.year && user.year !== "Not Assigned") {
+    score += 10;
+  } else {
+    missing.push("Year");
+  }
+
+  return {
+    percentage: score,
+    isComplete: score === 100,
+    missingFields: missing,
+  };
+}

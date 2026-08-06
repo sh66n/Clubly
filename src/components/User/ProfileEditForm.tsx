@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Session } from "next-auth";
 import Link from "next/link";
+import { getProfileStatus } from "@/lib/utils";
 
 interface ProfileEditFormProps {
   user: Session["user"] & {
@@ -60,6 +61,8 @@ export default function ProfileEditForm({ user }: ProfileEditFormProps) {
     }
   };
 
+  const { percentage, isComplete, missingFields } = getProfileStatus(user);
+
   return (
     <form onSubmit={handleSubmit} className="max-w-5xl mx-auto py-12 px-6">
       <div className="flex flex-col lg:flex-row gap-12 lg:gap-24">
@@ -105,6 +108,31 @@ export default function ProfileEditForm({ user }: ProfileEditFormProps) {
               accept="image/*"
             />
           </div>
+
+          {/* Minimalist Completeness Card */}
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 space-y-3 mt-6">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-zinc-400 font-medium">Profile Completeness</span>
+              <span className={`font-semibold ${isComplete ? "text-emerald-400" : "text-amber-500"}`}>{percentage}%</span>
+            </div>
+            
+            <div className="h-1.5 w-full bg-zinc-950 rounded-full overflow-hidden">
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${isComplete ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+
+            {missingFields.length > 0 ? (
+              <p className="text-[11px] text-zinc-500 leading-normal">
+                Please add: {missingFields.join(", ")}
+              </p>
+            ) : (
+              <p className="text-[11px] text-emerald-400 font-medium">
+                Profile is 100% complete.
+              </p>
+            )}
+          </div>
         </aside>
 
         {/* RIGHT COLUMN: The Form */}
@@ -128,27 +156,41 @@ export default function ProfileEditForm({ user }: ProfileEditFormProps) {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* DISABLED: Department */}
+                {/* Department Select */}
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-zinc-500 ml-1 flex items-center gap-2">
-                    Department <Lock className="w-3 h-3" />
+                  <label className="text-xs font-semibold text-zinc-400 ml-1">
+                    Department
                   </label>
-                  <input
-                    value={user?.department || "Not Assigned"}
-                    disabled
-                    className="w-full bg-zinc-950/50 border border-zinc-900 rounded-xl px-4 py-3 text-sm text-zinc-600 cursor-not-allowed italic"
-                  />
+                  <select
+                    name="department"
+                    defaultValue={user?.department || ""}
+                    className="w-full bg-zinc-900/40 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-200 focus:ring-1 focus:ring-zinc-500 outline-none transition-all"
+                  >
+                    <option value="" disabled className="bg-zinc-950 text-zinc-400">Select Department</option>
+                    <option value="Computer Engineering" className="bg-zinc-950 text-zinc-200">Computer Engineering</option>
+                    <option value="Information Technology" className="bg-zinc-950 text-zinc-200">Information Technology</option>
+                    <option value="Computer Science and Engineering (AI & ML)" className="bg-zinc-950 text-zinc-200">Computer Science and Engineering (AI & ML)</option>
+                    <option value="Electronics and Computer Science (ECS)" className="bg-zinc-950 text-zinc-200">Electronics and Computer Science (ECS)</option>
+                    <option value="Mechatronics" className="bg-zinc-950 text-zinc-200">Mechatronics</option>
+                    <option value="Electronics & Telecommunications" className="bg-zinc-950 text-zinc-200">Electronics & Telecommunications</option>
+                  </select>
                 </div>
-                {/* DISABLED: Year */}
+                {/* Year Select */}
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-zinc-500 ml-1 flex items-center gap-2">
-                    Year <Lock className="w-3 h-3" />
+                  <label className="text-xs font-semibold text-zinc-400 ml-1">
+                    Year
                   </label>
-                  <input
-                    value={user?.year || "Not Assigned"}
-                    disabled
-                    className="w-full bg-zinc-950/50 border border-zinc-900 rounded-xl px-4 py-3 text-sm text-zinc-600 cursor-not-allowed italic"
-                  />
+                  <select
+                    name="year"
+                    defaultValue={user?.year || ""}
+                    className="w-full bg-zinc-900/40 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-200 focus:ring-1 focus:ring-zinc-500 outline-none transition-all"
+                  >
+                    <option value="" disabled className="bg-zinc-950 text-zinc-400">Select Year</option>
+                    <option value="1" className="bg-zinc-950 text-zinc-200">FE (1st Year)</option>
+                    <option value="2" className="bg-zinc-950 text-zinc-200">SE (2nd Year)</option>
+                    <option value="3" className="bg-zinc-950 text-zinc-200">TE (3rd Year)</option>
+                    <option value="4" className="bg-zinc-950 text-zinc-200">BE (4th Year)</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -186,20 +228,7 @@ export default function ProfileEditForm({ user }: ProfileEditFormProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-zinc-400 ml-1">
-                  College
-                </label>
-                <input
-                  name="college"
-                  disabled={user.email?.endsWith("@pvppcoe.ac.in")}
-                  defaultValue={user?.college || ""}
-                  placeholder="e.g. Vasantdada Patil College of Engineering"
-                  className="w-full bg-zinc-900/40 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-200 focus:ring-1 focus:ring-zinc-500 outline-none transition-all placeholder:text-zinc-700 cursor-not-allowed"
-                />
-              </div>
-            </div>
+
           </section>
 
           {/* Action Bar */}
