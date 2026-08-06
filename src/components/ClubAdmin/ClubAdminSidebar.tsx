@@ -9,6 +9,7 @@ import {
   UsersRound,
   ChevronLeft,
   ChevronRight,
+  X,
 } from "lucide-react";
 
 interface ClubAdminSidebarProps {
@@ -18,16 +19,22 @@ interface ClubAdminSidebarProps {
     image?: string | null;
     role?: string | null;
   };
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
-export default function ClubAdminSidebar({ user }: ClubAdminSidebarProps) {
+export default function ClubAdminSidebar({
+  user,
+  mobileOpen = false,
+  onMobileClose,
+}: ClubAdminSidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--club-admin-sidebar-width",
-      isCollapsed ? "5rem" : "17rem",
+      isCollapsed ? "5rem" : "17rem"
     );
   }, [isCollapsed]);
 
@@ -54,108 +61,155 @@ export default function ClubAdminSidebar({ user }: ClubAdminSidebarProps) {
   };
 
   return (
-    <div
-      className={`fixed top-0 left-0 h-screen ${isCollapsed ? "w-20" : "w-[17rem]"} z-50 transition-all duration-300 hidden md:flex flex-col`}
-      style={{ background: "#091800" }}
-    >
-      {/* Collapse toggle — green circle on the right edge */}
-      <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute top-7 -right-3.5 z-10 w-7 h-7 rounded-full bg-[#7CB342] hover:bg-[#689F38] flex items-center justify-center transition-colors shadow-md"
-      >
-        {isCollapsed ? (
-          <ChevronRight size={14} className="text-white" />
-        ) : (
-          <ChevronLeft size={14} className="text-white" />
-        )}
-      </button>
+    <>
+      {/* Mobile Overlay */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden transition-opacity"
+          onClick={onMobileClose}
+        />
+      )}
 
-      {/* ── Logo ── */}
-      <div
-        className={`shrink-0 ${isCollapsed ? "px-3 py-6 flex justify-center" : "px-5 py-6"}`}
+      {/* Sidebar Container */}
+      <aside
+        className={`fixed top-0 left-0 h-screen z-50 transition-all duration-300 flex flex-col ${
+          /* Desktop behavior */
+          isCollapsed ? "md:w-20" : "md:w-[17rem]"
+        } ${
+          /* Mobile behavior */
+          mobileOpen ? "translate-x-0 w-[17rem]" : "-translate-x-full md:translate-x-0"
+        }`}
+        style={{ background: "#091800" }}
       >
-        <Link
-          href="/club-admin/dashboard"
-          className="flex items-center gap-2.5"
+        {/* Mobile close button */}
+        <button
+          onClick={onMobileClose}
+          className="md:hidden absolute top-5 right-4 z-10 text-white/70 hover:text-white p-1"
+          aria-label="Close sidebar"
+        >
+          <X size={20} />
+        </button>
+
+        {/* Desktop Collapse toggle — green circle on the right edge */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="hidden md:flex absolute top-7 -right-3.5 z-10 w-7 h-7 rounded-full bg-[#7CB342] hover:bg-[#689F38] items-center justify-center transition-colors shadow-md"
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {isCollapsed ? (
-            <Image
-              src="/images/logo-without-text-club-admin.png"
-              alt="Clubly"
-              width={36}
-              height={36}
-              priority
-              className="object-contain"
-            />
+            <ChevronRight size={14} className="text-white" />
           ) : (
-            <Image
-              src="/images/logo-club-admin.png"
-              alt="Clubly"
-              width={140}
-              height={40}
-              priority
-              placeholder="empty"
-              className="object-contain"
-            />
+            <ChevronLeft size={14} className="text-white" />
           )}
-        </Link>
-      </div>
+        </button>
 
-      {/* ── PRIMARY section ── */}
-      <div className={`flex-1 ${isCollapsed ? "px-2" : "px-4"}`}>
-        {!isCollapsed && (
-          <div className="text-[#8a9a6c] text-[11px] font-bold tracking-[0.15em] uppercase mb-3">
+        {/* ── Logo ── */}
+        <div
+          className={`shrink-0 ${
+            isCollapsed ? "md:px-3 md:py-6 px-5 py-6 flex justify-center" : "px-5 py-6"
+          }`}
+        >
+          <Link
+            href="/club-admin/dashboard"
+            onClick={() => onMobileClose && onMobileClose()}
+            className="flex items-center gap-2.5"
+          >
+            {isCollapsed ? (
+              <>
+                <Image
+                  src="/images/logo-without-text-club-admin.png"
+                  alt="Clubly"
+                  width={36}
+                  height={36}
+                  priority
+                  className="hidden md:block object-contain"
+                />
+                <Image
+                  src="/images/logo-club-admin.png"
+                  alt="Clubly"
+                  width={140}
+                  height={40}
+                  priority
+                  className="md:hidden object-contain"
+                />
+              </>
+            ) : (
+              <Image
+                src="/images/logo-club-admin.png"
+                alt="Clubly"
+                width={140}
+                height={40}
+                priority
+                placeholder="empty"
+                className="object-contain"
+              />
+            )}
+          </Link>
+        </div>
+
+        {/* ── PRIMARY section ── */}
+        <div className={`flex-1 ${isCollapsed ? "md:px-2 px-4" : "px-4"}`}>
+          <div
+            className={`text-[#8a9a6c] text-[11px] font-bold tracking-[0.15em] uppercase mb-3 ${
+              isCollapsed ? "hidden md:hidden" : "block"
+            }`}
+          >
             Primary
           </div>
-        )}
 
-        <ul className="space-y-1.5">
-          {navItems.map((item) => {
-            const active = isItemActive(item.href);
-            return (
-              <li key={item.name}>
-                <Link href={item.href}>
-                  <div
-                    className={`flex items-center gap-3 rounded-xl transition-all duration-200 ${
-                      isCollapsed
-                        ? "justify-center py-3 px-2"
-                        : "py-3 px-4"
-                    } ${
-                      active
-                        ? "text-[#1a2e00] font-semibold"
-                        : "text-[#c5d6a8] hover:text-white hover:bg-white/5"
-                    }`}
-                    style={
-                      active
-                        ? {
-                            background:
-                              "linear-gradient(90deg, #7CB342 0%, #9CCC65 100%)",
-                          }
-                        : undefined
-                    }
+          <ul className="space-y-1.5">
+            {navItems.map((item) => {
+              const active = isItemActive(item.href);
+              return (
+                <li key={item.name}>
+                  <Link
+                    href={item.href}
+                    onClick={() => onMobileClose && onMobileClose()}
                   >
-                    {item.icon}
-                    {!isCollapsed && (
-                      <span className="text-sm">{item.name}</span>
-                    )}
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+                    <div
+                      className={`flex items-center gap-3 rounded-xl transition-all duration-200 ${
+                        isCollapsed
+                          ? "md:justify-center md:py-3 md:px-2 py-3 px-4"
+                          : "py-3 px-4"
+                      } ${
+                        active
+                          ? "text-[#1a2e00] font-semibold"
+                          : "text-[#c5d6a8] hover:text-white hover:bg-white/5"
+                      }`}
+                      style={
+                        active
+                          ? {
+                              background:
+                                "linear-gradient(90deg, #7CB342 0%, #9CCC65 100%)",
+                            }
+                          : undefined
+                      }
+                    >
+                      {item.icon}
+                      <span className={isCollapsed ? "md:hidden text-sm" : "text-sm"}>
+                        {item.name}
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
 
-        {/* ── GENERAL section ── */}
-        <div className="mt-10">
-          {!isCollapsed ? (
-            <div className="text-[#8a9a6c] text-[11px] font-bold tracking-[0.15em] uppercase">
+          {/* ── GENERAL section ── */}
+          <div className="mt-10">
+            <div
+              className={`text-[#8a9a6c] text-[11px] font-bold tracking-[0.15em] uppercase ${
+                isCollapsed ? "hidden md:hidden" : "block"
+              }`}
+            >
               General
             </div>
-          ) : (
-            <div className="border-t border-[#2a3a10]" />
-          )}
+            {isCollapsed && <div className="hidden md:block border-t border-[#2a3a10]" />}
+          </div>
         </div>
-      </div>
-    </div>
+      </aside>
+    </>
   );
 }
+

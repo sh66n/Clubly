@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft,
   Calendar,
@@ -25,6 +26,7 @@ import {
   Link2,
   ChevronDown,
   ChevronUp,
+  QrCode,
 } from "lucide-react";
 import { toast } from "sonner";
 import ClublyLoader from "@/components/ClubAdmin/ClublyLoader";
@@ -342,7 +344,7 @@ export default function EventDetailsPage() {
             {event.description || "No description provided."}
           </p>
 
-          <div className="flex items-center gap-2 mt-4">
+          <div className="flex items-center gap-2 mt-4 flex-wrap">
             <button
               onClick={() => setEditDrawerOpen(true)}
               className="px-3 py-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors flex items-center gap-1.5 outline-none"
@@ -350,6 +352,14 @@ export default function EventDetailsPage() {
               <Pencil size={12} />
               Edit Event
             </button>
+
+            <Link
+              href={`/club-admin/events/${eventId}/scan`}
+              className="px-3 py-1.5 text-xs font-bold text-white bg-[#091800] hover:bg-[#0f2900] border border-[#1a3a00] rounded-lg transition-colors flex items-center gap-1.5 outline-none"
+            >
+              <QrCode size={12} />
+              Scan QR Attendance
+            </Link>
 
             {event.status === "draft" && (
               <button

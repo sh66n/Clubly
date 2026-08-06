@@ -1,7 +1,6 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import ClubAdminSidebar from "@/components/ClubAdmin/ClubAdminSidebar";
-import ClubAdminHeader from "@/components/ClubAdmin/ClubAdminHeader";
+import ClubAdminClientLayout from "@/components/ClubAdmin/ClubAdminClientLayout";
 
 export const metadata = {
   title: "Club Admin | Clubly",
@@ -24,18 +23,8 @@ export default async function ClubAdminLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-[#f5f5f5]">
-      {/* Sidebar */}
-      <ClubAdminSidebar user={session.user} />
-
-      {/* Main area */}
-      <div className="flex-1 md:ml-[var(--club-admin-sidebar-width,17rem)] transition-all duration-300 flex flex-col">
-        {/* Top header */}
-        <ClubAdminHeader user={session.user} />
-
-        {/* Page content */}
-        <main className="flex-1 px-4 md:px-6 pt-6 pb-6">{children}</main>
-      </div>
-    </div>
+    <ClubAdminClientLayout user={session.user}>
+      {children}
+    </ClubAdminClientLayout>
   );
 }

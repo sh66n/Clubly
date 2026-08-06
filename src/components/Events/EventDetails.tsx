@@ -12,6 +12,7 @@ import {
   FileBadge,
   MessageCircle,
   Pencil,
+  QrCode,
   Trophy,
   User,
   Users,
@@ -29,6 +30,7 @@ import ContinueWithGroupModal from "../Groups/ContinueWithGroupModal";
 import RegistrationQuestionsModal from "./RegistrationQuestionsModal";
 import DownloadCertificateButton from "./DownloadCertificateButton";
 import LeaveGroupButton from "../Groups/LeaveGroupButton";
+import EventQRTicket from "./EventQRTicket";
 
 interface EventDetailsProps {
   event: IEvent;
@@ -55,6 +57,7 @@ export default function EventDetails({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isQROpen, setIsQROpen] = useState(false);
 
   useEffect(() => {
     if (viewLoggedEvents.has(event._id)) return;
@@ -496,6 +499,15 @@ export default function EventDetails({
                     </div>
                   </a>
                 )}
+                {isAlreadyRegistered && (
+                  <button
+                    onClick={() => setIsQROpen(true)}
+                    className="w-full mt-3 py-2.5 rounded-lg font-semibold text-sm border border-dashed border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 hover:bg-white/5 transition-all flex items-center justify-center gap-2"
+                  >
+                    <QrCode size={18} />
+                    Show My QR Ticket
+                  </button>
+                )}
               </BorderedDiv>
               {event.eventType === "team" && (
                 <>
@@ -592,6 +604,18 @@ export default function EventDetails({
             }
             await handleRegister(answers);
           }}
+        />
+      )}
+      {isAlreadyRegistered && (
+        <EventQRTicket
+          eventId={String(event._id)}
+          eventName={event.name}
+          userId={user.id}
+          userName={user.name || "Student"}
+          eventDate={String(event.date)}
+          clubName={event.organizingClub.name}
+          isOpen={isQROpen}
+          onClose={() => setIsQROpen(false)}
         />
       )}
     </>

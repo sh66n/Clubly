@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Search, Bell, Settings, X, Calendar, CreditCard, MessageSquare, Mail } from "lucide-react";
+import { Search, Bell, Settings, Calendar, CreditCard, MessageSquare, Menu } from "lucide-react";
 
 interface NotificationFeedItem {
   id: string;
@@ -18,6 +18,7 @@ interface ClubAdminHeaderProps {
     image?: string | null;
     role?: string | null;
   };
+  onMenuClick?: () => void;
 }
 
 const pageTitles: Record<string, string> = {
@@ -26,7 +27,7 @@ const pageTitles: Record<string, string> = {
   "/club-admin/club": "My Club",
 };
 
-export default function ClubAdminHeader({ user }: ClubAdminHeaderProps) {
+export default function ClubAdminHeader({ user, onMenuClick }: ClubAdminHeaderProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const title = pageTitles[pathname] || "Dashboard";
@@ -107,8 +108,17 @@ export default function ClubAdminHeader({ user }: ClubAdminHeaderProps) {
   return (
     <header className="sticky top-0 z-30 bg-white px-4 md:px-6 py-3 border-b border-[#e0e0e0]">
       <div className="flex items-center justify-between gap-4">
-        {/* Left: Page title */}
-        <h1 className="text-xl md:text-2xl font-bold text-[#222]">{title}</h1>
+        {/* Left: Mobile Menu Toggle & Page title */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onMenuClick}
+            className="md:hidden p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700 transition-colors"
+            aria-label="Open navigation menu"
+          >
+            <Menu size={20} />
+          </button>
+          <h1 className="text-xl md:text-2xl font-bold text-[#222]">{title}</h1>
+        </div>
 
         {/* Right: Search, icons, profile */}
         <div className="flex items-center gap-3">
