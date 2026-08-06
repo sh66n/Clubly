@@ -94,7 +94,7 @@ export async function POST(request: Request) {
     if (event) {
       if (event.eventType === "individual") {
         await Registration.updateOne(
-          { eventId: payment.eventId, userId: session.user.id },
+          { eventId: payment.eventId, userId: payment.userId },
           {
             $setOnInsert: {
               status: "registered",
