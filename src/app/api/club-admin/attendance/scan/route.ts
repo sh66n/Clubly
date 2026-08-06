@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { connectToDb } from "@/lib/connectToDb";
-import { Event, Registration, Group, User, Badge } from "@/models";
+import { Event, Registration, Group, User, Badge, UserPoints } from "@/models";
+import mongoose from "mongoose";
 
 export async function POST(request: Request) {
   try {
@@ -67,6 +68,30 @@ export async function POST(request: Request) {
         { upsert: true }
       );
 
+      // Award participation points
+      const clubId = event.organizingClub;
+      const participationPoints = event.points?.participation ?? 10;
+      await UserPoints.findOneAndUpdate(
+        { userId: new mongoose.Types.ObjectId(userId), clubId },
+        [
+          {
+            $set: {
+              userId: new mongoose.Types.ObjectId(userId),
+              clubId,
+              points: {
+                $max: [
+                  0,
+                  {
+                    $add: [{ $ifNull: ["$points", 0] }, participationPoints],
+                  },
+                ],
+              },
+            },
+          },
+        ],
+        { upsert: true }
+      );
+
       return NextResponse.json({ 
         success: true, 
         registration,
@@ -109,6 +134,35 @@ export async function POST(request: Request) {
       }));
       if (badgeOps.length > 0) {
         await Badge.bulkWrite(badgeOps);
+      }
+
+      // Award participation points to all group members
+      const clubId = event.organizingClub;
+      const participationPoints = event.points?.participation ?? 10;
+      const pointsOps = group.members.map((memberId: any) => ({
+        updateOne: {
+          filter: { userId: new mongoose.Types.ObjectId(memberId), clubId },
+          update: [
+            {
+              $set: {
+                userId: new mongoose.Types.ObjectId(memberId),
+                clubId,
+                points: {
+                  $max: [
+                    0,
+                    {
+                      $add: [{ $ifNull: ["$points", 0] }, participationPoints],
+                    },
+                  ],
+                },
+              },
+            },
+          ],
+          upsert: true
+        }
+      }));
+      if (pointsOps.length > 0) {
+        await UserPoints.bulkWrite(pointsOps);
       }
 
       return NextResponse.json({ 
