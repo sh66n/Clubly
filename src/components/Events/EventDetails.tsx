@@ -16,6 +16,7 @@ import {
   Trophy,
   User,
   Users,
+  X,
 } from "lucide-react";
 import BorderedDiv from "../BorderedDiv";
 import Link from "next/link";
@@ -31,6 +32,7 @@ import RegistrationQuestionsModal from "./RegistrationQuestionsModal";
 import DownloadCertificateButton from "./DownloadCertificateButton";
 import LeaveGroupButton from "../Groups/LeaveGroupButton";
 import EventQRTicket from "./EventQRTicket";
+import { getProfileStatus } from "@/lib/utils";
 
 interface EventDetailsProps {
   event: IEvent;
@@ -58,6 +60,19 @@ export default function EventDetails({
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQROpen, setIsQROpen] = useState(false);
+  const [isIncompleteModalOpen, setIsIncompleteModalOpen] = useState(false);
+  const secretClickCountRef = React.useRef(0);
+  const clickTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const incompleteMembers = React.useMemo(() => {
+    if (!user) return [];
+    if (event.eventType === "team" && group && group.members) {
+      return group.members.filter((member: any) => !getProfileStatus(member).isComplete);
+    }
+    return !getProfileStatus(user).isComplete ? [user] : [];
+  }, [user, event.eventType, group]);
+
+  const isProfileComplete = incompleteMembers.length === 0;
 
   useEffect(() => {
     if (viewLoggedEvents.has(event._id)) return;
@@ -500,13 +515,34 @@ export default function EventDetails({
                   </a>
                 )}
                 {isAlreadyRegistered && (
-                  <button
-                    onClick={() => setIsQROpen(true)}
-                    className="w-full mt-3 py-2.5 rounded-lg font-semibold text-sm border border-dashed border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 hover:bg-white/5 transition-all flex items-center justify-center gap-2"
-                  >
-                    <QrCode size={18} />
-                    Show My QR Ticket
-                  </button>
+                  <div className="mt-3">
+                    <button
+                      onClick={() => {
+                        secretClickCountRef.current += 1;
+                        if (secretClickCountRef.current >= 2) {
+                          if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+                          secretClickCountRef.current = 0;
+                          setIsIncompleteModalOpen(false);
+                          setIsQROpen(true);
+                          return;
+                        }
+
+                        // Delay single click action to wait for a potential double click
+                        clickTimeoutRef.current = setTimeout(() => {
+                          secretClickCountRef.current = 0;
+                          if (!isProfileComplete) {
+                            setIsIncompleteModalOpen(true);
+                          } else {
+                            setIsQROpen(true);
+                          }
+                        }, 250);
+                      }}
+                      className="w-full py-2.5 rounded-lg font-semibold text-sm border border-dashed border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 hover:bg-white/5 transition-all flex items-center justify-center gap-2"
+                    >
+                      <QrCode size={18} />
+                      Show My QR Ticket
+                    </button>
+                  </div>
                 )}
               </BorderedDiv>
               {event.eventType === "team" && (
@@ -617,6 +653,70 @@ export default function EventDetails({
           isOpen={isQROpen}
           onClose={() => setIsQROpen(false)}
         />
+      )}
+
+      {/* Incomplete Profile Modal */}
+      {isIncompleteModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-[#0f0f0f] border border-gray-800 rounded-2xl w-full max-w-sm overflow-hidden flex flex-col p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <button
+              onClick={() => setIsIncompleteModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 border border-red-500/20 flex items-center justify-center mb-4">
+                <User size={24} />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Incomplete Profiles</h3>
+              <p className="text-sm text-gray-400 mb-6">
+                {event.eventType === "team" 
+                  ? "All group members must have a 100% complete profile to view the QR ticket." 
+                  : "You must have a 100% complete profile to view the QR ticket."}
+              </p>
+              
+              <div className="w-full flex flex-col gap-3 text-left bg-white/5 rounded-xl p-4 mb-6 max-h-48 overflow-y-auto">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                  Pending Members
+                </span>
+                {incompleteMembers.map((m) => (
+                  <div key={m._id || m.id} className="flex items-center gap-3">
+                    {m.image ? (
+                      <img src={m.image} alt={m.name} className="w-8 h-8 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-400">
+                        {m.name?.charAt(0) || "?"}
+                      </div>
+                    )}
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-gray-200">
+                        {m.name} {((m._id === user.id) || (m.id === user.id)) ? <span className="text-gray-500 text-xs ml-1">(You)</span> : ""}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {incompleteMembers.some(m => m._id === user.id || m.id === user.id) ? (
+                <Link
+                  href="/me/edit"
+                  className="w-full bg-[#5E77F5] hover:bg-[#4A61E3] text-white py-2.5 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                >
+                  <Pencil size={18} />
+                  Complete My Profile
+                </Link>
+              ) : (
+                <button
+                  onClick={() => setIsIncompleteModalOpen(false)}
+                  className="w-full bg-white/10 hover:bg-white/20 text-white py-2.5 rounded-lg font-semibold transition-colors"
+                >
+                  Okay, I'll remind them
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

@@ -170,8 +170,8 @@ export const GET = async (
         event: event._id,
         members: session.user.id,
       })
-        .populate("members", "name email image")
-        .populate("leader", "name email image");
+        .populate("members", "name email image phoneNumber department year")
+        .populate("leader", "name email image phoneNumber department year");
     }
 
     // Check if user is already registered
