@@ -31,6 +31,26 @@ export default function ScanAttendancePage() {
   const [retryTrigger, setRetryTrigger] = useState(0);
 
   useEffect(() => {
+    const fetchExistingScans = async () => {
+      try {
+        const res = await fetch(`/api/club-admin/attendance/scans?eventId=${eventId}`);
+        if (res.ok) {
+          const data = await res.json();
+          const scans = data.scans.map((scan: any) => ({
+            ...scan,
+            timestamp: new Date(scan.timestamp)
+          }));
+          setResultsFeed(scans);
+          setAttendedCount(scans.length);
+        }
+      } catch (err) {
+        console.error("Error loading existing scans:", err);
+      }
+    };
+    fetchExistingScans();
+  }, [eventId]);
+
+  useEffect(() => {
     // Inject custom CSS to override html5-qrcode styles for light theme
     const style = document.createElement("style");
     style.innerHTML = `

@@ -21,16 +21,17 @@ interface ClubAdminHeaderProps {
   onMenuClick?: () => void;
 }
 
-const pageTitles: Record<string, string> = {
-  "/club-admin/dashboard": "Dashboard",
-  "/club-admin/events": "Events",
-  "/club-admin/club": "My Club",
+const getTitleFromPathname = (pathname: string) => {
+  if (pathname.startsWith("/club-admin/events")) return "Events";
+  if (pathname.startsWith("/club-admin/club")) return "My Club";
+  if (pathname.startsWith("/club-admin/dashboard")) return "Dashboard";
+  return "Dashboard";
 };
 
 export default function ClubAdminHeader({ user, onMenuClick }: ClubAdminHeaderProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const title = pageTitles[pathname] || "Dashboard";
+  const title = getTitleFromPathname(pathname);
 
   // Read active academicYear from search parameters or fallback to today's active cycle
   const getActiveAcademicYear = () => {

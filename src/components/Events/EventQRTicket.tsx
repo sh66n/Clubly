@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import QRCode from "react-qr-code";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Award, CheckCircle2 } from "lucide-react";
@@ -39,12 +39,14 @@ export default function EventQRTicket({
 
   const qrValue = `clubly:att:${eventId}:${userId}`;
 
-  const [attendanceStatus, setAttendanceStatus] = React.useState("registered");
+  const [attendanceStatus, setAttendanceStatus] = useState("registered");
+  const [isInitialCheck, setIsInitialCheck] = useState(true);
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
+    
     if (isOpen && attendanceStatus !== "attended") {
-      intervalId = setInterval(async () => {
+      const checkStatus = async () => {
         try {
           const res = await fetch(`/api/events/${eventId}/attendance/status`);
           const data = await res.json();
@@ -52,15 +54,24 @@ export default function EventQRTicket({
             setAttendanceStatus("attended");
           }
         } catch (err) {}
-      }, 3000);
+        setIsInitialCheck(false);
+      };
+
+      // Check immediately, then every 3 seconds
+      checkStatus();
+      intervalId = setInterval(checkStatus, 3000);
     }
-    return () => clearInterval(intervalId);
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [isOpen, eventId, attendanceStatus]);
 
   // Reset status when modal closes
   useEffect(() => {
     if (!isOpen) {
       setAttendanceStatus("registered");
+      setIsInitialCheck(true);
     }
   }, [isOpen]);
 
@@ -124,7 +135,12 @@ export default function EventQRTicket({
                 }
               `}</style>
               
-              {attendanceStatus === "attended" ? (
+              {isInitialCheck ? (
+                <div className="flex flex-col items-center justify-center w-full min-h-[300px]">
+                  <div className="w-8 h-8 border-4 border-[#7CB342]/30 border-t-[#7CB342] rounded-full animate-spin mb-4"></div>
+                  <p className="text-sm text-gray-400 font-medium">Loading your ticket...</p>
+                </div>
+              ) : attendanceStatus === "attended" ? (
                 <motion.div
                   initial={{ scale: 0.5, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
