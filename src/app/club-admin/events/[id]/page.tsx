@@ -1,5 +1,9 @@
 "use client";
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler, BarElement } from 'chart.js';
+import { Pie, Line, Bar } from 'react-chartjs-2';
+
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler, BarElement);
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -23,17 +27,20 @@ import {
   Pencil,
   X,
   Upload,
+  PieChart,
   Link2,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   QrCode,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import ClublyLoader from "@/components/ClubAdmin/ClublyLoader";
 
 type EventStatus = "draft" | "live" | "completed";
 type EventType = "team" | "individual";
-type TabKey = "participants" | "finance" | "feedback";
+type TabKey = "participants" | "finance" | "feedback" | "likes";
 
 interface CustomQuestion {
   id: string;
@@ -45,7 +52,7 @@ interface CustomQuestion {
 
 interface RegistrationItem {
   _id: string;
-  userId?: { _id: string; name: string; email: string; image?: string };
+  userId?: { _id: string; name: string; email: string; image?: string; department?: string };
   groupId?: {
     _id: string;
     name: string;
@@ -77,6 +84,7 @@ interface EventDetails {
   _id: string;
   name: string;
   description?: string;
+  createdAt?: string;
   date: string;
   eventType: EventType;
   status: EventStatus;
@@ -92,6 +100,40 @@ interface EventDetails {
   certificateTemplate?: { url: string; publicId: string };
   likes: number;
   views: number;
+  likedBy?: { _id: string; name: string; email: string; image?: string }[];
+  points?: { participation?: number; winner?: number };
+  winner?: { _id: string; name: string; email: string; image?: string };
+  winnerGroup?: { _id: string; name: string };
+  contact?: { _id: string; name: string; email: string; image?: string }[];
+  superEvent?: { _id: string; name: string; image?: string };
+  customQuestions?: {
+    id: string;
+    question: string;
+    type: string;
+    required: boolean;
+    options: string[];
+  }[];
+}
+
+interface GroupItem {
+  _id: string;
+  name: string;
+  members: { _id: string; name: string; email: string; image?: string; department?: string }[];
+  leader: { _id: string; name: string; email: string; department?: string };
+  isPublic: boolean;
+  maxSize: number;
+}
+
+function InfoTooltip({ text }: { text: string }) {
+  return (
+    <div className="group relative inline-flex items-center justify-center w-4 h-4 rounded-full border border-slate-300 text-slate-400 text-[10px] font-bold cursor-help ml-2">
+      i
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-max max-w-xs bg-slate-800 text-white text-xs p-2 rounded shadow-lg z-50 font-normal">
+        {text}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-800"></div>
+      </div>
+    </div>
+  );
 }
 
 export default function EventDetailsPage() {
@@ -103,6 +145,7 @@ export default function EventDetailsPage() {
   const [registrations, setRegistrations] = useState<RegistrationItem[]>([]);
   const [payments, setPayments] = useState<PaymentItem[]>([]);
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
+  const [groups, setGroups] = useState<GroupItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -110,6 +153,9 @@ export default function EventDetailsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusLoading, setStatusLoading] = useState(false);
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
+  const [timeFilter, setTimeFilter] = useState("All Time");
+  const [timeFilterOpen, setTimeFilterOpen] = useState(false);
+  const [descExpanded, setDescExpanded] = useState(false);
 
   // Expand states for team events
   const [expandedRegs, setExpandedRegs] = useState<Record<string, boolean>>({});
@@ -132,6 +178,7 @@ export default function EventDetailsPage() {
       setRegistrations(data.registrations || []);
       setPayments(data.payments || []);
       setFeedbacks(data.feedbacks || []);
+      setGroups(data.groups || []);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -269,6 +316,80 @@ export default function EventDetailsPage() {
     });
   }, [registrations, searchQuery, event]);
 
+  const filteredMetrics = useMemo(() => {
+    const now = new Date();
+    let currentRegs = registrations;
+    let previousRegs: RegistrationItem[] = [];
+    let currentPayments = payments;
+    let previousPayments: PaymentItem[] = [];
+
+    if (timeFilter === "Today") {
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      currentRegs = registrations.filter(r => new Date(r.registeredAt) >= today);
+      currentPayments = payments.filter(p => new Date(p.createdAt) >= today);
+      const yesterday = new Date(today.getTime() - 86400000);
+      previousRegs = registrations.filter(r => {
+        const d = new Date(r.registeredAt);
+        return d >= yesterday && d < today;
+      });
+      previousPayments = payments.filter(p => {
+        const d = new Date(p.createdAt);
+        return d >= yesterday && d < today;
+      });
+    } else if (timeFilter === "Last 7 Days") {
+      const last7 = new Date(now.getTime() - 7 * 86400000);
+      currentRegs = registrations.filter(r => new Date(r.registeredAt) >= last7);
+      currentPayments = payments.filter(p => new Date(p.createdAt) >= last7);
+      const last14 = new Date(now.getTime() - 14 * 86400000);
+      previousRegs = registrations.filter(r => {
+        const d = new Date(r.registeredAt);
+        return d >= last14 && d < last7;
+      });
+      previousPayments = payments.filter(p => {
+        const d = new Date(p.createdAt);
+        return d >= last14 && d < last7;
+      });
+    } else if (timeFilter === "This Month") {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      currentRegs = registrations.filter(r => new Date(r.registeredAt) >= startOfMonth);
+      currentPayments = payments.filter(p => new Date(p.createdAt) >= startOfMonth);
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      previousRegs = registrations.filter(r => {
+        const d = new Date(r.registeredAt);
+        return d >= startOfLastMonth && d < startOfMonth;
+      });
+      previousPayments = payments.filter(p => {
+        const d = new Date(p.createdAt);
+        return d >= startOfLastMonth && d < startOfMonth;
+      });
+    }
+
+    const currentStats = {
+      registrations: currentRegs.length,
+      revenue: currentPayments.reduce((acc, p) => acc + p.amount, 0),
+    };
+
+    const prevStats = {
+      registrations: previousRegs.length,
+      revenue: previousPayments.reduce((acc, p) => acc + p.amount, 0),
+    };
+
+    const calculateTrend = (current: number, prev: number) => {
+      if (prev === 0) return current > 0 ? { value: 100, isPositive: true } : null;
+      const pct = ((current - prev) / prev) * 100;
+      return { value: Math.abs(Number(pct.toFixed(1))), isPositive: pct >= 0 };
+    };
+
+    return {
+      current: currentStats,
+      trends: timeFilter === "All Time" ? null : {
+        registrations: calculateTrend(currentStats.registrations, prevStats.registrations),
+        revenue: calculateTrend(currentStats.revenue, prevStats.revenue),
+        label: timeFilter === "Today" ? "from yesterday" : timeFilter === "Last 7 Days" ? "from previous 7 days" : "from last month"
+      }
+    };
+  }, [registrations, payments, timeFilter]);
+
   const ratingStats = useMemo(() => {
     if (feedbacks.length === 0) return { avg: 0, stars: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
     const stars: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
@@ -282,6 +403,163 @@ export default function EventDetailsPage() {
       stars,
     };
   }, [feedbacks]);
+
+  const departmentStats = useMemo(() => {
+    const stats: Record<string, number> = {};
+    registrations.forEach((reg) => {
+      if (reg.userId) {
+        const dept = reg.userId.department || "Not Specified";
+        stats[dept] = (stats[dept] || 0) + 1;
+      } else if (reg.groupId && reg.groupId.members) {
+        reg.groupId.members.forEach((member) => {
+          const dept = member.department || "Not Specified";
+          stats[dept] = (stats[dept] || 0) + 1;
+        });
+      }
+    });
+    return Object.fromEntries(
+      Object.entries(stats).sort(([, a], [, b]) => b - a)
+    );
+  }, [registrations]);
+
+  const totalDemographics = useMemo(() => 
+    Object.values(departmentStats).reduce((a, b) => a + b, 0), 
+  [departmentStats]);
+
+  const registrationChartData = useMemo(() => {
+    if (!event || !registrations || registrations.length === 0) return { labels: ["No Data"], values: [0] };
+    const sortedRegs = [...registrations].sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime());
+    const start = event.createdAt ? new Date(event.createdAt) : new Date(sortedRegs[0].registeredAt); 
+    const end = event.status === "completed" ? new Date(event.date) : new Date();
+    
+    const labels: string[] = [];
+    const values: number[] = [];
+    let currentDate = new Date(start);
+    currentDate.setHours(0, 0, 0, 0);
+    let endDate = new Date(end);
+    endDate.setHours(23, 59, 59, 999);
+    if (endDate < currentDate) endDate = new Date();
+
+    let cumulative = 0;
+    let regIdx = 0;
+    while (currentDate <= endDate) {
+      const nextDate = new Date(currentDate);
+      nextDate.setDate(nextDate.getDate() + 1);
+      while (regIdx < sortedRegs.length && new Date(sortedRegs[regIdx].registeredAt) < nextDate) {
+        cumulative++;
+        regIdx++;
+      }
+      labels.push(currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+      values.push(cumulative);
+      currentDate = nextDate;
+    }
+    return { labels, values };
+  }, [event, registrations]);
+
+  const maxRegValue = Math.max(...(registrationChartData.values.length ? registrationChartData.values : [5]), 5);
+  const lineChartData = useMemo(() => ({
+    labels: registrationChartData.labels,
+    datasets: [{
+      label: "Registrations",
+      data: registrationChartData.values,
+      borderColor: "#7CB342",
+      backgroundColor: "rgba(124,179,66,0.08)",
+      tension: 0.4,
+      fill: true,
+      pointRadius: 3,
+      pointHoverRadius: 6,
+      borderWidth: 2,
+    }],
+  }), [registrationChartData]);
+
+  const lineChartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: "#999", font: { size: 11 } } },
+      y: { grid: { color: "#eee", borderDash: [4, 4] as [number, number] }, ticks: { color: "#999", font: { size: 11 }, precision: 0 }, min: 0, suggestedMax: Math.ceil(maxRegValue * 1.2) },
+    },
+  }), [maxRegValue]);
+
+  const revenueChartData = useMemo(() => {
+    if (!event || !payments) return { labels: ["No Data"], values: [0], total: 0 };
+    const sortedPayments = [...payments].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    const start = event.createdAt ? new Date(event.createdAt) : (sortedPayments.length > 0 ? new Date(sortedPayments[0].createdAt) : new Date()); 
+    const end = event.status === "completed" ? new Date(event.date) : new Date();
+
+    const labels: string[] = [];
+    const values: number[] = [];
+    let currentDate = new Date(start);
+    currentDate.setHours(0, 0, 0, 0);
+    let endDate = new Date(end);
+    endDate.setHours(23, 59, 59, 999);
+    if (endDate < currentDate) endDate = new Date();
+
+    let total = 0;
+    let payIdx = 0;
+    while (currentDate <= endDate) {
+      const nextDate = new Date(currentDate);
+      nextDate.setDate(nextDate.getDate() + 1);
+      let dailySum = 0;
+      while (payIdx < sortedPayments.length && new Date(sortedPayments[payIdx].createdAt) < nextDate) {
+        dailySum += sortedPayments[payIdx].amount;
+        payIdx++;
+      }
+      labels.push(currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+      values.push(dailySum / 100);
+      total += dailySum;
+      currentDate = nextDate;
+    }
+    return { labels, values, total: total / 100 };
+  }, [event, payments]);
+
+  const maxRevenueVal = Math.max(...(revenueChartData.values.length ? revenueChartData.values : [5]), 5);
+  const revenueBarChartData = useMemo(() => ({
+    labels: revenueChartData.labels,
+    datasets: [
+      {
+        label: "Revenue",
+        data: revenueChartData.values,
+        backgroundColor: revenueChartData.values.map((v) =>
+          v === maxRevenueVal && v > 0 ? "#7CB342" : "#c5e1a5"
+        ),
+        borderRadius: 4,
+      },
+    ],
+  }), [revenueChartData, maxRevenueVal]);
+
+  const revenueBarChartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: "#999", font: { size: 10 } } },
+      y: { display: false },
+    },
+  }), []);
+
+  const pieData = useMemo(() => ({
+    labels: Object.keys(departmentStats),
+    datasets: [
+      {
+        data: Object.values(departmentStats),
+        backgroundColor: [
+          "#7CB342", "#00BCD4", "#3F51B5", "#9C27B0", "#FF9800", "#F44336", "#E91E63", "#4CAF50",
+        ],
+        borderWidth: 2,
+        borderColor: "#ffffff",
+      },
+    ],
+  }), [departmentStats]);
+
+  const pieOptions = useMemo(() => ({
+    plugins: {
+      legend: { display: false },
+    },
+    cutout: "70%",
+    maintainAspectRatio: false,
+  }), []);
 
   if (loading) {
     return (
@@ -313,72 +591,117 @@ export default function EventDetailsPage() {
     : "0.0";
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-16 text-[#333]">
-      {/* Back button */}
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-8 min-h-screen">
       <button
         onClick={() => router.push("/club-admin/events")}
-        className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-650 transition-colors outline-none"
+        className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-650 transition-colors outline-none mb-6"
       >
         <ArrowLeft size={14} /> Back to Events
       </button>
 
-      {/* Main Header Card */}
-      <div className="bg-white border border-[#eaeaea] rounded-xl p-5 flex flex-col md:flex-row gap-5 items-start">
+      {/* Event Header Section with Image on the Left */}
+      <div className="flex flex-col lg:flex-row gap-6 mb-8 items-stretch">
         {event.image && (
-          <div className="w-full md:w-44 h-28 rounded-lg overflow-hidden shrink-0 border border-slate-100">
-            <img src={event.image} alt="" className="w-full h-full object-cover" />
+          <div className="w-full lg:w-80 shrink-0 rounded-xl overflow-hidden border border-slate-200 shadow-sm relative bg-slate-50 min-h-[220px]">
+            <img
+              src={event.image}
+              alt={event.name}
+              className="w-full h-full object-cover"
+            />
           </div>
         )}
         
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wide bg-slate-100 px-1.5 py-0.5 rounded">
-              {event.eventType} Format
-            </span>
-            <span className="text-[9px] font-bold text-[#7CB342] bg-[#f0f7e6] uppercase tracking-wide px-1.5 py-0.5 rounded">
-              {event.status}
-            </span>
+        <div className="flex-1 bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm flex flex-col justify-start gap-4">
+          <div className="flex flex-col gap-3 flex-grow">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+                {event.name}
+              </h1>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-slate-600 bg-slate-100/80 border border-slate-200 px-2 py-0.5 rounded uppercase tracking-wide">
+                  {event.eventType === "team" ? "Team" : "Individual"} Format
+                </span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wide ${
+                  event.status === "live"
+                    ? "text-[#7CB342] bg-[#f0f7e6] border-[#c5d6a8]"
+                    : event.status === "completed"
+                    ? "text-blue-700 bg-blue-50 border-blue-200"
+                    : "text-slate-600 bg-slate-100 border-slate-200"
+                }`}>
+                  {event.status}
+                </span>
+                {event.superEvent && event.superEvent.name && (
+                  <span className="text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2.5 py-0.5 rounded flex items-center gap-1">
+                    {event.superEvent.image && <img src={event.superEvent.image} className="w-3 h-3 rounded-full object-cover" />}
+                    {event.superEvent.name}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex-grow min-h-0">
+              <p className={`text-sm text-slate-500 font-medium leading-relaxed max-w-3xl ${!descExpanded ? "line-clamp-3 lg:line-clamp-8" : ""}`} title={event.description}>
+                {event.description || "No description provided."}
+              </p>
+              {event.description && event.description.length > 250 && (
+                <button
+                  onClick={() => setDescExpanded(!descExpanded)}
+                  className="text-xs font-bold text-[#7CB342] hover:text-[#689F38] mt-1 inline-flex items-center gap-0.5 transition-colors outline-none"
+                >
+                  {descExpanded ? "Show Less" : "Read More"}
+                </button>
+              )}
+            </div>
+            
+            {/* Minimal metadata info strip */}
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-3 text-xs text-slate-500 font-semibold border-t border-slate-100 mt-auto">
+              <span className="flex items-center gap-1.5">
+                <Calendar size={13} className="text-slate-400" />
+                {eventDate.toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric' })}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <IndianRupee size={13} className="text-slate-400" />
+                {event.registrationFee > 0 ? event.registrationFee.toLocaleString() : "Free Event"}
+              </span>
+              {event.maxRegistrations && (
+                <span className="flex items-center gap-1.5">
+                  <Users size={13} className="text-slate-400" />
+                  {registrations.length} / {event.maxRegistrations} Registered
+                </span>
+              )}
+            </div>
           </div>
-          <h2 className="text-base font-bold text-slate-800 leading-snug">{event.name}</h2>
-          <p className="text-xs text-slate-500 mt-1.5 leading-relaxed max-w-2xl font-medium">
-            {event.description || "No description provided."}
-          </p>
-
-          <div className="flex items-center gap-2 mt-4 flex-wrap">
+          
+          {/* Action buttons */}
+          <div className="flex items-center gap-3 shrink-0 flex-wrap pt-2">
             <button
               onClick={() => setEditDrawerOpen(true)}
-              className="px-3 py-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors flex items-center gap-1.5 outline-none"
+              className="px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-all shadow-sm flex items-center gap-2"
             >
-              <Pencil size={12} />
-              Edit Event
+              <Pencil size={14} /> Edit Event
             </button>
-
             <Link
               href={`/club-admin/events/${eventId}/scan`}
-              className="px-3 py-1.5 text-xs font-bold text-white bg-[#091800] hover:bg-[#0f2900] border border-[#1a3a00] rounded-lg transition-colors flex items-center gap-1.5 outline-none"
+              className="px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-all shadow-sm flex items-center gap-2"
             >
-              <QrCode size={12} />
-              Scan QR Attendance
+              <QrCode size={14} /> Scan QR
             </Link>
-
             {event.status === "draft" && (
               <button
                 onClick={() => handleStatusChange("live")}
                 disabled={statusLoading}
-                className="px-3.5 py-1.5 text-xs font-bold text-white bg-[#7CB342] hover:bg-[#689f38] rounded-lg transition-colors flex items-center gap-1 outline-none"
+                className="px-4 py-2 text-sm font-semibold text-white bg-[#7CB342] hover:bg-[#689F38] rounded-xl transition-all shadow-sm flex items-center gap-2"
               >
-                {statusLoading && <Loader2 size={12} className="animate-spin" />}
+                {statusLoading && <Loader2 size={14} className="animate-spin" />}
                 Publish Live
               </button>
             )}
-
             {event.status === "live" && (
               <button
                 onClick={() => handleStatusChange("completed")}
                 disabled={statusLoading}
-                className="px-3.5 py-1.5 text-xs font-bold text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors flex items-center gap-1 outline-none"
+                className="px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-all shadow-sm flex items-center gap-2"
               >
-                {statusLoading && <Loader2 size={12} className="animate-spin" />}
+                {statusLoading && <Loader2 size={14} className="animate-spin" />}
                 Complete Event
               </button>
             )}
@@ -386,316 +709,356 @@ export default function EventDetailsPage() {
         </div>
       </div>
 
-      {/* Metrics Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-[#eaeaea] rounded-xl p-4 shadow-sm">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-            Registrations
-          </span>
-          <span className="text-lg font-bold text-slate-800 block mt-1">
-            {registrations.length}
-          </span>
-        </div>
-
-        <div className="bg-white border border-[#eaeaea] rounded-xl p-4 shadow-sm">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-            Conversion Rate
-          </span>
-          <span className="text-lg font-bold text-slate-800 block mt-1">
-            {conversionRate}%
-          </span>
-        </div>
-
-        <div className="bg-white border border-[#eaeaea] rounded-xl p-4 shadow-sm">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-            Revenue
-          </span>
-          <span className="text-lg font-bold text-emerald-600 block mt-1">
-            ₹{(payments.reduce((acc, p) => acc + p.amount, 0) / 100).toLocaleString()}
-          </span>
-        </div>
-
-        <div className="bg-white border border-[#eaeaea] rounded-xl p-4 shadow-sm">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-            Engagement Index
-          </span>
-          <span className="text-lg font-bold text-slate-800 block mt-1">
-            {event.likes} <span className="text-xs text-slate-400">Likes</span> / {event.views} <span className="text-xs text-slate-400">Views</span>
-          </span>
-        </div>
-      </div>
-
-      {/* Console Tab Section */}
-      <div className="bg-white border border-[#eaeaea] rounded-xl shadow-sm overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-5 py-3.5 border-b border-[#eaeaea] bg-[#fafafa]">
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setActiveTab("participants")}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors outline-none shrink-0 ${
-                activeTab === "participants"
-                  ? "text-slate-800 bg-white border border-[#e0e0e0]"
-                  : "text-slate-400 hover:text-slate-600"
-              }`}
-            >
-              Participants ({registrations.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("finance")}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors outline-none shrink-0 ${
-                activeTab === "finance"
-                  ? "text-slate-800 bg-white border border-[#e0e0e0]"
-                  : "text-slate-400 hover:text-slate-600"
-              }`}
-            >
-              Transactions ({payments.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("feedback")}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors outline-none shrink-0 ${
-                activeTab === "feedback"
-                  ? "text-slate-800 bg-white border border-[#e0e0e0]"
-                  : "text-slate-400 hover:text-slate-600"
-              }`}
-            >
-              Reviews ({feedbacks.length})
-            </button>
+      {/* Dynamic Insights Row */}
+      {(event.eventType === "team" || (event.customQuestions && event.customQuestions.length > 0) || true) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          
+          {/* Registration Trend */}
+          <div className="bg-white rounded-2xl border border-slate-200/60 p-6 flex flex-col justify-between shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp size={18} className="text-[#7CB342]" />
+              <h3 className="text-sm font-bold text-slate-800">Registration Trend</h3>
+            </div>
+            <div className="h-32 w-full flex-1">
+              <Line data={lineChartData} options={lineChartOptions as any} />
+            </div>
           </div>
 
-          {activeTab === "participants" && (
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                onClick={downloadCSV}
-                className="px-3 py-1.5 text-xs font-bold text-slate-600 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors flex items-center gap-1.5 outline-none shrink-0"
-              >
-                <Download size={13} />
-                Download CSV
-              </button>
-              <div className="flex items-center bg-white border border-slate-200 rounded-lg px-3 py-1.5 gap-2 w-full sm:w-56">
-                <Search size={13} className="text-slate-450 shrink-0" />
+          {/* Department Demographics */}
+          <div className="bg-white rounded-2xl border border-slate-200/60 p-6 flex flex-col justify-between shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <PieChart size={18} className="text-[#00BCD4]" />
+                <h3 className="text-sm font-bold text-slate-800">Demographics</h3>
+              </div>
+              <Link href={`/club-admin/events/${eventId}/demographics`} className="p-1 rounded hover:bg-slate-50 transition-colors text-slate-400 hover:text-[#00BCD4]">
+                <ChevronRight size={16} />
+              </Link>
+            </div>
+            <div className="flex-1 flex flex-col gap-4">
+              <div className="h-32 w-full relative">
+                {totalDemographics > 0 ? (
+                  <Pie data={pieData} options={pieOptions} />
+                ) : (
+                  <div className="w-full h-full rounded-full border-4 border-slate-100 flex items-center justify-center">
+                    <span className="text-xs font-medium text-slate-400">No Data</span>
+                  </div>
+                )}
+                {totalDemographics > 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
+                    <span className="text-2xl font-bold text-slate-800 leading-none">{totalDemographics}</span>
+                    <span className="text-[10px] text-slate-400 font-medium">Total Users</span>
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1 mt-auto">
+                {Object.entries(departmentStats).slice(0, 4).map(([dept, count], i) => (
+                  <div key={dept} className="flex items-center gap-1.5 min-w-0">
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: pieData.datasets[0].backgroundColor[i] }} />
+                    <span className="text-[10px] font-medium text-slate-600 truncate flex-1" title={dept}>{dept}</span>
+                    <span className="text-[10px] font-bold text-slate-800 shrink-0">
+                      {totalDemographics > 0 ? ((count / totalDemographics) * 100).toFixed(0) : 0}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Revenue Trend */}
+          <div className="bg-white rounded-2xl border border-slate-200/60 p-6 flex flex-col justify-between shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <IndianRupee size={18} className="text-emerald-500" />
+                <h3 className="text-sm font-bold text-slate-800">Revenue</h3>
+              </div>
+              <span className="text-xs font-bold text-emerald-600 bg-emerald-50/85 px-2 py-0.5 rounded border border-emerald-100 shadow-sm">
+                Total: ₹{revenueChartData.total.toLocaleString()}
+              </span>
+            </div>
+            <div className="h-32 w-full flex-1">
+              <Bar data={revenueBarChartData} options={revenueBarChartOptions as any} />
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      <div className="bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 py-6 border-b border-slate-100 bg-white">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Event Records</h2>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">Manage participants, check attendance, and view reviews.</p>
+          </div>
+ 
+           {activeTab === "participants" && (
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="flex items-center bg-slate-50 border border-slate-200 focus-within:border-[#7CB342] focus-within:ring-2 focus-within:ring-[#f0f7e6] rounded-xl px-3.5 py-2 gap-2 w-full sm:w-64 transition-all shadow-sm">
+                <Search size={14} className="text-slate-400 shrink-0" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={event.eventType === "team" ? "Search team name..." : "Search name..."}
-                  className="bg-transparent text-xs text-slate-700 placeholder:text-slate-400 outline-none w-full font-semibold"
+                  className="bg-transparent text-sm text-slate-750 placeholder:text-slate-400 outline-none w-full font-medium"
                 />
               </div>
+              <button
+                onClick={downloadCSV}
+                className="px-4 py-2.5 text-xs font-bold text-white bg-[#7CB342] border border-[#7CB342] hover:bg-[#689F38] rounded-xl transition-all shadow-sm flex items-center gap-2 whitespace-nowrap"
+              >
+                <Download size={13} /> Export CSV
+              </button>
             </div>
           )}
         </div>
-
-        {/* Tab content panel */}
-        <div className="p-5">
+        
+        {/* Sub Header for tabs */}
+        <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center gap-4">
+           <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide bg-slate-200/50 p-1 rounded-xl">
+              <button
+                onClick={() => setActiveTab("participants")}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all outline-none shrink-0 flex items-center gap-2 ${
+                  activeTab === "participants"
+                    ? "text-[#689F38] bg-white shadow-sm border border-[#c5d6a8]"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-white/50 border border-transparent"
+                }`}
+              >
+                Participants ({registrations.length})
+              </button>
+              <button
+                onClick={() => setActiveTab("finance")}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all outline-none shrink-0 flex items-center gap-2 ${
+                  activeTab === "finance"
+                    ? "text-[#689F38] bg-white shadow-sm border border-[#c5d6a8]"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-white/50 border border-transparent"
+                }`}
+              >
+                Transactions ({payments.length})
+              </button>
+              <button
+                onClick={() => setActiveTab("feedback")}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all outline-none shrink-0 flex items-center gap-2 ${
+                  activeTab === "feedback"
+                    ? "text-[#689F38] bg-white shadow-sm border border-[#c5d6a8]"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-white/50 border border-transparent"
+                }`}
+              >
+                Reviews ({feedbacks.length})
+              </button>
+           </div>
+        </div>
+ 
+         {/* Tab content panel */}
+        <div className="max-h-[550px] overflow-auto">
           {activeTab === "participants" && (
-            <div className="overflow-visible">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-[#eaeaea] text-[#999] uppercase tracking-wider text-[9px] font-bold">
-                    {event.eventType === "team" && <th className="py-2.5 px-2">Team / Leader</th>}
-                    {event.eventType === "individual" && <th className="py-2.5 px-2">Participant</th>}
-                    <th className="py-2.5 px-2">Date Registered</th>
-                    {event.customQuestions?.map((q) => (
-                      <th key={q.id} className="py-2.5 px-2">{q.question}</th>
-                    ))}
-                    <th className="py-2.5 px-2 text-right">Attendance</th>
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100 sticky top-0 bg-white z-10">
+                  <th className="py-3.5 pl-6 pr-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase w-8"><input type="checkbox" className="rounded border-slate-300 cursor-pointer" disabled/></th>
+                  {event.eventType === "team" && <th className="py-3.5 px-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">Team / Leader</th>}
+                  {event.eventType === "individual" && <th className="py-3.5 px-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">Participant</th>}
+                  <th className="py-3.5 px-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">Date Registered</th>
+                  {event.customQuestions?.map((q) => (
+                    <th key={q.id} className="py-3.5 px-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">{q.question}</th>
+                  ))}
+                  <th className="py-3.5 pl-4 pr-6 font-bold text-slate-400 text-[10px] tracking-wider uppercase text-right">Attendance</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredRegistrations.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-16 text-center text-slate-400 font-semibold text-xs">
+                      No registrations logged.
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-[#fafafa]">
-                  {filteredRegistrations.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-10 text-center text-slate-400 font-medium">
-                        No registrations logged.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredRegistrations.map((reg) => {
-                      return (
-                        <tr key={reg._id} className="hover:bg-[#fafafa]/50 transition-colors">
-                          <td className="py-5 px-2 max-w-[220px] sm:max-w-[280px]">
-                            {event.eventType === "team" ? (
-                              <div className="space-y-2 py-1">
-                                <div className="flex items-center gap-2">
-                                  <p className="font-bold text-slate-800 text-sm truncate max-w-[150px]">
-                                    {reg.groupId?.name || "Unknown Team"}
-                                  </p>
-                                  <span className="text-[9px] font-bold text-[#7CB342] bg-[#f0f7e6] border border-[#7CB342]/10 px-1.5 py-0.5 rounded-sm shrink-0">
-                                    {reg.groupId?.members?.length || 0} Members
-                                  </span>
-                                </div>
-                                
-                                {/* Overlapping Avatar Stack with Interactive Hover Animations */}
-                                <div className="flex items-center">
-                                  <div className="flex -space-x-2 mr-3 py-1 shrink-0">
-                                    {reg.groupId?.members?.map((m, idx) => (
-                                      <div 
-                                        key={m._id} 
-                                        className="inline-block h-7 w-7 rounded-full ring-2 ring-white bg-slate-100 relative group shrink-0 hover:scale-125 hover:z-30 transition-all duration-150 cursor-pointer"
-                                      >
-                                        <div className="w-full h-full rounded-full overflow-hidden">
-                                          {m.image ? (
-                                            <img src={m.image} alt="" className="h-full w-full object-cover" />
-                                          ) : (
-                                            <div className="h-full w-full flex items-center justify-center text-[9px] font-black text-slate-450 uppercase">
-                                              {m.name.charAt(0)}
-                                            </div>
-                                          )}
-                                        </div>
-                                        {m._id === reg.groupId?.leader?._id && (
-                                          <div className="absolute inset-0 border border-[#7CB342] rounded-full" />
+                ) : (
+                  filteredRegistrations.map((reg) => {
+                    return (
+                      <tr key={reg._id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-4 pl-6 pr-4 whitespace-nowrap"><input type="checkbox" className="rounded border-slate-300 cursor-pointer text-[#7CB342] focus:ring-[#7CB342]" /></td>
+                        <td className="py-4 px-4 max-w-[220px] sm:max-w-[280px]">
+                          {event.eventType === "team" ? (
+                            <div className="space-y-2 py-1">
+                              <div className="flex items-center gap-2">
+                                <p className="font-bold text-slate-800 text-sm truncate max-w-[150px]">
+                                  {reg.groupId?.name || "Unknown Team"}
+                                </p>
+                                <span className="text-[9px] font-bold text-[#7CB342] bg-[#f0f7e6] border border-[#7CB342]/10 px-1.5 py-0.5 rounded-sm shrink-0">
+                                  {reg.groupId?.members?.length || 0} Members
+                                </span>
+                              </div>
+                              
+                              {/* Overlapping Avatar Stack with Interactive Hover Animations */}
+                              <div className="flex items-center">
+                                <div className="flex -space-x-2 mr-3 py-1 shrink-0">
+                                  {reg.groupId?.members?.map((m, idx) => (
+                                    <div 
+                                      key={m._id} 
+                                      className="inline-block h-7 w-7 rounded-full ring-2 ring-white bg-slate-100 relative group shrink-0 hover:scale-125 hover:z-30 transition-all duration-150 cursor-pointer"
+                                    >
+                                      <div className="w-full h-full rounded-full overflow-hidden">
+                                        {m.image ? (
+                                          <img src={m.image} alt="" className="h-full w-full object-cover" />
+                                        ) : (
+                                          <div className="h-full w-full flex items-center justify-center text-[9px] font-black text-slate-450 uppercase">
+                                            {m.name.charAt(0)}
+                                          </div>
                                         )}
-                                        
-                                        {/* Minimalist Creme Tooltip positioned downwards */}
-                                        <div className={`opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 bg-[#FAF6EE] text-slate-700 text-[10px] px-2 py-1 rounded border border-[#E8DFD0] absolute top-full mt-1.5 whitespace-nowrap z-50 shadow-sm font-semibold leading-none ${
-                                          idx === 0 ? "left-0 translate-x-0" : "left-1/2 -translate-x-1/2"
-                                        }`}>
-                                          {/* Creme arrow tail */}
-                                          <div className={`absolute bottom-full w-0 h-0 border-4 border-transparent border-b-[#E8DFD0] ${
-                                            idx === 0 ? "left-3" : "left-1/2 -translate-x-1/2"
-                                          }`} />
-                                          <div className={`absolute bottom-full w-0 h-0 border-[3px] border-transparent border-b-[#FAF6EE] translate-y-[1px] ${
-                                            idx === 0 ? "left-[13px]" : "left-1/2 -translate-x-1/2"
-                                          }`} />
-                                          <span>{m.name}</span>
-                                        </div>
                                       </div>
-                                    ))}
-                                  </div>
-                                  <span className="text-[10px] text-slate-400 font-medium truncate max-w-[100px]">
-                                    Leader: <span className="font-bold text-slate-600">{reg.groupId?.leader?.name || "Unknown"}</span>
-                                  </span>
+                                      {m._id === reg.groupId?.leader?._id && (
+                                        <div className="absolute inset-0 border border-[#7CB342] rounded-full" />
+                                      )}
+                                      
+                                      {/* Minimalist Creme Tooltip positioned downwards */}
+                                      <div className={`opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 bg-[#FAF6EE] text-slate-700 text-[10px] px-2 py-1 rounded border border-[#E8DFD0] absolute top-full mt-1.5 whitespace-nowrap z-50 shadow-sm font-semibold leading-none ${
+                                        idx === 0 ? "left-0 translate-x-0" : "left-1/2 -translate-x-1/2"
+                                      }`}>
+                                        {/* Creme arrow tail */}
+                                        <div className={`absolute bottom-full w-0 h-0 border-4 border-transparent border-b-[#E8DFD0] ${
+                                          idx === 0 ? "left-3" : "left-1/2 -translate-x-1/2"
+                                        }`} />
+                                        <div className={`absolute bottom-full w-0 h-0 border-[3px] border-transparent border-b-[#FAF6EE] translate-y-[1px] ${
+                                          idx === 0 ? "left-[13px]" : "left-1/2 -translate-x-1/2"
+                                        }`} />
+                                        <span>{m.name}</span>
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
+                                <span className="text-[10px] text-slate-400 font-medium truncate max-w-[100px]">
+                                  Leader: <span className="font-bold text-slate-600">{reg.groupId?.leader?.name || "Unknown"}</span>
+                                </span>
                               </div>
-                            ) : (
-                              <div className="flex items-center gap-2.5">
-                                <div className="w-7 h-7 rounded-full bg-slate-100 overflow-hidden flex items-center justify-center shrink-0 border border-[#eaeaea]">
-                                  {reg.userId?.image ? (
-                                    <img src={reg.userId.image} alt="" className="w-full h-full object-cover" />
-                                  ) : (
-                                    <User size={11} className="text-slate-400" />
-                                  )}
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="font-bold text-slate-800 truncate max-w-[160px]">{reg.userId?.name || "Unknown user"}</p>
-                                  <p className="text-[10px] text-slate-400 font-normal truncate max-w-[160px]">{reg.userId?.email}</p>
-                                </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-full bg-slate-100 overflow-hidden flex items-center justify-center shrink-0 border border-[#eaeaea]">
+                                {reg.userId?.image ? (
+                                  <img src={reg.userId.image} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <User size={11} className="text-slate-400" />
+                                )}
                               </div>
-                            )}
-                          </td>
-
-                          <td className="py-3 px-2 text-slate-400 font-medium">
-                            {new Date(reg.registeredAt).toLocaleDateString("en-IN", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })}
-                          </td>
-
-                          {event.customQuestions?.map((q) => {
-                            const ansObj = reg.customQuestionAnswers?.find((ans) => ans.questionId === q.id);
-                            const formattedAns = ansObj
-                              ? Array.isArray(ansObj.answer)
-                                ? ansObj.answer.join(", ")
-                                : ansObj.answer
-                              : "-";
-                            return (
-                              <td key={q.id} className="py-3 px-2 text-slate-500 font-medium max-w-xs truncate">
-                                {formattedAns}
-                              </td>
-                            );
-                          })}
-
-                          <td className="py-3 px-2 text-right">
-                            <select
-                              value={reg.status}
-                              onChange={(e) => handleAttendanceChange(reg._id, e.target.value as any)}
-                              className={`px-2 py-0.5 text-[10px] font-bold rounded border outline-none cursor-pointer ${
-                                reg.status === "attended"
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                  : reg.status === "absent"
-                                    ? "bg-rose-50 text-rose-700 border-rose-200"
-                                    : "bg-slate-50 text-slate-655 border-slate-200"
-                              }`}
-                            >
-                              <option value="registered">Registered</option>
-                              <option value="attended">Attended</option>
-                              <option value="absent">Absent</option>
-                            </select>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {activeTab === "finance" && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-[#eaeaea] text-[#999] uppercase tracking-wider text-[9px] font-bold">
-                    <th className="py-2.5">Transaction ID</th>
-                    <th className="py-2.5">User</th>
-                    <th className="py-2.5">Date</th>
-                    <th className="py-2.5 text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#fafafa]">
-                  {payments.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="py-10 text-center text-slate-400">
-                        No transactions registered.
-                      </td>
-                    </tr>
-                  ) : (
-                    payments.map((p) => (
-                      <tr key={p.razorpayOrderId} className="hover:bg-[#fafafa]/50 transition-colors">
-                        <td className="py-3 font-semibold text-slate-600 font-mono">
-                          {p.razorpayPaymentId || p.razorpayOrderId}
+                              <div className="min-w-0">
+                                <p className="font-bold text-slate-800 truncate max-w-[160px]">{reg.userId?.name || "Unknown user"}</p>
+                                <p className="text-[10px] text-slate-400 font-normal truncate max-w-[160px]">{reg.userId?.email}</p>
+                              </div>
+                            </div>
+                          )}
                         </td>
-                        <td className="py-3 font-semibold text-slate-700">
-                          <div>
-                            <p className="font-bold">{p.userId?.name}</p>
-                            <p className="text-[9px] text-slate-400 font-normal">{p.userId?.email}</p>
-                          </div>
-                        </td>
-                        <td className="py-3 text-slate-400 font-medium">
-                          {new Date(p.createdAt).toLocaleDateString("en-IN", {
+
+                        <td className="py-4 px-4 text-slate-600 font-medium text-sm">
+                          {new Date(reg.registeredAt).toLocaleDateString("en-IN", {
                             day: "2-digit",
                             month: "short",
                             year: "numeric",
                           })}
                         </td>
-                        <td className="py-3 text-right font-bold text-emerald-600">
-                          ₹{Math.round(p.amount / 100)}
+
+                        {event.customQuestions?.map((q) => {
+                          const ansObj = reg.customQuestionAnswers?.find((ans) => ans.questionId === q.id);
+                          const formattedAns = ansObj
+                            ? Array.isArray(ansObj.answer)
+                              ? ansObj.answer.join(", ")
+                              : ansObj.answer
+                            : "-";
+                          return (
+                            <td key={q.id} className="py-4 px-4 text-slate-600 font-medium text-sm max-w-[150px] truncate" title={formattedAns}>
+                              {formattedAns}
+                            </td>
+                          );
+                        })}
+
+                        <td className="py-4 pl-4 pr-6 text-right">
+                          <select
+                            value={reg.status}
+                            onChange={(e) => handleAttendanceChange(reg._id, e.target.value as any)}
+                            className={`px-3 py-1 text-[10px] font-bold rounded-full border outline-none cursor-pointer transition-colors shadow-sm ${
+                              reg.status === "attended"
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100/50"
+                                : reg.status === "absent"
+                                  ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100/50"
+                                  : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                            }`}
+                          >
+                            <option value="registered" className="bg-white text-slate-800 font-medium">Registered</option>
+                            <option value="attended" className="bg-white text-slate-800 font-medium">Attended</option>
+                            <option value="absent" className="bg-white text-slate-800 font-medium">Absent</option>
+                          </select>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          )}
+
+          {activeTab === "finance" && (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100 sticky top-0 bg-white z-10">
+                  <th className="py-3.5 pl-6 pr-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">Transaction ID</th>
+                  <th className="py-3.5 px-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">Participant</th>
+                  <th className="py-3.5 px-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">Date & Time</th>
+                  <th className="py-3.5 pl-4 pr-6 font-bold text-slate-400 text-[10px] tracking-wider uppercase text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {payments.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-16 text-center text-slate-400 font-semibold text-xs">
+                      No transactions registered.
+                    </td>
+                  </tr>
+                ) : (
+                  payments.map((p) => (
+                    <tr key={p.razorpayOrderId} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="py-4 pl-6 pr-4 font-mono font-semibold text-xs text-slate-600">
+                        {p.razorpayPaymentId || p.razorpayOrderId}
+                      </td>
+                      <td className="py-4 px-4">
+                        <div>
+                          <p className="font-bold text-slate-800 text-sm">{p.userId?.name || "Participant"}</p>
+                          <p className="text-xs text-slate-400 font-normal">{p.userId?.email}</p>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-slate-600 font-medium text-sm">
+                        {new Date(p.createdAt).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </td>
+                      <td className="py-4 pl-4 pr-6 text-right font-bold text-emerald-600 text-sm">
+                        ₹{Math.round(p.amount / 100).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           )}
 
           {activeTab === "feedback" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Star Rating Distribution chart */}
-              <div className="bg-[#fafafa] rounded-xl p-4 border border-[#eaeaea] h-fit">
-                <h4 className="text-xs font-bold text-slate-700 mb-3">Rating Breakdown</h4>
-                <div className="space-y-1.5">
+              <div className="bg-slate-50/70 rounded-3xl p-6 border border-slate-200/60 h-fit shadow-sm">
+                <h4 className="text-sm font-bold text-slate-800 mb-4">Rating Breakdown</h4>
+                <div className="space-y-3">
                   {[5, 4, 3, 2, 1].map((rating) => {
                     const count = ratingStats.stars[rating] || 0;
                     const pct = feedbacks.length > 0 
                       ? ((count / feedbacks.length) * 100).toFixed(0)
                       : "0";
                     return (
-                      <div key={rating} className="flex items-center gap-2 text-[10px] font-semibold text-slate-500">
-                        <span className="w-3">{rating}★</span>
-                        <div className="flex-1 bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                          <div className="bg-amber-400 h-full rounded-full" style={{ width: `${pct}%` }} />
+                      <div key={rating} className="flex items-center gap-3 text-xs font-semibold text-slate-600">
+                        <span className="w-5 text-slate-500 font-bold">{rating}★</span>
+                        <div className="flex-1 bg-slate-200/80 h-2 rounded-full overflow-hidden">
+                          <div className="bg-[#7CB342] h-full rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
                         </div>
-                        <span className="w-6 text-right text-slate-400">{count}</span>
+                        <span className="w-8 text-right text-slate-400 text-xs font-medium">{count}</span>
                       </div>
                     );
                   })}
@@ -705,28 +1068,28 @@ export default function EventDetailsPage() {
               {/* Feedbacks list */}
               <div className="md:col-span-2 space-y-3">
                 {feedbacks.length === 0 ? (
-                  <div className="text-center py-10 text-slate-400 border border-dashed border-slate-200 rounded-xl">
-                    No rating reviews logged.
+                  <div className="text-center py-16 text-slate-400 border border-dashed border-slate-200 rounded-3xl font-semibold text-xs bg-white">
+                    No rating reviews logged yet.
                   </div>
                 ) : (
                   feedbacks.map((fb) => (
-                    <div key={fb._id} className="p-4 bg-white rounded-xl border border-[#eaeaea] shadow-sm">
+                    <div key={fb._id} className="p-5 bg-white rounded-3xl border border-slate-200/60 shadow-sm hover:shadow transition-shadow">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-700">{fb.userId.name}</span>
+                          <span className="font-bold text-slate-800 text-sm">{fb.userId.name}</span>
                         </div>
                         <div className="flex items-center gap-0.5">
                           {[1, 2, 3, 4, 5].map((i) => (
                             <Star
                               key={i}
-                              size={10}
+                              size={12}
                               className={i <= fb.rating ? "text-amber-400 fill-amber-400" : "text-slate-200"}
                             />
                           ))}
                         </div>
                       </div>
                       {fb.comment && (
-                        <p className="text-slate-500 mt-2.5 leading-relaxed text-xs font-medium">{fb.comment}</p>
+                        <p className="text-slate-600 mt-2 text-xs font-medium leading-relaxed">{fb.comment}</p>
                       )}
                     </div>
                   ))
@@ -734,7 +1097,89 @@ export default function EventDetailsPage() {
               </div>
             </div>
           )}
+
         </div>
+      </div>
+
+      {/* Audience Likes & Admirers Section */}
+      <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden mb-8 p-6">
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <Heart size={18} className="text-rose-500 fill-rose-500" />
+              Event Admirers & Engagement
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">Real-time audience interaction and users who liked this event.</p>
+          </div>
+          <span className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 px-3 py-1 rounded-full flex items-center gap-1.5">
+            <Heart size={12} className="fill-rose-500" />
+            {event.likedBy?.length || event.likes} Likes
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="bg-rose-50/60 rounded-2xl p-5 border border-rose-100/80 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-rose-600">Total Likes</p>
+              <p className="text-2xl font-extrabold text-slate-900 mt-1">{event.likedBy?.length || event.likes}</p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
+              <Heart size={20} className="fill-rose-500 text-rose-500" />
+            </div>
+          </div>
+
+          <div className="bg-blue-50/60 rounded-2xl p-5 border border-blue-100/80 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-blue-600">Total Page Views</p>
+              <p className="text-2xl font-extrabold text-slate-900 mt-1">{event.views}</p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+              <Eye size={20} />
+            </div>
+          </div>
+
+          <div className="bg-emerald-50/60 rounded-2xl p-5 border border-emerald-100/80 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-emerald-600">Engagement Rate</p>
+              <p className="text-2xl font-extrabold text-slate-900 mt-1">
+                {event.views > 0 ? (((event.likedBy?.length || event.likes) / event.views) * 100).toFixed(1) : 0}%
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+              <User size={20} />
+            </div>
+          </div>
+        </div>
+
+        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Liked By</h4>
+        {!event.likedBy || event.likedBy.length === 0 ? (
+          <div className="text-center py-12 text-slate-400 border border-dashed border-slate-200 rounded-2xl font-semibold text-xs">
+            {event.likes > 0 
+              ? `${event.likes} guest user(s) liked this event.`
+              : "No likes logged for this event yet."}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+            {event.likedBy.map((user) => (
+              <div key={user._id} className="p-3.5 bg-slate-50/50 hover:bg-white rounded-xl border border-slate-200/60 shadow-xs flex items-center gap-3 hover:shadow-sm transition-all">
+                <div className="w-9 h-9 rounded-full bg-white overflow-hidden flex items-center justify-center shrink-0 border border-slate-200">
+                  {user.image ? (
+                    <img src={user.image} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={16} className="text-slate-400" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-slate-800 text-sm truncate">{user.name}</p>
+                  <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                </div>
+                <div className="w-6 h-6 rounded-full bg-rose-50 flex items-center justify-center shrink-0">
+                  <Heart size={11} className="fill-rose-500 text-rose-500" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Edit Drawer Integration */}

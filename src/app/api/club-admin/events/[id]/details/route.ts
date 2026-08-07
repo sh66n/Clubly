@@ -17,7 +17,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
 
     // 1. Fetch Event and verify ownership
-    const event = await Event.findById(id).lean();
+    const event = await Event.findById(id)
+      .populate("likedBy", "name email image")
+      .populate("contact", "name email image")
+      .populate("winner", "name email image")
+      .populate("winnerGroup", "name")
+      .populate("superEvent", "name image")
+      .lean();
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
@@ -28,18 +34,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // 2. Fetch Registrations and populate users
     const registrations = await Registration.find({ eventId: id })
-      .populate("userId", "name email image")
+      .populate("userId", "name email image department")
       .populate({
         path: "groupId",
         select: "name members leader",
         populate: [
           {
             path: "members",
-            select: "name email image"
+            select: "name email image department"
           },
           {
             path: "leader",
-            select: "name email image"
+            select: "name email image department"
           }
         ]
       })

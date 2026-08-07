@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import { Search, Bell, Settings, Calendar, CreditCard, MessageSquare, Menu } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Search, Bell, Settings, Calendar, CreditCard, MessageSquare, Menu, CalendarDays } from "lucide-react";
+import { useAcademicYear } from "@/context/AcademicYearContext";
 
 interface NotificationFeedItem {
   id: string;
@@ -30,26 +31,25 @@ const getTitleFromPathname = (pathname: string) => {
 
 export default function ClubAdminHeader({ user, onMenuClick }: ClubAdminHeaderProps) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const title = getTitleFromPathname(pathname);
 
-  // Read active academicYear from search parameters or fallback to today's active cycle
-  const getActiveAcademicYear = () => {
-    const fromUrl = searchParams.get("academicYear");
-    if (fromUrl) return fromUrl;
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth(); // July is 6
-    return currentMonth >= 6 
-      ? `${currentYear}-${currentYear + 1}` 
-      : `${currentYear - 1}-${currentYear}`;
-  };
-
-  const academicYear = getActiveAcademicYear();
+  const { academicYear, setAcademicYear, availableYears, setAvailableYears } = useAcademicYear();
 
   const [notifications, setNotifications] = useState<NotificationFeedItem[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fetch available academic years dynamically for the dropdown
+  useEffect(() => {
+    fetch("/api/club-admin/academic-years")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.availableAcademicYears && Array.isArray(data.availableAcademicYears)) {
+          setAvailableYears(data.availableAcademicYears);
+        }
+      })
+      .catch(() => {});
+  }, [setAvailableYears]);
 
   const fetchNotifications = () => {
     fetch(`/api/club-admin/notifications?academicYear=${academicYear}`)
@@ -121,10 +121,27 @@ export default function ClubAdminHeader({ user, onMenuClick }: ClubAdminHeaderPr
           <h1 className="text-xl md:text-2xl font-bold text-[#222]">{title}</h1>
         </div>
 
-        {/* Right: Search, icons, profile */}
+        {/* Right: Search, Academic Year Toggle, icons, profile */}
         <div className="flex items-center gap-3">
+          {/* Global Academic Year Toggle */}
+          <div className="flex items-center gap-1.5 bg-[#f5f7fa] border border-[#dcdfe6] px-2.5 py-1.5 rounded-lg">
+            <CalendarDays size={15} className="text-[#7CB342]" />
+            <span className="hidden sm:inline text-xs font-medium text-slate-500">AY:</span>
+            <select
+              value={academicYear}
+              onChange={(e) => setAcademicYear(e.target.value)}
+              className="bg-transparent text-xs font-bold text-[#2c3e50] focus:outline-none cursor-pointer"
+            >
+              {availableYears.map((yearOption) => (
+                <option key={yearOption} value={yearOption}>
+                  {yearOption}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Search */}
-          <div className="hidden sm:flex items-center bg-white border border-[#e0e0e0] rounded-lg px-3 py-2 gap-2 w-56 lg:w-72">
+          <div className="hidden sm:flex items-center bg-white border border-[#e0e0e0] rounded-lg px-3 py-2 gap-2 w-48 lg:w-64">
             <Search size={18} className="text-[#999]" />
             <input
               type="text"

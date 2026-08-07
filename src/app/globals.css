@@ -34,3 +34,14 @@ body {
 html.splash-seen #splash-screen {
   display: none !important;
 }
+
+.dark .bg-white { background-color: #0f172a !important; }
+.dark .text-slate-900, .dark .text-slate-800 { color: #f8fafc !important; }
+.dark .text-slate-700 { color: #e2e8f0 !important; }
+.dark .text-slate-600 { color: #cbd5e1 !important; }
+.dark .text-slate-500 { color: #94a3b8 !important; }
+.dark .border-slate-200\/60, .dark .border-slate-200, .dark .border-slate-100 { border-color: #1e293b !important; }
+.dark .bg-slate-50 { background-color: #1e293b !important; }
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #1e293b !important; }
+.dark .bg-\[\#f5f5f5\] { background-color: #020617 !important; }
+.dark .hover\:bg-slate-50:hover { background-color: #1e293b !important; }

@@ -1,6 +1,13 @@
 "use client";
-import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import { useRouter } from "next/navigation";
+import { useAcademicYear } from "@/context/AcademicYearContext";
 import ClublyLoader from "@/components/ClubAdmin/ClublyLoader";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -29,6 +36,7 @@ import {
   AlertTriangle,
   Link2,
   CircleDot,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -95,6 +103,18 @@ interface FeedbackItem {
 /* ═══════════════════════════════════════════
    Status Badge
    ═══════════════════════════════════════════ */
+function InfoTooltip({ text }: { text: string }) {
+  return (
+    <div className="group relative inline-flex items-center justify-center w-4 h-4 rounded-full border border-slate-500 text-slate-400 text-[10px] font-bold cursor-help ml-2 shrink-0">
+      i
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-40 bg-[#FFFEEA] border border-slate-400 text-slate-800 text-[10px] p-2 rounded-lg shadow-md z-50 font-medium text-center leading-normal">
+        {text}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#FFFEEA]"></div>
+      </div>
+    </div>
+  );
+}
+
 function StatusBadge({ status }: { status: EventStatus }) {
   const config = {
     draft: {
@@ -173,189 +193,147 @@ function EventListCard({
   const eventDate = new Date(event.date);
 
   return (
-    <div className="bg-white border border-slate-200/60 rounded-xl p-5 hover:border-slate-300 transition-colors duration-150">
-      <div className="flex flex-col sm:flex-row gap-5 items-start">
-        {/* Banner */}
-        {event.image ? (
-          <div
-            className="w-full sm:w-36 h-24 rounded-lg overflow-hidden shrink-0 cursor-pointer bg-slate-50 border border-slate-100"
-            onClick={onViewDetail}
-          >
-            <img
-              src={event.image}
-              alt=""
-              className="w-full h-full object-cover"
-            />
-          </div>
-        ) : (
-          <div
-            className="w-full sm:w-36 h-24 rounded-lg bg-slate-50 flex items-center justify-center shrink-0 cursor-pointer border border-slate-100 text-slate-300"
-            onClick={onViewDetail}
-          >
-            <Calendar size={24} />
-          </div>
-        )}
-
-        {/* Details */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider bg-slate-100 px-1.5 py-0.5 rounded">
-                  {event.eventType}
-                </span>
-                <StatusBadge status={event.status} />
-                {event.providesCertificate && (
-                  <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
-                    Certificate
-                  </span>
-                )}
-              </div>
-              <h3
-                className="text-base font-bold text-slate-800 hover:text-slate-900 cursor-pointer transition-colors"
-                onClick={onViewDetail}
-              >
-                {event.name}
-              </h3>
-              {event.description && (
-                <p className="text-xs text-slate-400 mt-1 line-clamp-1">
-                  {event.description}
-                </p>
-              )}
+    <tr className="group hover:bg-[#f0f7e6]/50 transition-colors border-b border-slate-100 last:border-0 relative">
+      <td className="py-4 pl-6 pr-4 whitespace-nowrap">
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            className="w-4 h-4 rounded border-slate-300 text-[#7CB342] focus:ring-[#7CB342] cursor-pointer"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <span className="text-slate-500 font-medium text-sm">
+            #{event._id.slice(-8)}
+          </span>
+        </div>
+      </td>
+      <td
+        className="px-4 py-4 whitespace-nowrap min-w-[200px] cursor-pointer"
+        onClick={onViewDetail}
+      >
+        <div className="flex items-center gap-3">
+          {event.image ? (
+            <div className="w-9 h-9 rounded-md overflow-hidden shrink-0 border border-slate-200/50">
+              <img
+                src={event.image}
+                alt=""
+                className="w-full h-full object-cover"
+              />
             </div>
-
-            {/* Menu */}
-            <div className="relative shrink-0" ref={menuRef}>
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-50 text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                <MoreVertical size={16} />
-              </button>
-              <AnimatePresence>
-                {menuOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.98 }}
-                    transition={{ duration: 0.1 }}
-                    className="absolute right-0 top-9 z-30 bg-white border border-slate-200 shadow-lg rounded-lg py-1 min-w-[160px]"
-                  >
-                    <button
-                      onClick={() => {
-                        onViewDetail();
-                        setMenuOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
-                    >
-                      View details
-                    </button>
-                    <button
-                      onClick={() => {
-                        onEdit();
-                        setMenuOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
-                    >
-                      Edit details
-                    </button>
-                    {event.status === "draft" && (
-                      <button
-                        onClick={() => {
-                          onStatusChange("live");
-                          setMenuOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-xs font-medium text-emerald-600 hover:bg-emerald-50"
-                      >
-                        Publish event
-                      </button>
-                    )}
-                    {event.status === "live" && (
-                      <button
-                        onClick={() => {
-                          onStatusChange("completed");
-                          setMenuOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-xs font-medium text-blue-600 hover:bg-blue-50"
-                      >
-                        Mark completed
-                      </button>
-                    )}
-                    <hr className="my-1 border-slate-100" />
-                    <button
-                      onClick={() => {
-                        onDelete();
-                        setMenuOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-xs font-medium text-red-500 hover:bg-red-50"
-                    >
-                      Delete event
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+          ) : (
+            <div className="w-9 h-9 rounded-md bg-[#f0f7e6] flex items-center justify-center shrink-0 text-[#7CB342] border border-[#c5d6a8]">
+              <Calendar size={14} />
             </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 text-xs text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <Calendar size={13} />
-              {eventDate.toLocaleDateString("en-IN", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
+          )}
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-slate-800 hover:text-[#7CB342] transition-colors">
+              {event.name}
             </span>
-            <span className="flex items-center gap-1.5">
-              <Clock size={13} />
-              {eventDate.toLocaleTimeString("en-IN", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
-            {event.registrationFee > 0 ? (
-              <span className="flex items-center gap-0.5 text-slate-500 font-semibold">
-                Entry: ₹{event.registrationFee}
-              </span>
-            ) : (
-              <span className="text-emerald-600 font-semibold">Free entry</span>
-            )}
-          </div>
-
-          {/* Quick Metrics Bar */}
-          <div className="flex items-center gap-5 mt-4 pt-3.5 border-t border-slate-100 text-xs text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <Users size={13} className="text-slate-400" />
-              <strong className="text-slate-600 font-semibold">
-                {event.registrationCount}
-              </strong>{" "}
-              registered
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Eye size={13} />
-              <strong className="text-slate-600 font-semibold">
-                {event.views}
-              </strong>{" "}
-              views
-            </span>
-            {event.feedbackCount > 0 && (
-              <span className="flex items-center gap-1.5">
-                <MessageSquare size={13} />
-                <strong className="text-slate-600 font-semibold">
-                  {event.feedbackCount}
-                </strong>{" "}
-                reviews ({event.avgRating.toFixed(1)}★)
-              </span>
-            )}
-            {event.revenue > 0 && (
-              <span className="ml-auto text-xs font-semibold text-slate-600">
-                Revenue: ₹{event.revenue.toLocaleString()}
-              </span>
+            {event.description && (
+              <p
+                className="text-xs text-slate-500 truncate w-48"
+                title={event.description}
+              >
+                {event.description}
+              </p>
             )}
           </div>
         </div>
-      </div>
-    </div>
+      </td>
+      <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-600 font-medium">
+        <span className="capitalize">{event.eventType}</span>
+      </td>
+      <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-600 font-medium">
+        {eventDate.toLocaleDateString("en-US", {
+          month: "numeric",
+          day: "numeric",
+          year: "2-digit",
+        })}
+      </td>
+      <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-800 font-semibold">
+        {event.registrationFee > 0 ? `₹${event.registrationFee}` : "Free"}
+      </td>
+      <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-emerald-600">
+        ₹{event.revenue.toLocaleString()}
+      </td>
+      <td className="px-4 py-4 whitespace-nowrap">
+        <StatusBadge status={event.status} />
+      </td>
+      <td className="py-4 pl-4 pr-6 whitespace-nowrap text-right">
+        <div className="relative inline-block text-left" ref={menuRef}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen(!menuOpen);
+            }}
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+          >
+            <MoreVertical size={16} />
+          </button>
+          <AnimatePresence>
+            {menuOpen && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="absolute right-0 top-9 z-30 bg-white border border-slate-200 shadow-xl rounded-xl py-1.5 min-w-[180px] overflow-hidden"
+              >
+                <button
+                  onClick={() => {
+                    onViewDetail();
+                    setMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2 text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-[#f0f7e6] hover:text-[#7CB342] transition-colors"
+                >
+                  <Eye size={14} /> View details
+                </button>
+                <button
+                  onClick={() => {
+                    onEdit();
+                    setMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2 text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-[#f0f7e6] hover:text-[#7CB342] transition-colors"
+                >
+                  <Pencil size={14} /> Edit details
+                </button>
+                {event.status === "draft" && (
+                  <button
+                    onClick={() => {
+                      onStatusChange("live");
+                      setMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 text-left px-4 py-2 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 transition-colors"
+                  >
+                    <Rocket size={14} /> Publish event
+                  </button>
+                )}
+                {event.status === "live" && (
+                  <button
+                    onClick={() => {
+                      onStatusChange("completed");
+                      setMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 text-left px-4 py-2 text-xs font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
+                  >
+                    <CheckCircle2 size={14} /> Mark completed
+                  </button>
+                )}
+                <hr className="my-1.5 border-slate-100" />
+                <button
+                  onClick={() => {
+                    onDelete();
+                    setMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2 text-left px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 size={14} /> Delete event
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </td>
+    </tr>
   );
 }
 
@@ -515,7 +493,8 @@ function CreateEditDrawer({
         }
       }
       if (prize) formData.append("prize", prize);
-      if (maxRegistrations) formData.append("maxRegistrations", maxRegistrations);
+      if (maxRegistrations)
+        formData.append("maxRegistrations", maxRegistrations);
       if (whatsappLink) formData.append("whatsappGroupLink", whatsappLink);
 
       if (customQuestions.length > 0) {
@@ -570,9 +549,7 @@ function CreateEditDrawer({
             <h2 className="text-base font-bold text-slate-800">
               {isEdit ? "Edit event details" : "Create new event"}
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Step {step} of 3
-            </p>
+            <p className="text-xs text-slate-400 mt-0.5">Step {step} of 3</p>
           </div>
           <button
             onClick={onClose}
@@ -852,7 +829,9 @@ function CreateEditDrawer({
                   >
                     <span
                       className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                        providesCertificate ? "translate-x-4" : "translate-x-0.5"
+                        providesCertificate
+                          ? "translate-x-4"
+                          : "translate-x-0.5"
                       }`}
                     />
                   </button>
@@ -942,18 +921,18 @@ function CreateEditDrawer({
                         />
                         <div className="flex items-center gap-3">
                           <select
-                              value={q.type}
-                              onChange={(e) =>
-                                updateQuestion(idx, {
-                                  type: e.target.value as any,
-                                })
-                              }
-                              className="px-2 py-1 text-xs bg-white border border-slate-200 rounded text-slate-600 outline-none"
-                            >
-                              <option value="text">Text Box</option>
-                              <option value="select">Dropdown Menu</option>
-                              <option value="multiselect">Checkboxes</option>
-                            </select>
+                            value={q.type}
+                            onChange={(e) =>
+                              updateQuestion(idx, {
+                                type: e.target.value as any,
+                              })
+                            }
+                            className="px-2 py-1 text-xs bg-white border border-slate-200 rounded text-slate-600 outline-none"
+                          >
+                            <option value="text">Text Box</option>
+                            <option value="select">Dropdown Menu</option>
+                            <option value="multiselect">Checkboxes</option>
+                          </select>
                           <label className="flex items-center gap-1 text-xs text-slate-500">
                             <input
                               type="checkbox"
@@ -1339,6 +1318,8 @@ function EventDetailPanel({
    ═══════════════════════════════════════════ */
 export default function ClubAdminEventsPage() {
   const router = useRouter();
+  const { academicYear, setAvailableYears } = useAcademicYear();
+
   const [events, setEvents] = useState<EventItem[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1350,26 +1331,19 @@ export default function ClubAdminEventsPage() {
   const [detailEvent, setDetailEvent] = useState<EventItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<EventItem | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [academicYear, setAcademicYear] = useState<string>("");
-  const [availableYears, setAvailableYears] = useState<string[]>([]);
-
-  // Default to current academic year on mount
-  useEffect(() => {
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth(); // July is 6
-    const defaultAcadYear = currentMonth >= 6 
-      ? `${currentYear}-${currentYear + 1}` 
-      : `${currentYear - 1}-${currentYear}`;
-    setAcademicYear(defaultAcadYear);
-  }, []);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [timeFilter, setTimeFilter] = useState("All Time");
+  const [timeFilterOpen, setTimeFilterOpen] = useState(false);
 
   const fetchEvents = useCallback(async () => {
     if (!academicYear) return;
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`/api/club-admin/events?academicYear=${academicYear}`);
+      const res = await fetch(
+        `/api/club-admin/events?academicYear=${academicYear}`,
+      );
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
         throw new Error(e.error || "Failed to fetch events");
@@ -1406,7 +1380,81 @@ export default function ClubAdminEventsPage() {
     return filtered;
   }, [events, activeTab, searchQuery]);
 
-  const handleStatusChange = async (eventId: string, newStatus: EventStatus) => {
+  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
+  const paginatedEvents = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredEvents.slice(start, start + itemsPerPage);
+  }, [filteredEvents, currentPage, itemsPerPage]);
+
+  // Reset page when search or tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeTab]);
+
+  const filteredStats = useMemo(() => {
+    const now = new Date();
+    let currentPeriodEvents = events;
+    let previousPeriodEvents: EventItem[] = [];
+
+    if (timeFilter === "Today") {
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      currentPeriodEvents = events.filter(e => new Date(e.createdAt) >= today);
+      const yesterday = new Date(today.getTime() - 86400000);
+      previousPeriodEvents = events.filter(e => {
+        const d = new Date(e.createdAt);
+        return d >= yesterday && d < today;
+      });
+    } else if (timeFilter === "Last 7 Days") {
+      const last7 = new Date(now.getTime() - 7 * 86400000);
+      currentPeriodEvents = events.filter(e => new Date(e.createdAt) >= last7);
+      const last14 = new Date(now.getTime() - 14 * 86400000);
+      previousPeriodEvents = events.filter(e => {
+        const d = new Date(e.createdAt);
+        return d >= last14 && d < last7;
+      });
+    } else if (timeFilter === "This Month") {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      currentPeriodEvents = events.filter(e => new Date(e.createdAt) >= startOfMonth);
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      previousPeriodEvents = events.filter(e => {
+        const d = new Date(e.createdAt);
+        return d >= startOfLastMonth && d < startOfMonth;
+      });
+    }
+
+    const currentStats = {
+      revenue: currentPeriodEvents.reduce((acc, e) => acc + (e.revenue || 0), 0),
+      events: currentPeriodEvents.length,
+      registrations: currentPeriodEvents.reduce((acc, e) => acc + (e.registrationCount || 0), 0),
+    };
+
+    const prevStats = {
+      revenue: previousPeriodEvents.reduce((acc, e) => acc + (e.revenue || 0), 0),
+      events: previousPeriodEvents.length,
+      registrations: previousPeriodEvents.reduce((acc, e) => acc + (e.registrationCount || 0), 0),
+    };
+
+    const calculateTrend = (current: number, prev: number) => {
+      if (prev === 0) return current > 0 ? { value: 100, isPositive: true } : null;
+      const pct = ((current - prev) / prev) * 100;
+      return { value: Math.abs(Number(pct.toFixed(1))), isPositive: pct >= 0 };
+    };
+
+    return {
+      current: currentStats,
+      trends: timeFilter === "All Time" ? null : {
+        revenue: calculateTrend(currentStats.revenue, prevStats.revenue),
+        events: calculateTrend(currentStats.events, prevStats.events),
+        registrations: calculateTrend(currentStats.registrations, prevStats.registrations),
+        label: timeFilter === "Today" ? "from yesterday" : timeFilter === "Last 7 Days" ? "from previous 7 days" : "from last month"
+      }
+    };
+  }, [events, timeFilter]);
+
+  const handleStatusChange = async (
+    eventId: string,
+    newStatus: EventStatus,
+  ) => {
     try {
       const res = await fetch(`/api/club-admin/events/${eventId}/status`, {
         method: "PATCH",
@@ -1481,156 +1529,302 @@ export default function ClubAdminEventsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-8 min-h-screen">
       {/* Page Header */}
-      <div className="flex items-center justify-between gap-4">
-        {/* Highlight Card */}
-        {stats && events.length > 0 ? (
-          <div className="text-xs text-slate-400 font-medium hidden sm:flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/50">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#7CB342]" />
-            <span>Top event by signups: </span>
-            <strong className="text-slate-700 font-bold">
-              {(() => {
-                const sorted = [...events].sort((a, b) => b.registrationCount - a.registrationCount);
-                return sorted[0]?.name || "None";
-              })()}
-            </strong>
-          </div>
-        ) : (
-          <div />
-        )}
-        <button
-          onClick={() => {
-            setEditEvent(null);
-            setDrawerOpen(true);
-          }}
-          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#7CB342] hover:bg-[#689F38] rounded-lg transition-colors outline-none shrink-0"
-        >
-          <Plus size={14} />
-          Create Event
-        </button>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+            Events Overview
+          </h1>
+          <p className="text-sm font-medium text-slate-500 mt-1">
+            Manage and analyze your club&apos;s events and registrations in real-time.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0">
+          <button className="px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-all shadow-sm flex items-center gap-2">
+            <Upload size={14} /> Export
+          </button>
+          <button className="px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-all shadow-sm flex items-center gap-2">
+            More Actions <ChevronRight size={14} className="rotate-90" />
+          </button>
+        </div>
       </div>
 
-      {/* Numerical Stats overview */}
-      {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white border border-slate-200/60 rounded-xl p-4">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
-              Total events
+      {/* Metrics Row */}
+      <div className="bg-[#091800] border border-[#091800] text-white rounded-2xl shadow-md flex flex-col lg:flex-row mb-8 relative">
+        <div 
+          onClick={() => setTimeFilterOpen(!timeFilterOpen)}
+          className="relative flex items-center justify-center p-6 lg:w-56 shrink-0 border-b lg:border-b-0 lg:border-r border-[#1a3805] cursor-pointer bg-[#132c02]/40 hover:bg-[#132c02]/85 transition-colors duration-200 rounded-t-2xl lg:rounded-t-none lg:rounded-l-2xl"
+        >
+          <button className="flex items-center gap-2 outline-none">
+            <Calendar
+              size={22}
+              className="text-[#9ccc65]"
+              strokeWidth={2.5}
+            />
+            <span className="font-bold text-[#9ccc65] text-lg tracking-tight flex items-center gap-1">
+              {timeFilter} <ChevronDown size={14} className="opacity-75" />
             </span>
-            <span className="text-xl font-bold text-slate-800 block mt-0.5">
-              {stats.totalEvents}
-            </span>
+          </button>
+
+          {timeFilterOpen && (
+            <div className="absolute top-full mt-2 bg-white rounded-xl shadow-lg border border-slate-100 p-1.5 w-40 z-50 text-slate-800">
+              {["Today", "Last 7 Days", "This Month", "All Time"].map((opt) => (
+                <button
+                  key={opt}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setTimeFilter(opt);
+                    setTimeFilterOpen(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                    timeFilter === opt
+                      ? "bg-[#f0f7e6] text-[#7CB342]"
+                      : "text-slate-650 hover:bg-slate-50"
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#1a3805]">
+          <div className="flex flex-col p-6">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-semibold text-[#9ccc65]">
+                Total Revenue
+              </span>
+              <InfoTooltip text="Total revenue generated from all events." />
+            </div>
+            <div className="flex items-end justify-between mt-auto">
+              <span className="text-4xl font-bold text-white tracking-tight">
+                ₹{filteredStats.current.revenue.toLocaleString()}
+              </span>
+              {filteredStats.trends && filteredStats.trends.revenue && (
+                <div className="flex flex-col items-end">
+                  <span className={`text-xs font-bold flex items-center gap-1 ${filteredStats.trends.revenue.isPositive ? 'text-[#5c8bff]' : 'text-[#f25c5c]'}`}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={filteredStats.trends.revenue.isPositive ? '' : 'rotate-180'}>
+                      <path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+                    </svg>
+                    {filteredStats.trends.revenue.value}%
+                  </span>
+                  <span className="text-[10px] font-medium text-slate-350 mt-0.5">{filteredStats.trends.label}</span>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="bg-white border border-slate-200/60 rounded-xl p-4">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
-              Live events
-            </span>
-            <span className="text-xl font-bold text-slate-800 block mt-0.5">
-              {stats.liveEvents}
-            </span>
+
+          <div className="flex flex-col p-6">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-semibold text-[#9ccc65]">
+                Total Events
+              </span>
+              <InfoTooltip text="Total number of events created." />
+            </div>
+            <div className="flex items-end justify-between mt-auto">
+              <span className="text-4xl font-bold text-white tracking-tight">
+                {stats.totalEvents}
+              </span>
+            </div>
           </div>
-          <div className="bg-white border border-slate-200/60 rounded-xl p-4">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
-              Registrations
-            </span>
-            <span className="text-xl font-bold text-slate-800 block mt-0.5">
-              {stats.totalRegistrations.toLocaleString()}
-            </span>
-          </div>
-          <div className="bg-white border border-slate-200/60 rounded-xl p-4">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
-              Event Revenue
-            </span>
-            <span className="text-xl font-bold text-slate-800 block mt-0.5">
-              ₹{stats.totalRevenue.toLocaleString()}
-            </span>
+
+          <div className="flex flex-col p-6">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-semibold text-[#9ccc65]">
+                Registrations
+              </span>
+              <InfoTooltip text="Total registrations across all events." />
+            </div>
+            <div className="flex items-end justify-between mt-auto">
+              <span className="text-4xl font-bold text-white tracking-tight">
+                {stats.totalRegistrations.toLocaleString()}
+              </span>
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Tabs and Search bar */}
-      <div className="bg-white border border-slate-200/65 rounded-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-5 py-4 border-b border-slate-100">
-          {/* Tabs */}
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors outline-none shrink-0 ${
-                  activeTab === tab.key
-                    ? "text-slate-800 bg-slate-100"
-                    : "text-slate-400 hover:text-slate-600"
-                }`}
-              >
-                {tab.label}
-                {tab.count !== undefined && tab.count > 0 && (
-                  <span className="ml-1 text-[9px] font-bold text-slate-400">
-                    ({tab.count})
-                  </span>
-                )}
-              </button>
-            ))}
+      <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 py-5 border-b border-slate-100 bg-white">
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">Event Summary</h2>
+            <p className="text-sm text-slate-500 mt-1">
+              Overview of total events, registrations, and revenue.
+            </p>
           </div>
 
-          {/* Controls */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            {/* Academic Year select */}
-            {availableYears.length > 0 && (
-              <select
-                value={academicYear}
-                onChange={(e) => setAcademicYear(e.target.value)}
-                className="px-2 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-600 outline-none font-semibold hover:border-slate-300 transition-colors"
-              >
-                {availableYears.map((yearOption) => (
-                  <option key={yearOption} value={yearOption}>
-                    {yearOption}
-                  </option>
-                ))}
-              </select>
-            )}
-
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             {/* Search box */}
-            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 gap-2 w-full sm:w-52">
-              <Search size={13} className="text-slate-400 shrink-0" />
+            <div className="flex items-center bg-white border border-slate-200 focus-within:border-[#7CB342] focus-within:ring-2 focus-within:ring-[#f0f7e6] rounded-xl px-3.5 py-2 gap-2 w-full sm:w-64 transition-all shadow-sm">
+              <Search size={14} className="text-slate-400 shrink-0" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search events..."
-                className="bg-transparent text-xs text-slate-700 placeholder:text-slate-400 outline-none w-full font-medium"
+                placeholder="Search..."
+                className="bg-transparent text-sm text-slate-700 placeholder:text-slate-400 outline-none w-full font-medium"
               />
             </div>
+
+            <button
+              onClick={() => {
+                setEditEvent(null);
+                setDrawerOpen(true);
+              }}
+              className="px-4 py-2 text-sm font-semibold text-white bg-[#7CB342] border border-[#7CB342] hover:bg-[#689F38] rounded-xl transition-all shadow-sm shadow-sm flex items-center gap-2 whitespace-nowrap"
+            >
+              <Plus size={14} /> New Event
+            </button>
+          </div>
+        </div>
+
+        {/* Sub Header for tabs */}
+        <div className="px-6 py-2 border-b border-slate-100 bg-slate-50/50 flex items-center gap-4">
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all outline-none shrink-0 flex items-center gap-2 ${
+                  activeTab === tab.key
+                    ? "text-[#689F38] bg-[#e2f1cd] shadow-sm border border-[#c5d6a8]"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* List items block */}
-        <div className="p-5 space-y-4">
-          {filteredEvents.length === 0 ? (
-            <div className="text-center py-16 text-slate-400">
-              <p className="text-xs font-semibold">No events found</p>
-              <p className="text-[11px] text-slate-300 mt-0.5">
-                {searchQuery ? "Try refining your search" : "Get started by adding your first event config!"}
-              </p>
-            </div>
-          ) : (
-            filteredEvents.map((event) => (
-              <EventListCard
-                key={event._id}
-                event={event}
-                onEdit={() => {
-                  setEditEvent(event);
-                  setDrawerOpen(true);
-                }}
-                onDelete={() => setDeleteTarget(event)}
-                onStatusChange={(status) =>
-                  handleStatusChange(event._id, status)
-                }
-                onViewDetail={() => router.push(`/club-admin/events/${event._id}`)}
-              />
-            ))
-          )}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-[#f0f7e6]/30 border-b border-slate-100">
+                <th className="py-3 pl-6 pr-4 font-semibold text-slate-500 text-xs w-8">
+                  <input
+                    type="checkbox"
+                    className="rounded border-slate-300 cursor-pointer"
+                    disabled
+                  />
+                </th>
+                <th className="py-3 px-4 font-semibold text-slate-500 text-xs">
+                  Event
+                </th>
+                <th className="py-3 px-4 font-semibold text-slate-500 text-xs">
+                  Format
+                </th>
+                <th className="py-3 px-4 font-semibold text-slate-500 text-xs">
+                  Date
+                </th>
+                <th className="py-3 px-4 font-semibold text-slate-500 text-xs">
+                  Fee
+                </th>
+                <th className="py-3 px-4 font-semibold text-slate-500 text-xs">
+                  Revenue
+                </th>
+                <th className="py-3 px-4 font-semibold text-slate-500 text-xs">
+                  Status
+                </th>
+                <th className="py-3 pl-4 pr-6 font-semibold text-slate-500 text-xs text-right">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredEvents.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-16 text-slate-400">
+                    <p className="text-xs font-semibold">No events found</p>
+                  </td>
+                </tr>
+              ) : (
+                paginatedEvents.map((event) => (
+                  <EventListCard
+                    key={event._id}
+                    event={event}
+                    onEdit={() => {
+                      setEditEvent(event);
+                      setDrawerOpen(true);
+                    }}
+                    onDelete={() => setDeleteTarget(event)}
+                    onStatusChange={(status) =>
+                      handleStatusChange(event._id, status)
+                    }
+                    onViewDetail={() =>
+                      router.push(`/club-admin/events/${event._id}`)
+                    }
+                  />
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination footer */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white">
+          <span className="text-xs text-slate-500 font-medium flex items-center gap-2">
+            Items per page
+            <select
+              className="border border-slate-200 rounded-md p-1 outline-none text-slate-700 bg-slate-50"
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-2 py-1 text-xs font-semibold text-slate-400 hover:text-slate-700 disabled:opacity-50"
+            >
+              {"<"} Previous
+            </button>
+
+            {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+              let pageNum = currentPage;
+              if (totalPages <= 5) pageNum = i + 1;
+              else if (currentPage <= 3) pageNum = i + 1;
+              else if (currentPage >= totalPages - 2)
+                pageNum = totalPages - 4 + i;
+              else pageNum = currentPage - 2 + i;
+
+              return (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center transition-colors ${
+                    currentPage === pageNum
+                      ? "bg-[#7CB342] text-white shadow-sm"
+                      : "text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+
+            <button
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="px-2 py-1 text-xs font-semibold text-slate-600 hover:text-slate-900 disabled:opacity-50"
+            >
+              Next {">"}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1709,7 +1903,9 @@ function ConfirmModal({
         onClick={onCancel}
       />
       <div className="relative bg-white rounded-xl shadow-xl p-5 max-w-xs w-full z-10 border border-slate-200">
-        <h3 className="text-sm font-bold text-slate-800 text-center">{title}</h3>
+        <h3 className="text-sm font-bold text-slate-800 text-center">
+          {title}
+        </h3>
         <p className="text-xs text-slate-400 text-center mt-1.5 leading-normal">
           {description}
         </p>
@@ -1725,7 +1921,9 @@ function ConfirmModal({
             onClick={onConfirm}
             disabled={loading}
             className={`flex-1 py-2 text-xs font-semibold text-white rounded-lg transition-colors flex items-center justify-center gap-1 ${
-              danger ? "bg-rose-500 hover:bg-rose-600" : "bg-slate-800 hover:bg-slate-900"
+              danger
+                ? "bg-[#f0f7e6]0 hover:bg-[#7CB342]"
+                : "bg-slate-800 hover:bg-slate-900"
             }`}
           >
             {loading && <Loader2 size={10} className="animate-spin" />}

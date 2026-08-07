@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
+import { useAcademicYear } from "@/context/AcademicYearContext";
 import ClublyLoader from "@/components/ClubAdmin/ClublyLoader";
 import {
   Chart as ChartJS,
@@ -99,8 +100,8 @@ function StatCard({
   since: string;
 }) {
   return (
-    <div className="group rounded-xl p-4 md:p-5 flex flex-col justify-between min-h-[120px] bg-white text-[#222] border border-[#eaeaea] hover:bg-[#091800] hover:text-white hover:border-[#091800] transition-all duration-300 cursor-pointer">
-      <div className="text-xs font-semibold uppercase tracking-wide text-[#888] group-hover:text-[#7CB342] transition-colors duration-300">
+    <div className="rounded-xl p-4 md:p-5 flex flex-col justify-between min-h-[120px] bg-[#091800] text-white border border-[#091800] transition-all duration-300">
+      <div className="text-xs font-bold uppercase tracking-wide text-[#9ccc65] transition-colors duration-300">
         {label}
       </div>
       <div className="flex items-end gap-1 mt-2">
@@ -108,17 +109,17 @@ function StatCard({
           {value}
         </span>
         {trend === "up" ? (
-          <TrendingUp size={20} className="text-[#5a8a1c] group-hover:text-white transition-colors duration-300" />
+          <TrendingUp size={20} className="text-white" />
         ) : (
-          <TrendingDown size={20} className="text-red-500 group-hover:text-white transition-colors duration-300" />
+          <TrendingDown size={20} className="text-white" />
         )}
       </div>
       <div className="flex items-center gap-2 mt-2">
         <span
           className={`text-xs font-semibold px-2 py-0.5 rounded-full transition-all duration-300 border ${
             trend === "up"
-              ? "bg-[#e8f5e9] text-[#5a8a1c] border-transparent group-hover:bg-transparent group-hover:text-[#7CB342] group-hover:border-[#7CB342]"
-              : "bg-red-50 text-red-500 border-transparent group-hover:bg-transparent group-hover:text-red-400 group-hover:border-red-400"
+              ? "bg-transparent text-[#9ccc65] border-[#9ccc65]"
+              : "bg-transparent text-red-400 border-red-400"
           }`}
         >
           <span className="inline-flex items-center gap-0.5">
@@ -130,7 +131,7 @@ function StatCard({
             {change}
           </span>
         </span>
-        <span className="text-xs text-[#999] group-hover:text-white/70 transition-colors duration-300">
+        <span className="text-xs text-white/70 transition-colors duration-300">
           {since}
         </span>
       </div>
@@ -155,6 +156,8 @@ function StatusBadge({ status }: { status: "Live" | "Upcoming" | "Completed" }) 
    Main Dashboard Page
    ═══════════════════════════════════════════ */
 export default function ClubAdminDashboardPage() {
+  const { academicYear, availableYears, setAvailableYears } = useAcademicYear();
+
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -162,20 +165,7 @@ export default function ClubAdminDashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [pageSize, setPageSize] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
-  const [academicYear, setAcademicYear] = useState<string>("");
-  const [availableYears, setAvailableYears] = useState<string[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  // Default to current academic year on mount
-  useEffect(() => {
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth(); // July is 6
-    const defaultAcadYear = currentMonth >= 6 
-      ? `${currentYear}-${currentYear + 1}` 
-      : `${currentYear - 1}-${currentYear}`;
-    setAcademicYear(defaultAcadYear);
-  }, []);
 
   const fetchDashboardData = async () => {
     if (!academicYear) return;
@@ -415,19 +405,6 @@ export default function ClubAdminDashboardPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {availableYears.length > 0 && (
-                <select
-                  value={academicYear}
-                  onChange={(e) => setAcademicYear(e.target.value)}
-                  className="px-2 py-1.5 text-xs bg-white border border-[#e0e0e0] rounded-lg text-slate-600 outline-none font-semibold hover:border-slate-300 transition-colors"
-                >
-                  {availableYears.map((yearOption) => (
-                    <option key={yearOption} value={yearOption}>
-                      {yearOption}
-                    </option>
-                  ))}
-                </select>
-              )}
               <button
                 onClick={fetchDashboardData}
                 className="flex items-center gap-1.5 text-xs font-medium text-[#555] bg-white border border-[#e0e0e0] rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors"
