@@ -40,10 +40,16 @@ export default function Payment({
   const [queuedAutoStart, setQueuedAutoStart] = useState(false);
   const lastAutoStartTrigger = useRef<number | undefined>(autoStartTrigger);
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.Razorpay) {
+      setIsRazorpayReady(true);
+    }
+  }, []);
+
   const handlePayment = async (suppressNotReadyAlert = false) => {
     if (typeof window === "undefined" || !window.Razorpay || !isRazorpayReady) {
       if (!suppressNotReadyAlert) {
-        alert("Payment gateway is still loading. Please try again in a moment.");
+        toast.error("Payment gateway is still loading. Please try again in a moment.");
       }
       setQueuedAutoStart(true);
       return;
@@ -118,7 +124,7 @@ export default function Payment({
             if (verificationData.success) {
               onSuccess?.();
             } else {
-              alert("Payment verification failed");
+              toast.error("Payment verification failed");
             }
           } finally {
             setPaymentLoading(false);
@@ -141,7 +147,7 @@ export default function Payment({
     } catch (error: any) {
       console.error("Payment error:", error);
       setPaymentLoading(false);
-      alert(error.message || "Payment failed. Please try again.");
+      toast.error(error.message || "Payment failed. Please try again.");
       return;
     }
   };
