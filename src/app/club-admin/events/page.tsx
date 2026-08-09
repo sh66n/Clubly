@@ -1398,56 +1398,90 @@ export default function ClubAdminEventsPage() {
 
     if (timeFilter === "Today") {
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      currentPeriodEvents = events.filter(e => new Date(e.createdAt) >= today);
+      currentPeriodEvents = events.filter(
+        (e) => new Date(e.createdAt) >= today,
+      );
       const yesterday = new Date(today.getTime() - 86400000);
-      previousPeriodEvents = events.filter(e => {
+      previousPeriodEvents = events.filter((e) => {
         const d = new Date(e.createdAt);
         return d >= yesterday && d < today;
       });
     } else if (timeFilter === "Last 7 Days") {
       const last7 = new Date(now.getTime() - 7 * 86400000);
-      currentPeriodEvents = events.filter(e => new Date(e.createdAt) >= last7);
+      currentPeriodEvents = events.filter(
+        (e) => new Date(e.createdAt) >= last7,
+      );
       const last14 = new Date(now.getTime() - 14 * 86400000);
-      previousPeriodEvents = events.filter(e => {
+      previousPeriodEvents = events.filter((e) => {
         const d = new Date(e.createdAt);
         return d >= last14 && d < last7;
       });
     } else if (timeFilter === "This Month") {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      currentPeriodEvents = events.filter(e => new Date(e.createdAt) >= startOfMonth);
-      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      previousPeriodEvents = events.filter(e => {
+      currentPeriodEvents = events.filter(
+        (e) => new Date(e.createdAt) >= startOfMonth,
+      );
+      const startOfLastMonth = new Date(
+        now.getFullYear(),
+        now.getMonth() - 1,
+        1,
+      );
+      previousPeriodEvents = events.filter((e) => {
         const d = new Date(e.createdAt);
         return d >= startOfLastMonth && d < startOfMonth;
       });
     }
 
     const currentStats = {
-      revenue: currentPeriodEvents.reduce((acc, e) => acc + (e.revenue || 0), 0),
+      revenue: currentPeriodEvents.reduce(
+        (acc, e) => acc + (e.revenue || 0),
+        0,
+      ),
       events: currentPeriodEvents.length,
-      registrations: currentPeriodEvents.reduce((acc, e) => acc + (e.registrationCount || 0), 0),
+      registrations: currentPeriodEvents.reduce(
+        (acc, e) => acc + (e.registrationCount || 0),
+        0,
+      ),
     };
 
     const prevStats = {
-      revenue: previousPeriodEvents.reduce((acc, e) => acc + (e.revenue || 0), 0),
+      revenue: previousPeriodEvents.reduce(
+        (acc, e) => acc + (e.revenue || 0),
+        0,
+      ),
       events: previousPeriodEvents.length,
-      registrations: previousPeriodEvents.reduce((acc, e) => acc + (e.registrationCount || 0), 0),
+      registrations: previousPeriodEvents.reduce(
+        (acc, e) => acc + (e.registrationCount || 0),
+        0,
+      ),
     };
 
     const calculateTrend = (current: number, prev: number) => {
-      if (prev === 0) return current > 0 ? { value: 100, isPositive: true } : null;
+      if (prev === 0)
+        return current > 0 ? { value: 100, isPositive: true } : null;
       const pct = ((current - prev) / prev) * 100;
       return { value: Math.abs(Number(pct.toFixed(1))), isPositive: pct >= 0 };
     };
 
     return {
       current: currentStats,
-      trends: timeFilter === "All Time" ? null : {
-        revenue: calculateTrend(currentStats.revenue, prevStats.revenue),
-        events: calculateTrend(currentStats.events, prevStats.events),
-        registrations: calculateTrend(currentStats.registrations, prevStats.registrations),
-        label: timeFilter === "Today" ? "from yesterday" : timeFilter === "Last 7 Days" ? "from previous 7 days" : "from last month"
-      }
+      trends:
+        timeFilter === "All Time"
+          ? null
+          : {
+              revenue: calculateTrend(currentStats.revenue, prevStats.revenue),
+              events: calculateTrend(currentStats.events, prevStats.events),
+              registrations: calculateTrend(
+                currentStats.registrations,
+                prevStats.registrations,
+              ),
+              label:
+                timeFilter === "Today"
+                  ? "from yesterday"
+                  : timeFilter === "Last 7 Days"
+                    ? "from previous 7 days"
+                    : "from last month",
+            },
     };
   }, [events, timeFilter]);
 
@@ -1537,7 +1571,8 @@ export default function ClubAdminEventsPage() {
             Events Overview
           </h1>
           <p className="text-sm font-medium text-slate-500 mt-1">
-            Manage and analyze your club&apos;s events and registrations in real-time.
+            Manage and analyze your club&apos;s events and registrations in
+            real-time.
           </p>
         </div>
 
@@ -1551,18 +1586,26 @@ export default function ClubAdminEventsPage() {
         </div>
       </div>
 
-      {/* Metrics Row */}
-      <div className="bg-[#091800] border border-[#091800] text-white rounded-2xl shadow-md flex flex-col lg:flex-row mb-8 relative">
-        <div 
+      <div
+        className="border border-[#2d5c0c] text-white rounded-2xl shadow-md flex flex-col lg:flex-row mb-8 relative"
+        style={{
+          background:
+            "radial-gradient(ellipse 1250px 100px at bottom right, #254f0a 0%, #040c00 100%)",
+        }}
+      >
+        {/* Grain Overlay */}
+        <div
+          className="absolute inset-0 rounded-2xl pointer-events-none opacity-[0.95] mix-blend-overlay"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='4' result='noise'/%3E%3CfeColorMatrix type='matrix' values='0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0 0 0 1.5 -0.2'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='3.2' intercept='-1.0'/%3E%3CfeFuncG type='linear' slope='3.2' intercept='-1.0'/%3E%3CfeFuncB type='linear' slope='3.2' intercept='-1.0'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+          }}
+        />
+        <div
           onClick={() => setTimeFilterOpen(!timeFilterOpen)}
-          className="relative flex items-center justify-center p-6 lg:w-56 shrink-0 border-b lg:border-b-0 lg:border-r border-[#1a3805] cursor-pointer bg-[#132c02]/40 hover:bg-[#132c02]/85 transition-colors duration-200 rounded-t-2xl lg:rounded-t-none lg:rounded-l-2xl"
+          className="relative flex items-center justify-center p-6 lg:w-56 shrink-0 border-b lg:border-b-0 lg:border-r border-[#224b0a] cursor-pointer bg-[#132c02]/20 hover:bg-[#132c02]/50 transition-colors duration-200 rounded-t-2xl lg:rounded-t-none lg:rounded-l-2xl z-10"
         >
           <button className="flex items-center gap-2 outline-none">
-            <Calendar
-              size={22}
-              className="text-[#9ccc65]"
-              strokeWidth={2.5}
-            />
+            <Calendar size={22} className="text-[#9ccc65]" strokeWidth={2.5} />
             <span className="font-bold text-[#9ccc65] text-lg tracking-tight flex items-center gap-1">
               {timeFilter} <ChevronDown size={14} className="opacity-75" />
             </span>
@@ -1591,7 +1634,7 @@ export default function ClubAdminEventsPage() {
           )}
         </div>
 
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#1a3805]">
+        <div className="relative z-10 flex-1 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#224b0a]">
           <div className="flex flex-col p-6">
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-semibold text-[#9ccc65]">
@@ -1605,13 +1648,32 @@ export default function ClubAdminEventsPage() {
               </span>
               {filteredStats.trends && filteredStats.trends.revenue && (
                 <div className="flex flex-col items-end">
-                  <span className={`text-xs font-bold flex items-center gap-1 ${filteredStats.trends.revenue.isPositive ? 'text-[#5c8bff]' : 'text-[#f25c5c]'}`}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={filteredStats.trends.revenue.isPositive ? '' : 'rotate-180'}>
-                      <path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+                  <span
+                    className={`text-xs font-bold flex items-center gap-1 ${filteredStats.trends.revenue.isPositive ? "text-[#5c8bff]" : "text-[#f25c5c]"}`}
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={
+                        filteredStats.trends.revenue.isPositive
+                          ? ""
+                          : "rotate-180"
+                      }
+                    >
+                      <path d="M3 3v18h18" />
+                      <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" />
                     </svg>
                     {filteredStats.trends.revenue.value}%
                   </span>
-                  <span className="text-[10px] font-medium text-slate-350 mt-0.5">{filteredStats.trends.label}</span>
+                  <span className="text-[10px] font-medium text-slate-350 mt-0.5">
+                    {filteredStats.trends.label}
+                  </span>
                 </div>
               )}
             </div>

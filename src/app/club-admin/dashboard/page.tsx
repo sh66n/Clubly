@@ -100,11 +100,23 @@ function StatCard({
   since: string;
 }) {
   return (
-    <div className="rounded-xl p-4 md:p-5 flex flex-col justify-between min-h-[120px] bg-[#091800] text-white border border-[#091800] transition-all duration-300">
-      <div className="text-xs font-bold uppercase tracking-wide text-[#9ccc65] transition-colors duration-300">
+    <div 
+      className="relative rounded-xl p-4 md:p-5 flex flex-col justify-between min-h-[120px] text-white border border-[#2d5c0c] transition-all duration-300"
+      style={{
+        background: 'radial-gradient(ellipse 200px 80px at bottom right, #254f0a 0%, #040c00 100%)'
+      }}
+    >
+      {/* Grain Overlay */}
+      <div
+        className="absolute inset-0 rounded-xl pointer-events-none opacity-[0.95] mix-blend-overlay"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='4' result='noise'/%3E%3CfeColorMatrix type='matrix' values='0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0 0 0 1.5 -0.2'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='3.2' intercept='-1.0'/%3E%3CfeFuncG type='linear' slope='3.2' intercept='-1.0'/%3E%3CfeFuncB type='linear' slope='3.2' intercept='-1.0'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+        }}
+      />
+      <div className="relative z-10 text-xs font-bold uppercase tracking-wide text-[#9ccc65] transition-colors duration-300">
         {label}
       </div>
-      <div className="flex items-end gap-1 mt-2">
+      <div className="relative z-10 flex items-end gap-1 mt-2">
         <span className="text-3xl md:text-4xl font-bold leading-none">
           {value}
         </span>
@@ -114,7 +126,7 @@ function StatCard({
           <TrendingDown size={20} className="text-white" />
         )}
       </div>
-      <div className="flex items-center gap-2 mt-2">
+      <div className="relative z-10 flex items-center gap-2 mt-2">
         <span
           className={`text-xs font-semibold px-2 py-0.5 rounded-full transition-all duration-300 border ${
             trend === "up"
@@ -139,14 +151,20 @@ function StatCard({
   );
 }
 
-function StatusBadge({ status }: { status: "Live" | "Upcoming" | "Completed" }) {
+function StatusBadge({
+  status,
+}: {
+  status: "Live" | "Upcoming" | "Completed";
+}) {
   const styles = {
     Live: "bg-[#fff3e0] text-[#e65100]",
     Upcoming: "bg-[#e8f5e9] text-[#2e7d32]",
     Completed: "bg-[#e3f2fd] text-[#1565c0]",
   };
   return (
-    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${styles[status]}`}>
+    <span
+      className={`text-xs font-semibold px-2.5 py-1 rounded-full ${styles[status]}`}
+    >
       {status}
     </span>
   );
@@ -172,7 +190,9 @@ export default function ClubAdminDashboardPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`/api/club-admin/dashboard?academicYear=${academicYear}`);
+      const res = await fetch(
+        `/api/club-admin/dashboard?academicYear=${academicYear}`,
+      );
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
         throw new Error(errJson.error || "Failed to load dashboard data");
@@ -227,7 +247,8 @@ export default function ClubAdminDashboardPage() {
     );
   }
 
-  const { stats, registrationChart, revenueChart, eventsStatus, recentEvents } = data;
+  const { stats, registrationChart, revenueChart, eventsStatus, recentEvents } =
+    data;
 
   const statsCards = [
     {
@@ -246,7 +267,11 @@ export default function ClubAdminDashboardPage() {
     },
     {
       label: "Total Events",
-      value: (eventsStatus.live + eventsStatus.draft + eventsStatus.completed).toLocaleString(),
+      value: (
+        eventsStatus.live +
+        eventsStatus.draft +
+        eventsStatus.completed
+      ).toLocaleString(),
       trend: "up" as const,
       change: `${eventsStatus.draft} Drafts`,
       since: "currently managed",
@@ -262,11 +287,15 @@ export default function ClubAdminDashboardPage() {
 
   /* ── Line chart (Total Registrations) ── */
   const lineChartData = {
-    labels: registrationChart.labels.length > 0 ? registrationChart.labels : ["No Data"],
+    labels:
+      registrationChart.labels.length > 0
+        ? registrationChart.labels
+        : ["No Data"],
     datasets: [
       {
         label: "Registrations",
-        data: registrationChart.values.length > 0 ? registrationChart.values : [0],
+        data:
+          registrationChart.values.length > 0 ? registrationChart.values : [0],
         borderColor: "#7CB342",
         backgroundColor: "rgba(124,179,66,0.08)",
         tension: 0.4,
@@ -278,7 +307,10 @@ export default function ClubAdminDashboardPage() {
     ],
   };
 
-  const maxRegValue = Math.max(...(registrationChart.values.length ? registrationChart.values : [5]), 5);
+  const maxRegValue = Math.max(
+    ...(registrationChart.values.length ? registrationChart.values : [5]),
+    5,
+  );
   const lineChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -302,11 +334,7 @@ export default function ClubAdminDashboardPage() {
     labels: ["Live Events", "Draft Events", "Completed Events"],
     datasets: [
       {
-        data: [
-          eventsStatus.live,
-          eventsStatus.draft,
-          eventsStatus.completed,
-        ],
+        data: [eventsStatus.live, eventsStatus.draft, eventsStatus.completed],
         backgroundColor: ["#2e3a1f", "#7CB342", "#a5d610"],
         borderWidth: 0,
         cutout: "65%",
@@ -323,7 +351,10 @@ export default function ClubAdminDashboardPage() {
   };
 
   /* ── Bar chart (Total Revenue) ── */
-  const maxRevenueVal = Math.max(...(revenueChart.values.length ? revenueChart.values : [1]), 1);
+  const maxRevenueVal = Math.max(
+    ...(revenueChart.values.length ? revenueChart.values : [1]),
+    1,
+  );
   const barChartData = {
     labels: revenueChart.labels.length > 0 ? revenueChart.labels : ["Mon"],
     datasets: [
@@ -331,9 +362,7 @@ export default function ClubAdminDashboardPage() {
         label: "Revenue",
         data: revenueChart.values.length > 0 ? revenueChart.values : [0],
         backgroundColor: revenueChart.values.map((v) =>
-          v === maxRevenueVal && v > 0
-            ? "#7CB342"
-            : "#c5e1a5",
+          v === maxRevenueVal && v > 0 ? "#7CB342" : "#c5e1a5",
         ),
         borderRadius: 6,
         barThickness: 28,
@@ -366,7 +395,10 @@ export default function ClubAdminDashboardPage() {
   const paginatedEvents = filteredEvents.slice(startIdx, startIdx + pageSize);
 
   const avgReg = registrationChart.values.length
-    ? Math.round(registrationChart.values.reduce((a, b) => a + b, 0) / registrationChart.values.length)
+    ? Math.round(
+        registrationChart.values.reduce((a, b) => a + b, 0) /
+          registrationChart.values.length,
+      )
     : 0;
 
   return (
@@ -398,8 +430,7 @@ export default function ClubAdminDashboardPage() {
                     {avgReg}
                   </span>
                   <span className="text-xs font-semibold text-[#7CB342] bg-[#e8f5e9] px-2 py-0.5 rounded-full inline-flex items-center gap-0.5">
-                    <TrendingUp size={10} />
-                    +{stats.registrationsChange}
+                    <TrendingUp size={10} />+{stats.registrationsChange}
                   </span>
                 </div>
               </div>
@@ -454,9 +485,18 @@ export default function ClubAdminDashboardPage() {
           </div>
           {/* Legend */}
           <div className="flex flex-col gap-2 mt-4">
-            <LegendItem color="#2e3a1f" label={`Live Events (${eventsStatus.live})`} />
-            <LegendItem color="#7CB342" label={`Draft Events (${eventsStatus.draft})`} />
-            <LegendItem color="#a5d610" label={`Completed Events (${eventsStatus.completed})`} />
+            <LegendItem
+              color="#2e3a1f"
+              label={`Live Events (${eventsStatus.live})`}
+            />
+            <LegendItem
+              color="#7CB342"
+              label={`Draft Events (${eventsStatus.draft})`}
+            />
+            <LegendItem
+              color="#a5d610"
+              label={`Completed Events (${eventsStatus.completed})`}
+            />
           </div>
         </div>
       </div>
@@ -492,31 +532,22 @@ export default function ClubAdminDashboardPage() {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-[#eaeaea] text-[#999] text-xs">
-                  <th className="py-2 pr-3 font-medium">
-                    Event Name
-                  </th>
-                  <th className="py-2 pr-3 font-medium">
-                    Teams / Regs
-                  </th>
-                  <th className="py-2 pr-3 font-medium">
-                    Attended
-                  </th>
-                  <th className="py-2 pr-3 font-medium">
-                    Status
-                  </th>
-                  <th className="py-2 pr-3 font-medium">
-                    Event Date
-                  </th>
-                  <th className="py-2 pr-3 font-medium">
-                    Mode
-                  </th>
+                  <th className="py-2 pr-3 font-medium">Event Name</th>
+                  <th className="py-2 pr-3 font-medium">Teams / Regs</th>
+                  <th className="py-2 pr-3 font-medium">Attended</th>
+                  <th className="py-2 pr-3 font-medium">Status</th>
+                  <th className="py-2 pr-3 font-medium">Event Date</th>
+                  <th className="py-2 pr-3 font-medium">Mode</th>
                   <th className="py-2 font-medium w-10"></th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedEvents.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-6 text-center text-xs text-[#999]">
+                    <td
+                      colSpan={7}
+                      className="py-6 text-center text-xs text-[#999]"
+                    >
                       No events found.
                     </td>
                   </tr>
@@ -553,7 +584,10 @@ export default function ClubAdminDashboardPage() {
                       <td className="py-3 pr-3 text-[#555] text-xs">
                         {event.mode}
                       </td>
-                      <td className="py-3 relative" ref={openMenuId === event.id ? menuRef : null}>
+                      <td
+                        className="py-3 relative"
+                        ref={openMenuId === event.id ? menuRef : null}
+                      >
                         <button
                           onClick={() =>
                             setOpenMenuId(
@@ -600,7 +634,8 @@ export default function ClubAdminDashboardPage() {
                 <option value={25}>25</option>
               </select>
               <span>
-                {startIdx + 1}-{Math.min(startIdx + pageSize, totalFiltered)} of {totalFiltered}
+                {startIdx + 1}-{Math.min(startIdx + pageSize, totalFiltered)} of{" "}
+                {totalFiltered}
               </span>
               <div className="flex gap-1">
                 <button
@@ -612,7 +647,9 @@ export default function ClubAdminDashboardPage() {
                 </button>
                 <button
                   disabled={currentPage >= totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
                   className="w-6 h-6 flex items-center justify-center rounded border border-[#e0e0e0] hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-transparent"
                 >
                   <ChevronRight size={14} />
@@ -647,10 +684,7 @@ function LegendItem({ color, label }: { color: string; label: string }) {
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs text-[#555] flex-1">{label}</span>
-      <div
-        className="w-3 h-3 rounded-sm"
-        style={{ backgroundColor: color }}
-      />
+      <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: color }} />
     </div>
   );
 }
@@ -674,4 +708,3 @@ function DropdownItem({
     </button>
   );
 }
-
