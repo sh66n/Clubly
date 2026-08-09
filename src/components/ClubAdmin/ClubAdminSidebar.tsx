@@ -105,50 +105,66 @@ export default function ClubAdminSidebar({
 
         {/* ── Logo ── */}
         <div
-          className={`shrink-0 ${
-            isCollapsed ? "md:px-3 md:py-6 px-5 py-6 flex justify-center" : "px-5 py-6"
+          className={`shrink-0 border-b border-[#2a3a10] relative overflow-hidden ${
+            isCollapsed ? "px-2 py-5 flex justify-center" : "px-5 py-5 flex justify-center"
           }`}
+          style={{
+            background: `
+              radial-gradient(circle 95px at 0% 0%, rgba(220, 252, 162, 0.4) 0%, transparent 100%),
+              radial-gradient(circle 118px at 100% 100%, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 50%, transparent 100%),
+              #0d2800
+            `
+          }}
         >
+          {/* Grainy Noise Overlay */}
+          <div 
+            className="absolute inset-0 pointer-events-none opacity-[0.07] mix-blend-overlay"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`
+            }}
+          />
           <Link
             href="/club-admin/dashboard"
             onClick={() => onMobileClose && onMobileClose()}
-            className="flex items-center gap-2.5"
+            className="flex items-center justify-center gap-2"
           >
             {isCollapsed ? (
               <>
                 <Image
-                  src="/images/logo-without-text-club-admin.png"
+                  src="/images/svg-logo.svg"
                   alt="Clubly"
                   width={36}
-                  height={36}
+                  height={31}
                   priority
                   className="hidden md:block object-contain"
                 />
                 <Image
-                  src="/images/logo-club-admin.png"
+                  src="/images/svg-logo.svg"
                   alt="Clubly"
-                  width={140}
-                  height={40}
+                  width={36}
+                  height={31}
                   priority
                   className="md:hidden object-contain"
                 />
               </>
             ) : (
-              <Image
-                src="/images/logo-club-admin.png"
-                alt="Clubly"
-                width={140}
-                height={40}
-                priority
-                placeholder="empty"
-                className="object-contain"
-              />
+              <>
+                <Image
+                  src="/images/svg-logo.svg"
+                  alt="Clubly"
+                  width={42}
+                  height={36}
+                  priority
+                  className="object-contain"
+                />
+                <span className="text-2xl font-extrabold font-jakarta tracking-wide text-white">Clubly</span>
+              </>
             )}
           </Link>
         </div>
 
         {/* ── PRIMARY section ── */}
-        <div className={`flex-1 ${isCollapsed ? "md:px-2 px-4" : "px-4"}`}>
+        <div className={`flex-1 mt-6 ${isCollapsed ? "md:px-2 px-4" : "px-4"}`}>
           <div
             className={`text-[#8a9a6c] text-[11px] font-bold tracking-[0.15em] uppercase mb-3 ${
               isCollapsed ? "hidden md:hidden" : "block"
