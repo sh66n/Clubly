@@ -11,12 +11,12 @@ export default async function layout({
   const points = session?.user?.points ?? 0;
 
   return (
-    <div className="flex">
+    <div className="flex min-h-screen w-full max-w-full overflow-x-hidden">
       {/* Sidebar */}
       <Sidebar isLoggedIn={session ? true : false} points={points} user={session?.user} />
       <MobileNavbar user={session?.user} />
       {/* Main content */}
-      <div className="flex-1 pl-2 pr-2 pb-20 md:pb-0 md:ml-[var(--sidebar-width,16rem)] transition-all duration-300">
+      <div className="flex-1 min-w-0 w-full pl-2 pr-2 pb-20 md:pb-0 md:ml-[var(--sidebar-width,16rem)] transition-all duration-300">
         {children}
       </div>
     </div>

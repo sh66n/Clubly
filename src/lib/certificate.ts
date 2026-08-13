@@ -4,7 +4,7 @@ export const CERTIFICATE_MAX_TOKENS = 10;
 export const CERTIFICATE_VARIABLE_KEYS = ["$name", "$year", "$rank"] as const;
 export type CertificateVariableKey = (typeof CERTIFICATE_VARIABLE_KEYS)[number];
 
-export const CERTIFICATE_FONT_KEYS = ["helvetica", "times", "courier"] as const;
+export const CERTIFICATE_FONT_KEYS = ["helvetica", "times", "courier", "georgia", "arial", "verdana", "impact", "trebuchet"] as const;
 export type CertificateFontKey = (typeof CERTIFICATE_FONT_KEYS)[number];
 
 export type CertificateTextAlign = "left" | "center" | "right";
@@ -73,6 +73,11 @@ export const CERTIFICATE_FONT_OPTIONS: Array<{
   { value: "helvetica", label: "Helvetica" },
   { value: "times", label: "Times" },
   { value: "courier", label: "Courier" },
+  { value: "georgia", label: "Georgia" },
+  { value: "arial", label: "Arial" },
+  { value: "verdana", label: "Verdana" },
+  { value: "impact", label: "Impact" },
+  { value: "trebuchet", label: "Trebuchet MS" },
 ];
 
 const clamp = (value: number, min: number, max: number) =>

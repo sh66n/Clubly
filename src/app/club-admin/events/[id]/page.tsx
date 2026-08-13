@@ -34,9 +34,13 @@ import {
   ChevronRight,
   QrCode,
   TrendingUp,
+  Receipt,
+  FileText
 } from "lucide-react";
 import { toast } from "sonner";
 import ClublyLoader from "@/components/ClubAdmin/ClublyLoader";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 type EventStatus = "draft" | "live" | "completed";
 type EventType = "team" | "individual";
@@ -156,6 +160,8 @@ export default function EventDetailsPage() {
   const [timeFilter, setTimeFilter] = useState("All Time");
   const [timeFilterOpen, setTimeFilterOpen] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
+  const [downloadingBill, setDownloadingBill] = useState(false);
+  const billRef = useRef<HTMLDivElement>(null);
 
   // Expand states for team events
   const [expandedRegs, setExpandedRegs] = useState<Record<string, boolean>>({});
@@ -225,6 +231,129 @@ export default function EventDetailsPage() {
       );
     } catch (err: any) {
       toast.error("Failed to update attendance");
+    }
+  };
+
+  const downloadBillPDF = async () => {
+    if (!billRef.current || !event) return;
+    try {
+      setDownloadingBill(true);
+      toast.info("Generating bill, please wait...");
+      
+      // Create a temporary iframe to isolate the bill from main document styles (which contains Tailwind v4's oklch/lab colors that crash html2canvas)
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'absolute';
+      iframe.style.width = '800px';
+      iframe.style.height = '1000px';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '-9999px';
+      document.body.appendChild(iframe);
+      
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) throw new Error("Could not access iframe document");
+
+      // Render custom inline classes matching our utility classes
+      iframeDoc.open();
+      iframeDoc.write(`
+        <html>
+          <head>
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                color: #1e293b;
+                background: #ffffff;
+                margin: 0;
+                padding: 64px;
+              }
+              .flex { display: flex; }
+              .justify-between { justify-content: space-between; }
+              .items-start { align-items: flex-start; }
+              .items-center { align-items: center; }
+              .gap-3 { gap: 12px; }
+              .gap-8 { gap: 32px; }
+              .border-b { border-bottom: 1px solid #e2e8f0; }
+              .border-slate-200 { border-color: #e2e8f0; }
+              .border-slate-100 { border-color: #f1f5f9; }
+              .pb-10 { padding-bottom: 40px; }
+              .mb-1 { margin-bottom: 4px; }
+              .mb-2 { margin-bottom: 8px; }
+              .mb-8 { margin-bottom: 32px; }
+              .mb-10 { margin-bottom: 40px; }
+              .mb-12 { margin-bottom: 48px; }
+              .mb-16 { margin-bottom: 64px; }
+              .text-xl { font-size: 20px; }
+              .text-lg { font-size: 18px; }
+              .text-sm { font-size: 14px; }
+              .text-xs { font-size: 12px; }
+              .text-[11px] { font-size: 11px; }
+              .font-bold { font-weight: 700; }
+              .font-semibold { font-weight: 600; }
+              .font-medium { font-weight: 500; }
+              .tracking-widest { letter-spacing: 0.1em; }
+              .tracking-wider { letter-spacing: 0.05em; }
+              .uppercase { text-transform: uppercase; }
+              .text-slate-900 { color: #0f172a; }
+              .text-slate-800 { color: #1e293b; }
+              .text-slate-600 { color: #475569; }
+              .text-slate-500 { color: #64748b; }
+              .text-slate-450 { color: #94a3b8; }
+              .text-slate-400 { color: #94a3b8; }
+              .text-rose-600 { color: #dc2626; }
+              .text-right { text-align: right; }
+              .text-center { text-align: center; }
+              .grid { display: grid; }
+              .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+              .mt-1 { margin-top: 4px; }
+              .mt-0.5 { margin-top: 2px; }
+              .pt-8 { padding-top: 32px; }
+              .capitalize { text-transform: capitalize; }
+              .w-full { width: 100%; }
+              .w-80 { width: 320px; }
+              .border-collapse { border-collapse: collapse; }
+              .divide-y > * + * { border-top: 1px solid #f1f5f9; }
+              .py-3 { padding-top: 12px; padding-bottom: 12px; }
+              .py-4 { padding-top: 16px; padding-bottom: 16px; }
+              .py-2 { padding-top: 8px; padding-bottom: 8px; }
+              .pb-3 { padding-bottom: 12px; }
+              .border-b.border-slate-900 { border-bottom: 1px solid #0f172a; }
+            </style>
+          </head>
+          <body>
+            <div style="width: 794px;">
+              ${billRef.current.innerHTML}
+            </div>
+          </body>
+        </html>
+      `);
+      iframeDoc.close();
+
+      // Wait briefly for rendering to complete in the iframe context
+      await new Promise((resolve) => setTimeout(resolve, 250));
+
+      const canvas = await html2canvas(iframeDoc.body, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [canvas.width / 2, canvas.height / 2]
+      });
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
+      pdf.save(`${event.name.replace(/\s+/g, '_')}_Bill.pdf`);
+      
+      document.body.removeChild(iframe);
+      toast.success("Bill downloaded successfully");
+    } catch (error: any) {
+      console.error("PDF Generation error details:", error);
+      toast.error(`Failed to generate bill: ${error?.message || error}`);
+    } finally {
+      setDownloadingBill(false);
     }
   };
 
@@ -673,6 +802,14 @@ export default function EventDetailsPage() {
           
           {/* Action buttons */}
           <div className="flex items-center gap-3 shrink-0 flex-wrap pt-2">
+            <button
+              onClick={downloadBillPDF}
+              disabled={downloadingBill}
+              className="px-4 py-2 text-sm font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-xl transition-all shadow-sm flex items-center gap-2"
+            >
+              {downloadingBill ? <Loader2 size={14} className="animate-spin" /> : <Receipt size={14} />}
+              Download Bill
+            </button>
             <button
               onClick={() => setEditDrawerOpen(true)}
               className="px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-all shadow-sm flex items-center gap-2"
@@ -1191,6 +1328,142 @@ export default function EventDetailsPage() {
           onSuccess={fetchDetails}
         />
       )}
+
+      {/* ── Hidden Bill – renders off-screen, cloned into iframe for PDF ── */}
+      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+        <div ref={billRef} style={{
+          width: '794px',
+          background: '#ffffff',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+          color: '#0f172a',
+          fontSize: '13px',
+          lineHeight: '1.6',
+        }}>
+          {/* Main content */}
+          <div style={{ padding: '52px 60px 60px' }}>
+
+            {/* ── HEADER ── */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '52px' }}>
+              {/* Brand */}
+              <div>
+                <div style={{ fontSize: '20px', fontWeight: '850', color: '#0f172a', letterSpacing: '-0.3px', lineHeight: '1.1' }}>Clubly</div>
+                <div style={{ fontSize: '10px', fontWeight: '600', color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: '6px' }}>Event Management Platform</div>
+              </div>
+
+              {/* Invoice meta */}
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '22px', fontWeight: '850', color: '#0f172a', letterSpacing: '-0.5px', marginBottom: '6px' }}>Settlement Statement</div>
+                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>
+                  <span style={{ color: '#94a3b8' }}>Ref. </span>#ST-{event._id.slice(-6).toUpperCase()}
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500', marginTop: '2px' }}>
+                  <span style={{ color: '#94a3b8' }}>Issued </span>{new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
+                </div>
+              </div>
+            </div>
+
+            {/* ── DIVIDER ── */}
+            <div style={{ height: '1px', background: '#e2e8f0', marginBottom: '40px' }} />
+
+            {/* ── EVENT DETAILS BAND ── */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '44px' }}>
+              <div>
+                <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Event</div>
+                <div style={{ fontSize: '20px', fontWeight: '850', color: '#0f172a', letterSpacing: '-0.3px', marginBottom: '5px' }}>{event.name}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', color: '#64748b', fontWeight: '500' }}>
+                  <span>{new Date(event.date).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                  <span style={{ color: '#cbd5e1' }}>·</span>
+                  <span style={{ textTransform: 'capitalize' }}>{event.eventType} Format</span>
+                  <span style={{ color: '#cbd5e1' }}>·</span>
+                  <span>{registrations.length} Registrations</span>
+                </div>
+              </div>
+              <div style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '10px',
+                padding: '12px 20px 18px',
+                textAlign: 'center',
+                minWidth: '120px',
+              }}>
+                <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px' }}>Ticket Price</div>
+                <div style={{ fontSize: '22px', fontWeight: '850', color: '#0f172a', letterSpacing: '-0.5px' }}>₹{event.registrationFee.toLocaleString()}</div>
+              </div>
+            </div>
+
+            {/* ── LEDGER TABLE ── */}
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '0' }}>
+              <thead>
+                <tr style={{ borderBottom: '1.5px solid #0f172a' }}>
+                  <th style={{ padding: '0 0 12px 0', textAlign: 'left', fontSize: '10px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Description</th>
+                  <th style={{ padding: '0 0 12px 0', textAlign: 'center', fontSize: '10px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Qty</th>
+                  <th style={{ padding: '0 0 12px 0', textAlign: 'center', fontSize: '10px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Unit Price</th>
+                  <th style={{ padding: '0 0 12px 0', textAlign: 'right', fontSize: '10px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '18px 0' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a', marginBottom: '3px' }}>Event Registration Tickets</div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>Paid registrations via Clubly portal</div>
+                  </td>
+                  <td style={{ padding: '18px 0', textAlign: 'center', fontSize: '13px', fontWeight: '600', color: '#334155' }}>{registrations.length}</td>
+                  <td style={{ padding: '18px 0', textAlign: 'center', fontSize: '13px', fontWeight: '600', color: '#334155' }}>₹{event.registrationFee.toLocaleString()}</td>
+                  <td style={{ padding: '18px 0', textAlign: 'right', fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>₹{(event.registrationFee * registrations.length).toLocaleString()}</td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '18px 0' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a', marginBottom: '3px' }}>Razorpay Payment Gateway Fee</div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>Standard platform processing fee</div>
+                  </td>
+                  <td style={{ padding: '18px 0', textAlign: 'center', fontSize: '13px', fontWeight: '600', color: '#334155' }}>—</td>
+                  <td style={{ padding: '18px 0', textAlign: 'center', fontSize: '13px', fontWeight: '600', color: '#334155' }}>2.0%</td>
+                  <td style={{ padding: '18px 0', textAlign: 'right', fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>− ₹{Math.round(event.registrationFee * registrations.length * 0.02).toLocaleString()}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* ── TOTAL BLOCK ── */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '32px', marginBottom: '52px' }}>
+              <div style={{ width: '300px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748b', fontWeight: '500', padding: '7px 0', borderBottom: '1px solid #f1f5f9' }}>
+                  <span>Gross Revenue</span>
+                  <span>₹{(event.registrationFee * registrations.length).toLocaleString()}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748b', fontWeight: '500', padding: '7px 0' }}>
+                  <span>Gateway Fee (2%)</span>
+                  <span>− ₹{Math.round(event.registrationFee * registrations.length * 0.02).toLocaleString()}</span>
+                </div>
+                {/* Net payout highlight - double top border for clean alignment */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderTop: '2px solid #0f172a',
+                  paddingTop: '16px',
+                  marginTop: '10px',
+                }}>
+                  <div>
+                    <div style={{ fontSize: '11px', fontWeight: '700', color: '#0f172a', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Net Settlement</div>
+                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500', marginTop: '2px' }}>After all deductions</div>
+                  </div>
+                  <div style={{ fontSize: '24px', fontWeight: '850', color: '#0f172a', letterSpacing: '-0.5px' }}>
+                    ₹{Math.round(event.registrationFee * registrations.length * 0.98).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── DIVIDER ── */}
+            <div style={{ height: '1px', background: '#e2e8f0', marginBottom: '24px' }} />
+
+            {/* ── FOOTER ── */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+              <span style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: '500' }}>Computer generated. No signature required.</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

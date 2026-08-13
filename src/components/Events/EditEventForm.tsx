@@ -1,7 +1,7 @@
 "use client";
 
 import { Session } from "next-auth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Input from "../Input";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -12,11 +12,7 @@ import CustomQuestionsEditor, {
   CustomQuestion,
   normalizeCustomQuestions,
 } from "./CustomQuestionsEditor";
-import CertificateLayoutEditor from "./CertificateLayoutEditor";
-import {
-  convertLegacyNameConfigToLayout,
-  getDefaultCertificateLayout,
-} from "@/lib/certificate";
+
 
 interface EditEventFormProps {
   user: Session["user"];
@@ -42,18 +38,27 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
       options: question.options ?? [],
     })),
   );
-  const [certificateTemplateFile, setCertificateTemplateFile] =
-    useState<File | null>(null);
-  const [certificateTemplatePreview, setCertificateTemplatePreview] = useState<
-    string | null
-  >(event.certificateTemplate?.url ?? null);
-  const [removeCertificateTemplate, setRemoveCertificateTemplate] =
-    useState(false);
-  const [certificateLayout, setCertificateLayout] = useState(
-    event.certificateTemplate?.layout ??
-      convertLegacyNameConfigToLayout(event.certificateTemplate?.nameConfig) ??
-      getDefaultCertificateLayout(),
+  const [certificates, setCertificates] = useState<any[]>([]);
+  const [selectedCertificateId, setSelectedCertificateId] = useState<string>(
+    event.certificate ? String(event.certificate) : "",
   );
+  const [providesCertificate, setProvidesCertificate] = useState(event.providesCertificate);
+
+  // Fetch certificates on mount
+  useEffect(() => {
+    async function fetchCertificates() {
+      try {
+        const certRes = await fetch(`/api/club-admin/certificates`);
+        if (certRes.ok) {
+          const certData = await certRes.json();
+          setCertificates(certData);
+        }
+      } catch (err) {
+        console.error("Failed to fetch certificates", err);
+      }
+    }
+    fetchCertificates();
+  }, []);
 
   const d = new Date(event.date);
 
@@ -94,14 +99,9 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
     if (file) {
       formData.append("image", file);
     }
-    if (certificateTemplateFile) {
-      formData.set("certificateTemplateImage", certificateTemplateFile);
+    if (providesCertificate && selectedCertificateId) {
+      formData.set("certificateId", selectedCertificateId);
     }
-    formData.set("certificateLayout", JSON.stringify(certificateLayout));
-    formData.set(
-      "removeCertificateTemplate",
-      String(removeCertificateTemplate),
-    );
     formData.set(
       "customQuestions",
       JSON.stringify(normalizeCustomQuestions(customQuestions)),
@@ -279,7 +279,8 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
           <label className="text-sm text-gray-300">Provides Certificate?</label>
           <select
             name="providesCertificate"
-            defaultValue={String(event.providesCertificate)}
+            value={String(providesCertificate)}
+            onChange={(e) => setProvidesCertificate(e.target.value === "true")}
             className="max-w-xs rounded-xl border border-gray-700 px-4 py-2 bg-gray-800"
           >
             <option value="true">Yes</option>
@@ -287,60 +288,32 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
           </select>
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-sm text-gray-300">Certificate Template</label>
-          {certificateTemplatePreview && !removeCertificateTemplate && (
-            <img
-              src={certificateTemplatePreview}
-              alt="Certificate template"
-              className="h-36 w-full object-cover rounded-xl border border-gray-700"
-            />
-          )}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const picked = e.target.files?.[0] || null;
-              if (!picked) {
-                setCertificateTemplateFile(null);
-                return;
-              }
-              if (!picked.type.startsWith("image/")) {
-                toast.error("Certificate template must be an image");
-                e.target.value = "";
-                return;
-              }
-              if (picked.size > 4 * 1024 * 1024) {
-                toast.error("Certificate template must be less than 4MB");
-                e.target.value = "";
-                return;
-              }
-              setCertificateTemplateFile(picked);
-              setCertificateTemplatePreview(URL.createObjectURL(picked));
-              setRemoveCertificateTemplate(false);
-            }}
-            className="rounded-xl border border-gray-700 p-3 bg-gray-800"
-          />
-          <label className="flex items-center gap-2 text-sm text-gray-400">
-            <input
-              type="checkbox"
-              checked={removeCertificateTemplate}
-              onChange={(e) => setRemoveCertificateTemplate(e.target.checked)}
-            />
-            Remove existing template
-          </label>
-        </div>
+        {providesCertificate && (
+          <div className="flex flex-col gap-1">
+            <label className="text-sm text-gray-300">Select Certificate Template</label>
+            {certificates.length === 0 ? (
+              <div className="p-4 rounded-xl border border-dashed border-gray-700 text-center text-sm text-gray-400">
+                You don't have any certificates yet.
+              </div>
+            ) : (
+              <select
+                name="certificateId"
+                value={selectedCertificateId}
+                onChange={(e) => setSelectedCertificateId(e.target.value)}
+                className="max-w-xs rounded-xl border border-gray-700 px-4 py-2 bg-gray-800"
+              >
+                <option value="" disabled>Select a certificate...</option>
+                {certificates.map((cert) => (
+                  <option key={cert._id} value={cert._id}>
+                    {cert.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
 
-        <div className="flex flex-col gap-1">
-          <label className="text-sm text-gray-300">Certificate Variables</label>
-          <CertificateLayoutEditor
-            templatePreviewUrl={
-              removeCertificateTemplate ? null : certificateTemplatePreview
-            }
-            layout={certificateLayout}
-            onChange={setCertificateLayout}
-          />
-        </div>
+
 
         {/* Registration Fee */}
         <div className="flex flex-col gap-1">

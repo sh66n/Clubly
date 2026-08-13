@@ -27,8 +27,6 @@ import CustomQuestionsEditor, {
   CustomQuestion,
   normalizeCustomQuestions,
 } from "./CustomQuestionsEditor";
-import CertificateLayoutEditor from "./CertificateLayoutEditor";
-import { getDefaultCertificateLayout } from "@/lib/certificate";
 
 interface NewEventFormProps {
   user: Session["user"];
@@ -62,14 +60,8 @@ export default function NewEventForm({ user }: NewEventFormProps) {
   const [selectedSuperEvent, setSelectedSuperEvent] = useState("");
   const [providesCertificate, setProvidesCertificate] = useState(true);
   const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
-  const [certificateTemplateFile, setCertificateTemplateFile] =
-    useState<File | null>(null);
-  const [certificateTemplatePreview, setCertificateTemplatePreview] = useState<
-    string | null
-  >(null);
-  const [certificateLayout, setCertificateLayout] = useState(
-    getDefaultCertificateLayout(),
-  );
+  const [certificates, setCertificates] = useState<any[]>([]);
+  const [selectedCertificateId, setSelectedCertificateId] = useState("");
 
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
@@ -83,16 +75,23 @@ export default function NewEventForm({ user }: NewEventFormProps) {
   const [teamMax, setTeamMax] = useState("");
 
   useEffect(() => {
-    async function fetchSuperEvents() {
+    async function fetchData() {
       try {
         const res = await fetch(`/api/superevents?club=${user.adminClub}`);
         const data = await res.json();
         setSuperEvents(data);
+
+        const certRes = await fetch(`/api/club-admin/certificates`);
+        if (certRes.ok) {
+          const certData = await certRes.json();
+          setCertificates(certData);
+          if (certData.length > 0) setSelectedCertificateId(certData[0]._id);
+        }
       } catch (err) {
-        console.error("Failed to fetch super events", err);
+        console.error("Failed to fetch data", err);
       }
     }
-    fetchSuperEvents();
+    fetchData();
   }, [user.adminClub]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,25 +106,7 @@ export default function NewEventForm({ user }: NewEventFormProps) {
     setPreviewUrl(URL.createObjectURL(picked));
   };
 
-  const handleCertificateTemplateChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const picked = e.target.files?.[0];
-    if (!picked) return;
-    if (!picked.type.startsWith("image/")) {
-      toast.error("Certificate template must be an image");
-      e.target.value = "";
-      return;
-    }
-    if (picked.size > 4 * 1024 * 1024) {
-      toast.error("Certificate template must be less than 4MB");
-      e.target.value = "";
-      return;
-    }
 
-    setCertificateTemplateFile(picked);
-    setCertificateTemplatePreview(URL.createObjectURL(picked));
-  };
 
   // Step validation before advancing
   const canAdvance = () => {
@@ -163,10 +144,9 @@ export default function NewEventForm({ user }: NewEventFormProps) {
     if (maxReg) formData.set("maxRegistrations", maxReg);
     if (selectedSuperEvent) formData.set("superEvent", selectedSuperEvent);
     if (file) formData.set("image", file);
-    if (providesCertificate && certificateTemplateFile) {
-      formData.set("certificateTemplateImage", certificateTemplateFile);
+    if (providesCertificate && selectedCertificateId) {
+      formData.set("certificateId", selectedCertificateId);
     }
-    formData.set("certificateLayout", JSON.stringify(certificateLayout));
     formData.set(
       "customQuestions",
       JSON.stringify(normalizeCustomQuestions(customQuestions)),
@@ -609,61 +589,32 @@ export default function NewEventForm({ user }: NewEventFormProps) {
               </Field>
 
               {providesCertificate && (
-                <>
-                  <Field
-                    label="Certificate Template"
-                    icon={<ImageIcon className="w-4 h-4" />}
-                  >
-                    <div
-                      onClick={() =>
-                        certificateTemplateInputRef.current?.click()
-                      }
-                      className={`border-2 border-dashed rounded-xl p-5 flex flex-col items-center gap-2 cursor-pointer transition-all
-                    ${certificateTemplatePreview ? "border-blue-500/40 bg-blue-500/5" : "border-gray-700 hover:border-gray-500 bg-gray-800/20"}`}
-                    >
-                      {certificateTemplatePreview ? (
-                        <>
-                          <img
-                            src={certificateTemplatePreview}
-                            alt="Certificate Template Preview"
-                            className="w-full h-28 object-cover rounded-lg"
-                          />
-                          <p className="text-xs text-blue-400">
-                            {certificateTemplateFile?.name}
-                          </p>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-6 h-6 text-gray-500" />
-                          <p className="text-sm text-gray-400">
-                            Click to upload certificate template
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            PNG, JPG, WEBP · Max 4MB
-                          </p>
-                        </>
-                      )}
+                <Field
+                  label="Select Certificate Template"
+                  icon={<ImageIcon className="w-4 h-4" />}
+                >
+                  {certificates.length === 0 ? (
+                    <div className="p-4 rounded-xl border border-dashed border-gray-700 text-center">
+                      <p className="text-sm text-gray-400 mb-2">You don't have any certificates yet.</p>
+                      <a href="/club-admin/certificates/new" className="text-blue-400 text-sm hover:underline">
+                        Create a certificate first
+                      </a>
                     </div>
-                    <input
-                      ref={certificateTemplateInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleCertificateTemplateChange}
-                      className="hidden"
-                    />
-                  </Field>
-
-                  <Field
-                    label="Certificate Variables"
-                    icon={<Tag className="w-4 h-4" />}
-                  >
-                    <CertificateLayoutEditor
-                      templatePreviewUrl={certificateTemplatePreview}
-                      layout={certificateLayout}
-                      onChange={setCertificateLayout}
-                    />
-                  </Field>
-                </>
+                  ) : (
+                    <select
+                      value={selectedCertificateId}
+                      onChange={(e) => setSelectedCertificateId(e.target.value)}
+                      className={inputCls}
+                    >
+                      <option value="" disabled>Select a certificate...</option>
+                      {certificates.map((cert) => (
+                        <option key={cert._id} value={cert._id}>
+                          {cert.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </Field>
               )}
 
               <CustomQuestionsEditor
@@ -700,7 +651,9 @@ export default function NewEventForm({ user }: NewEventFormProps) {
                   <SummaryRow
                     label="Template"
                     value={
-                      certificateTemplateFile ? "Uploaded" : "Not uploaded"
+                      selectedCertificateId
+                        ? certificates.find((c) => c._id === selectedCertificateId)?.name || "Selected"
+                        : "Not selected"
                     }
                   />
                 )}

@@ -33,6 +33,11 @@ const FONT_STACK: Record<CertificateTextToken["fontFamily"], string> = {
   helvetica: "Helvetica, Arial, sans-serif",
   times: "'Times New Roman', Times, serif",
   courier: "'Courier New', Courier, monospace",
+  georgia: "Georgia, serif",
+  arial: "Arial, sans-serif",
+  verdana: "Verdana, sans-serif",
+  impact: "Impact, sans-serif",
+  trebuchet: "'Trebuchet MS', sans-serif",
 };
 
 const createToken = (
@@ -221,164 +226,186 @@ export default function CertificateLayoutEditor({
   const usedVariables = new Set(layout.tokens.map((token) => token.variable));
 
   return (
-    <div className="rounded-xl border border-gray-700 bg-gray-900/70 overflow-hidden">
-      <div className="border-b border-gray-700 p-3 bg-gray-950/80">
-        <div className="flex flex-wrap gap-2">
-          {CERTIFICATE_VARIABLE_KEYS.map((variable) => (
-            <button
-              key={variable}
-              type="button"
-              disabled={usedVariables.has(variable)}
-              onClick={() => {
-                if (usedVariables.has(variable)) return;
-                const token = createToken(variable);
-                onChange({ tokens: [...layout.tokens, token] });
-                setSelectedTokenId(token.id);
-              }}
-              className="px-3 py-1.5 rounded-lg border border-gray-600 text-xs text-gray-100 hover:border-gray-400 disabled:opacity-40"
-            >
-              Add {variable}
-            </button>
-          ))}
+    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+      <div className="border-b border-slate-200 p-4 bg-slate-50 flex flex-col gap-4">
+        <div>
+          <label className="text-xs font-semibold text-slate-500 mb-2 block uppercase tracking-wider">
+            Available Variables
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {CERTIFICATE_VARIABLE_KEYS.map((variable) => {
+              const isUsed = usedVariables.has(variable);
+              return (
+                <button
+                  key={variable}
+                  type="button"
+                  disabled={isUsed}
+                  onClick={() => {
+                    if (isUsed) return;
+                    const token = createToken(variable, 0.5, 0.5);
+                    onChange({ tokens: [...layout.tokens, token] });
+                    setSelectedTokenId(token.id);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${
+                    isUsed
+                      ? "border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"
+                      : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 shadow-sm"
+                  }`}
+                >
+                  {isUsed ? "✓ Added" : "+ Add"} {variable}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {selectedToken && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <select
-              value={selectedToken.fontFamily}
-              onChange={(event) =>
-                updateToken(selectedToken.id, {
-                  fontFamily: event.target
-                    .value as CertificateTextToken["fontFamily"],
-                })
-              }
-              className="rounded-lg border border-gray-600 bg-gray-900 px-3 py-1.5 text-sm"
-            >
-              {CERTIFICATE_FONT_OPTIONS.map((font) => (
-                <option key={font.value} value={font.value}>
-                  {font.label}
-                </option>
-              ))}
-            </select>
-
-            <div className="inline-flex items-center rounded-lg border border-gray-600 overflow-hidden">
+        {selectedToken ? (
+          <div className="pt-4 border-t border-slate-200">
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                Edit {selectedToken.variable}
+              </label>
               <button
                 type="button"
-                className="px-2 py-1.5 text-sm hover:bg-gray-800"
-                onClick={() =>
-                  updateToken(selectedToken.id, {
-                    fontSize: Math.max(16, selectedToken.fontSize - 2),
-                  })
-                }
+                onClick={() => removeToken(selectedToken.id)}
+                className="text-xs font-medium text-red-600 hover:text-red-700 flex items-center gap-1 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-md transition-colors"
+                title="Remove variable"
               >
-                -
-              </button>
-              <input
-                type="number"
-                min={16}
-                max={120}
-                value={selectedToken.fontSize}
-                onChange={(event) =>
-                  updateToken(selectedToken.id, {
-                    fontSize: Number(event.target.value || 44),
-                  })
-                }
-                className="w-16 bg-gray-900 text-center text-sm py-1.5 outline-none"
-              />
-              <button
-                type="button"
-                className="px-2 py-1.5 text-sm hover:bg-gray-800"
-                onClick={() =>
-                  updateToken(selectedToken.id, {
-                    fontSize: Math.min(120, selectedToken.fontSize + 2),
-                  })
-                }
-              >
-                +
+                <Trash2 className="w-3.5 h-3.5" /> Remove
               </button>
             </div>
+            
+            <div className="flex flex-wrap items-center gap-3">
+              <select
+                value={selectedToken.fontFamily}
+                onChange={(event) =>
+                  updateToken(selectedToken.id, {
+                    fontFamily: event.target.value as CertificateTextToken["fontFamily"],
+                  })
+                }
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none"
+              >
+                {CERTIFICATE_FONT_OPTIONS.map((font) => (
+                  <option key={font.value} value={font.value}>
+                    {font.label}
+                  </option>
+                ))}
+              </select>
 
-            <input
-              type="color"
-              value={selectedToken.colorHex}
-              onChange={(event) =>
-                updateToken(selectedToken.id, {
-                  colorHex: event.target.value,
-                })
-              }
-              className="h-9 w-12 rounded border border-gray-600 bg-gray-900"
-              title="Text color"
-            />
+              <div className="flex items-center rounded-lg border border-slate-300 bg-white shadow-sm overflow-hidden h-[38px]">
+                <button
+                  type="button"
+                  className="px-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 font-medium"
+                  onClick={() =>
+                    updateToken(selectedToken.id, {
+                      fontSize: Math.max(16, selectedToken.fontSize - 2),
+                    })
+                  }
+                >
+                  -
+                </button>
+                <input
+                  type="number"
+                  min={16}
+                  max={120}
+                  value={selectedToken.fontSize}
+                  onChange={(event) =>
+                    updateToken(selectedToken.id, {
+                      fontSize: Number(event.target.value || 44),
+                    })
+                  }
+                  className="w-12 text-center text-sm font-medium text-slate-700 border-x border-slate-200 outline-none h-full"
+                />
+                <button
+                  type="button"
+                  className="px-3 text-slate-500 hover:bg-slate-50 hover:text-slate-800 font-medium"
+                  onClick={() =>
+                    updateToken(selectedToken.id, {
+                      fontSize: Math.min(120, selectedToken.fontSize + 2),
+                    })
+                  }
+                >
+                  +
+                </button>
+              </div>
 
-            <button
-              type="button"
-              onClick={() =>
-                updateToken(selectedToken.id, {
-                  bold: !selectedToken.bold,
-                })
-              }
-              className={`h-9 w-9 rounded border ${selectedToken.bold ? "border-blue-500 bg-blue-500/20" : "border-gray-600"} flex items-center justify-center`}
-              title="Bold"
-            >
-              <Bold className="w-4 h-4" />
-            </button>
+              <div className="flex items-center gap-2 relative group">
+                <input
+                  type="color"
+                  value={selectedToken.colorHex}
+                  onChange={(event) =>
+                    updateToken(selectedToken.id, {
+                      colorHex: event.target.value,
+                    })
+                  }
+                  className="h-[38px] w-12 rounded-lg border border-slate-300 bg-white cursor-pointer shadow-sm p-1"
+                  title="Text color"
+                />
+              </div>
 
-            <button
-              type="button"
-              onClick={() =>
-                updateToken(selectedToken.id, {
-                  italic: !selectedToken.italic,
-                })
-              }
-              className={`h-9 w-9 rounded border ${selectedToken.italic ? "border-blue-500 bg-blue-500/20" : "border-gray-600"} flex items-center justify-center`}
-              title="Italic"
-            >
-              <Italic className="w-4 h-4" />
-            </button>
+              <div className="flex items-center rounded-lg border border-slate-300 bg-white shadow-sm overflow-hidden h-[38px]">
+                <button
+                  type="button"
+                  onClick={() => updateToken(selectedToken.id, { bold: !selectedToken.bold })}
+                  className={`px-3 flex items-center justify-center border-r border-slate-200 transition-colors ${selectedToken.bold ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
+                  title="Bold"
+                >
+                  <Bold className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateToken(selectedToken.id, { italic: !selectedToken.italic })}
+                  className={`px-3 flex items-center justify-center transition-colors ${selectedToken.italic ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
+                  title="Italic"
+                >
+                  <Italic className="w-4 h-4" />
+                </button>
+              </div>
 
-            <button
-              type="button"
-              onClick={() => updateToken(selectedToken.id, { align: "left" })}
-              className={`h-9 w-9 rounded border ${selectedToken.align === "left" ? "border-blue-500 bg-blue-500/20" : "border-gray-600"} flex items-center justify-center`}
-              title="Align left"
-            >
-              <AlignLeft className="w-4 h-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => updateToken(selectedToken.id, { align: "center" })}
-              className={`h-9 w-9 rounded border ${selectedToken.align === "center" ? "border-blue-500 bg-blue-500/20" : "border-gray-600"} flex items-center justify-center`}
-              title="Align center"
-            >
-              <AlignCenter className="w-4 h-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => updateToken(selectedToken.id, { align: "right" })}
-              className={`h-9 w-9 rounded border ${selectedToken.align === "right" ? "border-blue-500 bg-blue-500/20" : "border-gray-600"} flex items-center justify-center`}
-              title="Align right"
-            >
-              <AlignRight className="w-4 h-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => removeToken(selectedToken.id)}
-              className="h-9 w-9 rounded border border-red-500/60 text-red-300 flex items-center justify-center hover:bg-red-500/10"
-              title="Remove variable"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+              <div className="flex items-center rounded-lg border border-slate-300 bg-white shadow-sm overflow-hidden h-[38px]">
+                <button
+                  type="button"
+                  onClick={() => updateToken(selectedToken.id, { align: "left" })}
+                  className={`px-3 flex items-center justify-center border-r border-slate-200 transition-colors ${selectedToken.align === "left" ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
+                  title="Align left"
+                >
+                  <AlignLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateToken(selectedToken.id, { align: "center" })}
+                  className={`px-3 flex items-center justify-center border-r border-slate-200 transition-colors ${selectedToken.align === "center" ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
+                  title="Align center"
+                >
+                  <AlignCenter className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateToken(selectedToken.id, { align: "right" })}
+                  className={`px-3 flex items-center justify-center transition-colors ${selectedToken.align === "right" ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
+                  title="Align right"
+                >
+                  <AlignRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="pt-4 border-t border-slate-200 text-sm text-slate-500 italic">
+            Select a variable on the canvas to edit its properties.
           </div>
         )}
       </div>
 
-      <div className="p-3">
+      <div className="p-4 bg-slate-100">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-xs font-semibold text-slate-500">Interactive Canvas</span>
+          <span className="text-xs text-slate-400">Drag items to position them</span>
+        </div>
+        
         <div
           ref={containerRef}
-          className="relative w-full aspect-[16/10] rounded-lg overflow-hidden border border-gray-700 bg-gray-800"
+          className="relative w-full aspect-[16/10] rounded-xl overflow-hidden border-2 border-slate-300 bg-white shadow-inner"
         >
           {templatePreviewUrl ? (
             <img
@@ -391,17 +418,20 @@ export default function CertificateLayoutEditor({
                   height: image.naturalHeight,
                 });
               }}
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain pointer-events-none"
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-500 px-4 text-center">
-              Upload certificate template to start placing text
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 px-4 text-center">
+              <div className="w-16 h-16 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center mb-3">
+                <span className="text-2xl">🖼️</span>
+              </div>
+              <p className="font-medium">Upload a template image first</p>
+              <p className="text-xs mt-1">Variables will be placed on top of it</p>
             </div>
           )}
 
           {layout.tokens.map((token) => {
-            const activeBox =
-              renderBox.width > 1 ? renderBox : FALLBACK_RENDER_BOX;
+            const activeBox = renderBox.width > 1 ? renderBox : FALLBACK_RENDER_BOX;
             const anchorX = activeBox.x + token.x * activeBox.width;
             const baselineY = activeBox.y + (1 - token.y) * activeBox.height;
             const fontSizePx = Math.max(8, token.fontSize * activeBox.scale);
@@ -416,6 +446,7 @@ export default function CertificateLayoutEditor({
             }
 
             const topPx = baselineY - metrics.ascent;
+            const isSelected = selectedTokenId === token.id;
 
             return (
               <button
@@ -427,7 +458,11 @@ export default function CertificateLayoutEditor({
                   setSelectedTokenId(token.id);
                 }}
                 onClick={() => setSelectedTokenId(token.id)}
-                className={`absolute select-none whitespace-nowrap leading-none ${selectedTokenId === token.id ? "outline outline-blue-500" : ""}`}
+                className={`absolute select-none whitespace-nowrap leading-none cursor-move transition-shadow ${
+                  isSelected 
+                    ? "outline outline-2 outline-emerald-500 shadow-lg ring-4 ring-emerald-500/20 z-10" 
+                    : "hover:outline hover:outline-1 hover:outline-emerald-300"
+                }`}
                 style={{
                   left: `${leftPx}px`,
                   top: `${topPx}px`,
@@ -437,7 +472,11 @@ export default function CertificateLayoutEditor({
                   fontStyle: token.italic ? "italic" : "normal",
                   fontSize: `${fontSizePx}px`,
                   lineHeight: 1.1,
-                  background: "transparent",
+                  background: isSelected ? "rgba(255,255,255,0.1)" : "transparent",
+                  padding: "2px 4px",
+                  borderRadius: "4px",
+                  marginLeft: "-4px",
+                  marginTop: "-2px",
                 }}
               >
                 {sample}
@@ -447,45 +486,43 @@ export default function CertificateLayoutEditor({
         </div>
 
         {selectedToken && (
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            <label className="text-xs text-gray-400">
-              X (%)
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={Math.round(selectedToken.x * 100)}
-                onChange={(event) =>
-                  updateToken(selectedToken.id, {
-                    x: clamp01(Number(event.target.value || 0) / 100),
-                  })
-                }
-                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm"
-              />
-            </label>
-            <label className="text-xs text-gray-400">
-              Y (%)
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={Math.round(selectedToken.y * 100)}
-                onChange={(event) =>
-                  updateToken(selectedToken.id, {
-                    y: clamp01(Number(event.target.value || 0) / 100),
-                  })
-                }
-                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm"
-              />
-            </label>
-            <label className="text-xs text-gray-400">
-              Variable
-              <input
-                value={selectedToken.variable}
-                readOnly
-                className="mt-1 w-full rounded-lg border border-gray-700 bg-gray-900 px-2 py-1.5 text-sm text-gray-200"
-              />
-            </label>
+          <div className="mt-4 bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex items-center justify-between gap-4">
+            <div className="flex-1 flex items-center gap-4">
+              <label className="text-xs font-medium text-slate-500 flex items-center gap-2 w-full">
+                <span className="w-4">X:</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={Math.round(selectedToken.x * 100)}
+                  onChange={(event) =>
+                    updateToken(selectedToken.id, {
+                      x: clamp01(Number(event.target.value || 0) / 100),
+                    })
+                  }
+                  className="flex-1 accent-emerald-500"
+                />
+                <span className="w-8 text-right text-slate-700">{Math.round(selectedToken.x * 100)}%</span>
+              </label>
+            </div>
+            <div className="flex-1 flex items-center gap-4">
+              <label className="text-xs font-medium text-slate-500 flex items-center gap-2 w-full">
+                <span className="w-4">Y:</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={Math.round(selectedToken.y * 100)}
+                  onChange={(event) =>
+                    updateToken(selectedToken.id, {
+                      y: clamp01(Number(event.target.value || 0) / 100),
+                    })
+                  }
+                  className="flex-1 accent-emerald-500"
+                />
+                <span className="w-8 text-right text-slate-700">{Math.round(selectedToken.y * 100)}%</span>
+              </label>
+            </div>
           </div>
         )}
       </div>

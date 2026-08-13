@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   LayoutGrid,
   Tickets,
+  Award,
   UsersRound,
   ChevronLeft,
   ChevronRight,
@@ -48,6 +49,11 @@ export default function ClubAdminSidebar({
       name: "My Events",
       icon: <Tickets size={20} />,
       href: "/club-admin/events",
+    },
+    {
+      name: "Certificates",
+      icon: <Award size={20} />, 
+      href: "/club-admin/certificates",
     },
     {
       name: "My Club",

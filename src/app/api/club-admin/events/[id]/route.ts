@@ -5,7 +5,6 @@ import { Event, Registration } from "@/models";
 import cloudinary from "@/lib/cloudinary";
 import {
   getDefaultCertificateLayout,
-  parseCertificateLayoutFromFormData,
 } from "@/lib/certificate";
 
 export const dynamic = "force-dynamic";
@@ -83,41 +82,27 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       updateData.image = uploadResult.secure_url;
     }
 
-    // Certificate Template
+    // Certificate Handling
     const removeCertificateTemplate = formData.get("removeCertificateTemplate") === "true";
     if (removeCertificateTemplate) {
       updateData.providesCertificate = false;
-      updateData.$unset = { certificateTemplate: 1 };
+      updateData.$unset = { certificate: 1 };
     } else {
       const providesCertificate = formData.get("providesCertificate");
       if (providesCertificate === "true") updateData.providesCertificate = true;
       if (providesCertificate === "false") updateData.providesCertificate = false;
 
-      const certificateTemplateFile = formData.get("certificateTemplateImage") as File | null;
-      if (certificateTemplateFile && certificateTemplateFile.size > 0) {
-        const certBuffer = Buffer.from(await certificateTemplateFile.arrayBuffer());
-        const certUploadResult: any = await new Promise((resolve, reject) => {
-          cloudinary.uploader.upload_stream({ resource_type: "image", folder: "certificates" }, (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }).end(certBuffer);
-        });
-
-        const certificateLayoutResult = parseCertificateLayoutFromFormData(formData);
-        
-        updateData.certificateTemplate = {
-          url: certUploadResult.secure_url,
-          publicId: certUploadResult.public_id,
-          uploadedAt: new Date(),
-          layout: certificateLayoutResult.layout ?? getDefaultCertificateLayout(),
-        };
-        updateData.providesCertificate = true;
+      const certificateId = formData.get("certificateId") as string | null;
+      if (providesCertificate === "true" && certificateId) {
+        updateData.certificate = certificateId;
+      } else if (providesCertificate === "false") {
+        updateData.$unset = { certificate: 1 };
       }
     }
 
     const updatedEvent = await Event.findByIdAndUpdate(
       id,
-      updateData.certificateTemplate ? { ...updateData } : updateData,
+      updateData,
       { new: true }
     );
 

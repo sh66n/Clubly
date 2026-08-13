@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { connectToDb } from "@/lib/connectToDb";
-import { Event, Group, UserPoints } from "@/models";
+import { Event, Group, UserPoints, Badge } from "@/models";
 import { NextRequest, NextResponse } from "next/server";
 
 // PUT /api/events/:id/winners
@@ -47,6 +47,11 @@ export const PUT = async (
       // Deduct points from old winner
       if (event.winner && event.winner.toString() !== winnerId) {
         await awardPointsToUser(event.winner, clubId, -winnerPoints);
+        // Downgrade old winner's badge back to participation
+        await Badge.findOneAndUpdate(
+          { userId: event.winner, eventId: id },
+          { type: "participation" },
+        );
       }
 
       // Assign new winner
@@ -56,6 +61,13 @@ export const PUT = async (
 
       // Award points
       await awardPointsToUser(winnerId, clubId, winnerPoints);
+
+      // Award winner badge
+      await Badge.findOneAndUpdate(
+        { userId: winnerId, eventId: id },
+        { type: "winner" },
+        { upsert: true },
+      );
     } else if (event.eventType === "team") {
       const group = await Group.findById(winnerId).populate("members");
       if (!group || group.event.toString() !== event._id.toString()) {
@@ -74,6 +86,16 @@ export const PUT = async (
           for (const member of oldGroup.members) {
             await awardPointsToUser(member._id, clubId, -winnerPoints);
           }
+          // Downgrade old winner group badges
+          const downgradeOps = oldGroup.members.map((member: any) => ({
+            updateOne: {
+              filter: { userId: member._id, eventId: id },
+              update: { $set: { type: "participation" } },
+            },
+          }));
+          if (downgradeOps.length > 0) {
+            await Badge.bulkWrite(downgradeOps);
+          }
         }
       }
 
@@ -85,6 +107,18 @@ export const PUT = async (
       // Award points to new winner group
       for (const member of group.members) {
         await awardPointsToUser(member._id, clubId, winnerPoints);
+      }
+
+      // Award winner badges to all group members
+      const badgeOps = group.members.map((member: any) => ({
+        updateOne: {
+          filter: { userId: member._id, eventId: id },
+          update: { $set: { type: "winner" } },
+          upsert: true,
+        },
+      }));
+      if (badgeOps.length > 0) {
+        await Badge.bulkWrite(badgeOps);
       }
     }
 

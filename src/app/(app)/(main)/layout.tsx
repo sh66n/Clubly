@@ -15,7 +15,7 @@ export default function layout({
       </div>
 
       {/* below md */}
-      <div className="relative min-h-screen h-full flex-grow pt-4 pr-4 pb-4 block md:hidden p-5">
+      <div className="relative min-h-screen h-full w-full flex-grow block md:hidden p-3 sm:p-4">
         {children}
       </div>
     </>

@@ -6,7 +6,7 @@ import {
   inferYearFromEmail,
 } from "@/lib/certificate";
 import { connectToDb } from "@/lib/connectToDb";
-import { Event, Group, Registration, User } from "@/models";
+import { Event, Group, Registration, User, Certificate } from "@/models";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { NextResponse } from "next/server";
 
@@ -74,9 +74,9 @@ export async function GET(
     const { id } = await params;
     await connectToDb();
 
-    const event = await Event.findById(id).select(
-      "name eventType providesCertificate certificateTemplate winner winnerGroup",
-    );
+    const event = await Event.findById(id)
+      .select("name eventType providesCertificate certificate winner winnerGroup")
+      .populate("certificate");
 
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
@@ -89,7 +89,7 @@ export async function GET(
       );
     }
 
-    if (!event.certificateTemplate?.url) {
+    if (!event.certificate?.url) {
       return NextResponse.json(
         { error: "Certificate template is not published yet" },
         { status: 400 },
@@ -97,10 +97,10 @@ export async function GET(
     }
 
     const legacyLayout = convertLegacyNameConfigToLayout(
-      event.certificateTemplate?.nameConfig,
+      event.certificate?.nameConfig,
     );
     const layoutTokens =
-      event.certificateTemplate?.layout?.tokens ?? legacyLayout?.tokens ?? [];
+      event.certificate?.layout?.tokens ?? legacyLayout?.tokens ?? [];
     if (!layoutTokens.length) {
       return NextResponse.json(
         { error: "Certificate variable layout is not configured" },
@@ -140,7 +140,7 @@ export async function GET(
       );
     }
 
-    const templateRes = await fetch(event.certificateTemplate.url, {
+    const templateRes = await fetch(event.certificate.url, {
       cache: "no-store",
     });
     if (!templateRes.ok) {
@@ -154,7 +154,7 @@ export async function GET(
     let templateBytes = new Uint8Array(templateBuffer);
 
     if (!isPng(templateBytes) && !isJpeg(templateBytes)) {
-      const transformedUrl = toCloudinaryJpgUrl(event.certificateTemplate.url);
+      const transformedUrl = toCloudinaryJpgUrl(event.certificate.url);
       const transformedRes = await fetch(transformedUrl, { cache: "no-store" });
       if (!transformedRes.ok) {
         return NextResponse.json(

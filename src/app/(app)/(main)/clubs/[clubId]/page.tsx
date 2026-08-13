@@ -3,6 +3,7 @@ import ClubHeader from "@/components/Clubs/ClubHeader";
 import ClubLogo from "@/components/Clubs/ClubLogo";
 import Panorama from "@/components/Clubs/Panorama";
 import EventGrid from "@/components/Events/EventGrid";
+import StreakCard from "@/components/Clubs/StreakCard";
 import { getClub } from "@/services/getClub";
 import React from "react";
 
@@ -23,11 +24,12 @@ export default async function ClubDetails({
     : null;
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full max-w-full overflow-x-hidden">
       <Panorama />
       <ClubLogo club={club} />
       <ClubHeader club={club} user={serializedUser} />
       <EventGrid events={serializedEvents} user={serializedUser} />
+      {serializedUser && <StreakCard clubId={clubId} />}
     </div>
   );
 }

@@ -1,38 +1,6 @@
 import { Types } from "mongoose";
 import { z } from "zod";
 
-const zCertificateToken = z.object({
-  id: z.string(),
-  variable: z.enum(["$name", "$year", "$rank"]),
-  x: z.number(),
-  y: z.number(),
-  fontSize: z.number(),
-  colorHex: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-  fontFamily: z.enum(["helvetica", "times", "courier"]),
-  bold: z.boolean(),
-  italic: z.boolean(),
-  align: z.enum(["left", "center", "right"]),
-});
-
-const zCertificateLayout = z.object({
-  tokens: z.array(zCertificateToken),
-});
-
-const zCertificateNameConfig = z.object({
-  preset: z.enum(["center", "lower-third", "top-center"]),
-  xOffset: z.number(),
-  yOffset: z.number(),
-  fontSize: z.number(),
-  colorHex: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-});
-
-const zCertificateTemplate = z.object({
-  url: z.string().url(),
-  publicId: z.string(),
-  uploadedAt: z.date(),
-  layout: zCertificateLayout.optional(),
-  nameConfig: zCertificateNameConfig.optional(),
-});
 
 export const zEvent = z.object({
   organizingClub: z.string().regex(/^[0-9a-fA-F]{24}$/),
@@ -65,7 +33,7 @@ export const zEvent = z.object({
       }),
     )
     .optional(),
-  certificateTemplate: zCertificateTemplate.optional(),
+  certificate: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
   likes: z.number().default(0),
   views: z.number().default(0),
   likedBy: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/)).optional(),
@@ -108,32 +76,7 @@ export interface IEvent {
   isRegistrationOpen: boolean;
   status: "draft" | "live" | "completed";
   customQuestions?: ICustomQuestion[];
-  certificateTemplate?: {
-    url: string;
-    publicId: string;
-    uploadedAt: Date;
-    layout?: {
-      tokens: {
-        id: string;
-        variable: "$name" | "$year" | "$rank";
-        x: number;
-        y: number;
-        fontSize: number;
-        colorHex: string;
-        fontFamily: "helvetica" | "times" | "courier";
-        bold: boolean;
-        italic: boolean;
-        align: "left" | "center" | "right";
-      }[];
-    };
-    nameConfig?: {
-      preset: "center" | "lower-third" | "top-center";
-      xOffset: number;
-      yOffset: number;
-      fontSize: number;
-      colorHex: string;
-    };
-  };
+  certificate?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
   likes: number;

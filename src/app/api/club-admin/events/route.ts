@@ -5,8 +5,6 @@ import { Event, Payment, Registration, Feedback, Club } from "@/models";
 import cloudinary from "@/lib/cloudinary";
 import {
   getDefaultCertificateLayout,
-  parseCertificateLayoutFromFormData,
-  validateCertificateTemplateFile,
 } from "@/lib/certificate";
 import { sendMail } from "@/services/sendMail";
 
@@ -205,8 +203,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const certificateLayoutResult = parseCertificateLayoutFromFormData(formData);
-    
+    const certificateId = formData.get("certificateId") as string | null;
+
     // Upload image
     const file = formData.get("image") as unknown as File | null;
     let imageUrl = "";
@@ -219,27 +217,6 @@ export async function POST(req: NextRequest) {
         }).end(buffer);
       });
       imageUrl = uploadResult.secure_url;
-    }
-
-    // Upload certificate
-    const certificateTemplateFile = formData.get("certificateTemplateImage") as File | null;
-    let certificateTemplate: any = undefined;
-
-    if (providesCertificate && certificateTemplateFile && certificateTemplateFile.size > 0) {
-      const certBuffer = Buffer.from(await certificateTemplateFile.arrayBuffer());
-      const certUploadResult: any = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream({ resource_type: "image", folder: "certificates" }, (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }).end(certBuffer);
-      });
-
-      certificateTemplate = {
-        url: certUploadResult.secure_url,
-        publicId: certUploadResult.public_id,
-        uploadedAt: new Date(),
-        layout: certificateLayoutResult.layout ?? getDefaultCertificateLayout(),
-      };
     }
 
     const newEvent = await Event.create({
@@ -257,7 +234,7 @@ export async function POST(req: NextRequest) {
       maxRegistrations: maxRegistrations ? Number(maxRegistrations) : undefined,
       whatsappGroupLink: whatsappGroupLink || undefined,
       customQuestions,
-      certificateTemplate,
+      certificate: providesCertificate && certificateId ? certificateId : undefined,
       status,
       isRegistrationOpen: status === "live",
     });
