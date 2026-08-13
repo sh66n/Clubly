@@ -23,6 +23,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       .populate("winner", "name email image")
       .populate("winnerGroup", "name")
       .populate("superEvent", "name image")
+      .populate("winners.user", "name email image")
+      .populate({
+        path: "winners.group",
+        select: "name members leader",
+        populate: [
+          { path: "members", select: "name email image department" },
+          { path: "leader", select: "name email image department" }
+        ]
+      })
       .lean();
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });

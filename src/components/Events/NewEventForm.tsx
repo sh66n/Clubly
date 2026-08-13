@@ -62,6 +62,7 @@ export default function NewEventForm({ user }: NewEventFormProps) {
   const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
   const [certificates, setCertificates] = useState<any[]>([]);
   const [selectedCertificateId, setSelectedCertificateId] = useState("");
+  const [numberOfWinners, setNumberOfWinners] = useState<1 | 2 | 3>(1);
 
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
@@ -143,6 +144,7 @@ export default function NewEventForm({ user }: NewEventFormProps) {
     if (prize) formData.set("prize", prize);
     if (maxReg) formData.set("maxRegistrations", maxReg);
     if (selectedSuperEvent) formData.set("superEvent", selectedSuperEvent);
+    formData.set("numberOfWinners", String(numberOfWinners));
     if (file) formData.set("image", file);
     if (providesCertificate && selectedCertificateId) {
       formData.set("certificateId", selectedCertificateId);
@@ -446,6 +448,26 @@ export default function NewEventForm({ user }: NewEventFormProps) {
                   )}
                 </Field>
               )}
+
+              <Field label="Number of Winners" icon={<Trophy className="w-4 h-4" />}>
+                <div className="flex gap-2 mb-3">
+                  {([1, 2, 3] as const).map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setNumberOfWinners(n)}
+                      className={`px-4 py-1.5 rounded-lg text-sm font-medium border transition-all flex-1
+                        ${
+                          numberOfWinners === n
+                            ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                            : "border-gray-700 bg-gray-800/30 text-gray-400 hover:border-gray-600"
+                        }`}
+                    >
+                      {n} {n === 1 ? "Winner" : "Winners"}
+                    </button>
+                  ))}
+                </div>
+              </Field>
 
               <Field
                 label="Add to Super Event"

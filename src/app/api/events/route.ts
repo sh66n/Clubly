@@ -358,6 +358,10 @@ export const POST = async (req: NextRequest) => {
       }
     }
 
+    const numberOfWinners = formData.get("numberOfWinners")
+      ? Number(formData.get("numberOfWinners"))
+      : 1;
+
     /* ---------- Create Event ---------- */
     const event = await Event.create({
       organizingClub,
@@ -375,6 +379,13 @@ export const POST = async (req: NextRequest) => {
       superEvent: superEvent || undefined,
       customQuestions,
       certificateTemplate,
+      numberOfWinners,
+      points: {
+        winner: 50,
+        second: 40,
+        third: 30,
+        participation: 10,
+      },
     });
 
     // Note: Events are linked to clubs via organizingClub field, no need to maintain club.events array

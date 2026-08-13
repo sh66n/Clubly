@@ -1,11 +1,39 @@
 "use client";
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler, BarElement } from 'chart.js';
-import { Pie, Line, Bar } from 'react-chartjs-2';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  BarElement,
+} from "chart.js";
+import { Pie, Line, Bar } from "react-chartjs-2";
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler, BarElement);
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  BarElement,
+);
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   Calendar,
@@ -31,11 +59,13 @@ import {
   Link2,
   ChevronDown,
   ChevronUp,
+  LoaderCircle,
   ChevronRight,
   QrCode,
   TrendingUp,
   Receipt,
-  FileText
+  FileText,
+  Trophy,
 } from "lucide-react";
 import { toast } from "sonner";
 import ClublyLoader from "@/components/ClubAdmin/ClublyLoader";
@@ -44,7 +74,7 @@ import html2canvas from "html2canvas";
 
 type EventStatus = "draft" | "live" | "completed";
 type EventType = "team" | "individual";
-type TabKey = "participants" | "finance" | "feedback" | "likes";
+type TabKey = "participants" | "finance" | "feedback" | "likes" | "winners";
 
 interface CustomQuestion {
   id: string;
@@ -56,7 +86,13 @@ interface CustomQuestion {
 
 interface RegistrationItem {
   _id: string;
-  userId?: { _id: string; name: string; email: string; image?: string; department?: string };
+  userId?: {
+    _id: string;
+    name: string;
+    email: string;
+    image?: string;
+    department?: string;
+  };
   groupId?: {
     _id: string;
     name: string;
@@ -108,6 +144,8 @@ interface EventDetails {
   points?: { participation?: number; winner?: number };
   winner?: { _id: string; name: string; email: string; image?: string };
   winnerGroup?: { _id: string; name: string };
+  winners?: { position: number; user?: any; group?: any }[];
+  numberOfWinners?: number;
   contact?: { _id: string; name: string; email: string; image?: string }[];
   superEvent?: { _id: string; name: string; image?: string };
   customQuestions?: {
@@ -122,7 +160,13 @@ interface EventDetails {
 interface GroupItem {
   _id: string;
   name: string;
-  members: { _id: string; name: string; email: string; image?: string; department?: string }[];
+  members: {
+    _id: string;
+    name: string;
+    email: string;
+    image?: string;
+    department?: string;
+  }[];
   leader: { _id: string; name: string; email: string; department?: string };
   isPublic: boolean;
   maxSize: number;
@@ -155,12 +199,15 @@ export default function EventDetailsPage() {
 
   const [activeTab, setActiveTab] = useState<TabKey>("participants");
   const [searchQuery, setSearchQuery] = useState("");
+  const [winnerSearchQuery, setWinnerSearchQuery] = useState("");
   const [statusLoading, setStatusLoading] = useState(false);
   const [editDrawerOpen, setEditDrawerOpen] = useState(false);
   const [timeFilter, setTimeFilter] = useState("All Time");
   const [timeFilterOpen, setTimeFilterOpen] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
   const [downloadingBill, setDownloadingBill] = useState(false);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [openDropdownPos, setOpenDropdownPos] = useState<number | null>(null);
   const billRef = useRef<HTMLDivElement>(null);
 
   // Expand states for team events
@@ -223,14 +270,68 @@ export default function EventDetailsPage() {
     }
   };
 
-  const handleAttendanceChange = async (regId: string, newStatus: "registered" | "attended" | "absent") => {
+  const handleAttendanceChange = async (
+    regId: string,
+    newStatus: "registered" | "attended" | "absent",
+  ) => {
     try {
       toast.success("Attendance status updated");
       setRegistrations((prev) =>
-        prev.map((reg) => (reg._id === regId ? { ...reg, status: newStatus } : reg))
+        prev.map((reg) =>
+          reg._id === regId ? { ...reg, status: newStatus } : reg,
+        ),
       );
     } catch (err: any) {
       toast.error("Failed to update attendance");
+    }
+  };
+
+  const assignWinner = async (id: string, position: number) => {
+    try {
+      setLoadingId(`${id}-${position}`);
+      const res = await fetch(`/api/events/${eventId}/winners`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ winnerId: id, position }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data.error);
+        return;
+      }
+
+      toast.success(`Winner assigned for position ${position}`);
+      fetchDetails();
+    } catch (err: any) {
+      toast.error("Failed to assign winner");
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  const unassignWinner = async (position: number) => {
+    try {
+      setLoadingId(`unassign-${position}`);
+      const res = await fetch(`/api/events/${eventId}/winners?position=${position}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data.error || "Failed to unassign winner");
+        return;
+      }
+
+      toast.success(`Winner unassigned from ${position === 1 ? '1st Place' : position === 2 ? '2nd Place' : '3rd Place'}`);
+      if (openDropdownPos === position) {
+        setOpenDropdownPos(null);
+      }
+      fetchDetails();
+    } catch (err: any) {
+      toast.error("Failed to unassign winner");
+    } finally {
+      setLoadingId(null);
     }
   };
 
@@ -239,17 +340,18 @@ export default function EventDetailsPage() {
     try {
       setDownloadingBill(true);
       toast.info("Generating bill, please wait...");
-      
+
       // Create a temporary iframe to isolate the bill from main document styles (which contains Tailwind v4's oklch/lab colors that crash html2canvas)
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'absolute';
-      iframe.style.width = '800px';
-      iframe.style.height = '1000px';
-      iframe.style.left = '-9999px';
-      iframe.style.top = '-9999px';
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "absolute";
+      iframe.style.width = "800px";
+      iframe.style.height = "1000px";
+      iframe.style.left = "-9999px";
+      iframe.style.top = "-9999px";
       document.body.appendChild(iframe);
-      
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+
+      const iframeDoc =
+        iframe.contentDocument || iframe.contentWindow?.document;
       if (!iframeDoc) throw new Error("Could not access iframe document");
 
       // Render custom inline classes matching our utility classes
@@ -334,19 +436,19 @@ export default function EventDetailsPage() {
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: "#ffffff",
       });
-      
-      const imgData = canvas.toDataURL('image/png');
+
+      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'px',
-        format: [canvas.width / 2, canvas.height / 2]
+        orientation: "portrait",
+        unit: "px",
+        format: [canvas.width / 2, canvas.height / 2],
       });
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
-      pdf.save(`${event.name.replace(/\s+/g, '_')}_Bill.pdf`);
-      
+
+      pdf.addImage(imgData, "PNG", 0, 0, canvas.width / 2, canvas.height / 2);
+      pdf.save(`${event.name.replace(/\s+/g, "_")}_Bill.pdf`);
+
       document.body.removeChild(iframe);
       toast.success("Bill downloaded successfully");
     } catch (error: any) {
@@ -381,17 +483,20 @@ export default function EventDetailsPage() {
     const csvRows = [headers.join(",")];
 
     registrations.forEach((reg) => {
-      const nameField = event.eventType === "team" 
-        ? reg.groupId?.name || "Unknown Team" 
-        : reg.userId?.name || "Unknown user";
-      
-      const emailField = event.eventType === "team"
-        ? reg.groupId?.leader?.email || ""
-        : reg.userId?.email || "";
+      const nameField =
+        event.eventType === "team"
+          ? reg.groupId?.name || "Unknown Team"
+          : reg.userId?.name || "Unknown user";
 
-      const membersField = event.eventType === "team"
-        ? (reg.groupId?.members?.map((m) => m.name).join("; ") || "")
-        : "";
+      const emailField =
+        event.eventType === "team"
+          ? reg.groupId?.leader?.email || ""
+          : reg.userId?.email || "";
+
+      const membersField =
+        event.eventType === "team"
+          ? reg.groupId?.members?.map((m) => m.name).join("; ") || ""
+          : "";
 
       const row = [
         `"${nameField}"`,
@@ -405,7 +510,9 @@ export default function EventDetailsPage() {
       }
 
       event.customQuestions?.forEach((q) => {
-        const ansObj = reg.customQuestionAnswers?.find((ans) => ans.questionId === q.id);
+        const ansObj = reg.customQuestionAnswers?.find(
+          (ans) => ans.questionId === q.id,
+        );
         const ansVal = ansObj
           ? Array.isArray(ansObj.answer)
             ? ansObj.answer.join("; ")
@@ -417,11 +524,16 @@ export default function EventDetailsPage() {
       csvRows.push(row.join(","));
     });
 
-    const blob = new Blob([csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([csvRows.join("\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `${event.name.replace(/\s+/g, "_")}_participants.csv`);
+    link.setAttribute(
+      "download",
+      `${event.name.replace(/\s+/g, "_")}_participants.csv`,
+    );
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -454,40 +566,52 @@ export default function EventDetailsPage() {
 
     if (timeFilter === "Today") {
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      currentRegs = registrations.filter(r => new Date(r.registeredAt) >= today);
-      currentPayments = payments.filter(p => new Date(p.createdAt) >= today);
+      currentRegs = registrations.filter(
+        (r) => new Date(r.registeredAt) >= today,
+      );
+      currentPayments = payments.filter((p) => new Date(p.createdAt) >= today);
       const yesterday = new Date(today.getTime() - 86400000);
-      previousRegs = registrations.filter(r => {
+      previousRegs = registrations.filter((r) => {
         const d = new Date(r.registeredAt);
         return d >= yesterday && d < today;
       });
-      previousPayments = payments.filter(p => {
+      previousPayments = payments.filter((p) => {
         const d = new Date(p.createdAt);
         return d >= yesterday && d < today;
       });
     } else if (timeFilter === "Last 7 Days") {
       const last7 = new Date(now.getTime() - 7 * 86400000);
-      currentRegs = registrations.filter(r => new Date(r.registeredAt) >= last7);
-      currentPayments = payments.filter(p => new Date(p.createdAt) >= last7);
+      currentRegs = registrations.filter(
+        (r) => new Date(r.registeredAt) >= last7,
+      );
+      currentPayments = payments.filter((p) => new Date(p.createdAt) >= last7);
       const last14 = new Date(now.getTime() - 14 * 86400000);
-      previousRegs = registrations.filter(r => {
+      previousRegs = registrations.filter((r) => {
         const d = new Date(r.registeredAt);
         return d >= last14 && d < last7;
       });
-      previousPayments = payments.filter(p => {
+      previousPayments = payments.filter((p) => {
         const d = new Date(p.createdAt);
         return d >= last14 && d < last7;
       });
     } else if (timeFilter === "This Month") {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      currentRegs = registrations.filter(r => new Date(r.registeredAt) >= startOfMonth);
-      currentPayments = payments.filter(p => new Date(p.createdAt) >= startOfMonth);
-      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      previousRegs = registrations.filter(r => {
+      currentRegs = registrations.filter(
+        (r) => new Date(r.registeredAt) >= startOfMonth,
+      );
+      currentPayments = payments.filter(
+        (p) => new Date(p.createdAt) >= startOfMonth,
+      );
+      const startOfLastMonth = new Date(
+        now.getFullYear(),
+        now.getMonth() - 1,
+        1,
+      );
+      previousRegs = registrations.filter((r) => {
         const d = new Date(r.registeredAt);
         return d >= startOfLastMonth && d < startOfMonth;
       });
-      previousPayments = payments.filter(p => {
+      previousPayments = payments.filter((p) => {
         const d = new Date(p.createdAt);
         return d >= startOfLastMonth && d < startOfMonth;
       });
@@ -504,23 +628,36 @@ export default function EventDetailsPage() {
     };
 
     const calculateTrend = (current: number, prev: number) => {
-      if (prev === 0) return current > 0 ? { value: 100, isPositive: true } : null;
+      if (prev === 0)
+        return current > 0 ? { value: 100, isPositive: true } : null;
       const pct = ((current - prev) / prev) * 100;
       return { value: Math.abs(Number(pct.toFixed(1))), isPositive: pct >= 0 };
     };
 
     return {
       current: currentStats,
-      trends: timeFilter === "All Time" ? null : {
-        registrations: calculateTrend(currentStats.registrations, prevStats.registrations),
-        revenue: calculateTrend(currentStats.revenue, prevStats.revenue),
-        label: timeFilter === "Today" ? "from yesterday" : timeFilter === "Last 7 Days" ? "from previous 7 days" : "from last month"
-      }
+      trends:
+        timeFilter === "All Time"
+          ? null
+          : {
+              registrations: calculateTrend(
+                currentStats.registrations,
+                prevStats.registrations,
+              ),
+              revenue: calculateTrend(currentStats.revenue, prevStats.revenue),
+              label:
+                timeFilter === "Today"
+                  ? "from yesterday"
+                  : timeFilter === "Last 7 Days"
+                    ? "from previous 7 days"
+                    : "from last month",
+            },
     };
   }, [registrations, payments, timeFilter]);
 
   const ratingStats = useMemo(() => {
-    if (feedbacks.length === 0) return { avg: 0, stars: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
+    if (feedbacks.length === 0)
+      return { avg: 0, stars: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
     const stars: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     let sum = 0;
     feedbacks.forEach((fb) => {
@@ -547,20 +684,28 @@ export default function EventDetailsPage() {
       }
     });
     return Object.fromEntries(
-      Object.entries(stats).sort(([, a], [, b]) => b - a)
+      Object.entries(stats).sort(([, a], [, b]) => b - a),
     );
   }, [registrations]);
 
-  const totalDemographics = useMemo(() => 
-    Object.values(departmentStats).reduce((a, b) => a + b, 0), 
-  [departmentStats]);
+  const totalDemographics = useMemo(
+    () => Object.values(departmentStats).reduce((a, b) => a + b, 0),
+    [departmentStats],
+  );
 
   const registrationChartData = useMemo(() => {
-    if (!event || !registrations || registrations.length === 0) return { labels: ["No Data"], values: [0] };
-    const sortedRegs = [...registrations].sort((a, b) => new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime());
-    const start = event.createdAt ? new Date(event.createdAt) : new Date(sortedRegs[0].registeredAt); 
-    const end = event.status === "completed" ? new Date(event.date) : new Date();
-    
+    if (!event || !registrations || registrations.length === 0)
+      return { labels: ["No Data"], values: [0] };
+    const sortedRegs = [...registrations].sort(
+      (a, b) =>
+        new Date(a.registeredAt).getTime() - new Date(b.registeredAt).getTime(),
+    );
+    const start = event.createdAt
+      ? new Date(event.createdAt)
+      : new Date(sortedRegs[0].registeredAt);
+    const end =
+      event.status === "completed" ? new Date(event.date) : new Date();
+
     const labels: string[] = [];
     const values: number[] = [];
     let currentDate = new Date(start);
@@ -574,48 +719,117 @@ export default function EventDetailsPage() {
     while (currentDate <= endDate) {
       const nextDate = new Date(currentDate);
       nextDate.setDate(nextDate.getDate() + 1);
-      while (regIdx < sortedRegs.length && new Date(sortedRegs[regIdx].registeredAt) < nextDate) {
+      while (
+        regIdx < sortedRegs.length &&
+        new Date(sortedRegs[regIdx].registeredAt) < nextDate
+      ) {
         cumulative++;
         regIdx++;
       }
-      labels.push(currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+      labels.push(
+        currentDate.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        }),
+      );
       values.push(cumulative);
       currentDate = nextDate;
     }
     return { labels, values };
   }, [event, registrations]);
 
-  const maxRegValue = Math.max(...(registrationChartData.values.length ? registrationChartData.values : [5]), 5);
-  const lineChartData = useMemo(() => ({
-    labels: registrationChartData.labels,
-    datasets: [{
-      label: "Registrations",
-      data: registrationChartData.values,
-      borderColor: "#7CB342",
-      backgroundColor: "rgba(124,179,66,0.08)",
-      tension: 0.4,
-      fill: true,
-      pointRadius: 3,
-      pointHoverRadius: 6,
-      borderWidth: 2,
-    }],
-  }), [registrationChartData]);
+  const currentWinners = useMemo(() => {
+    if (!event) return [];
+    const winnersArr = (event.winners || [])
+      .map((w: any) => {
+        const pId =
+          event.eventType === "team" 
+            ? (w.group?._id || w.group)?.toString() 
+            : (w.user?._id || w.user)?.toString();
+        const participant = registrations.find((p) =>
+          event.eventType === "team"
+            ? p.groupId?._id === pId
+            : p.userId?._id === pId,
+        );
+        return { participant, position: w.position };
+      })
+      .filter((w) => w.participant);
 
-  const lineChartOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      x: { grid: { display: false }, ticks: { color: "#999", font: { size: 11 } } },
-      y: { grid: { color: "#eee", borderDash: [4, 4] as [number, number] }, ticks: { color: "#999", font: { size: 11 }, precision: 0 }, min: 0, suggestedMax: Math.ceil(maxRegValue * 1.2) },
-    },
-  }), [maxRegValue]);
+    // Legacy support (fallback for position 1)
+    if (!winnersArr.some((w) => w.position === 1) && (event.winner || event.winnerGroup)) {
+      const legacyId =
+        event.eventType === "team" ? (event.winnerGroup?._id || event.winnerGroup)?.toString() : (event.winner?._id || event.winner)?.toString();
+      const participant = registrations.find((p) =>
+        event.eventType === "team"
+          ? p.groupId?._id === legacyId
+          : p.userId?._id === legacyId,
+      );
+      if (participant) winnersArr.push({ participant, position: 1 });
+    }
+    return winnersArr;
+  }, [event, registrations]);
+
+  const maxRegValue = Math.max(
+    ...(registrationChartData.values.length
+      ? registrationChartData.values
+      : [5]),
+    5,
+  );
+  const lineChartData = useMemo(
+    () => ({
+      labels: registrationChartData.labels,
+      datasets: [
+        {
+          label: "Registrations",
+          data: registrationChartData.values,
+          borderColor: "#7CB342",
+          backgroundColor: "rgba(124,179,66,0.08)",
+          tension: 0.4,
+          fill: true,
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          borderWidth: 2,
+        },
+      ],
+    }),
+    [registrationChartData],
+  );
+
+  const lineChartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: "#999", font: { size: 11 } },
+        },
+        y: {
+          grid: { color: "#eee", borderDash: [4, 4] as [number, number] },
+          ticks: { color: "#999", font: { size: 11 }, precision: 0 },
+          min: 0,
+          suggestedMax: Math.ceil(maxRegValue * 1.2),
+        },
+      },
+    }),
+    [maxRegValue],
+  );
 
   const revenueChartData = useMemo(() => {
-    if (!event || !payments) return { labels: ["No Data"], values: [0], total: 0 };
-    const sortedPayments = [...payments].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    const start = event.createdAt ? new Date(event.createdAt) : (sortedPayments.length > 0 ? new Date(sortedPayments[0].createdAt) : new Date()); 
-    const end = event.status === "completed" ? new Date(event.date) : new Date();
+    if (!event || !payments)
+      return { labels: ["No Data"], values: [0], total: 0 };
+    const sortedPayments = [...payments].sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+    const start = event.createdAt
+      ? new Date(event.createdAt)
+      : sortedPayments.length > 0
+        ? new Date(sortedPayments[0].createdAt)
+        : new Date();
+    const end =
+      event.status === "completed" ? new Date(event.date) : new Date();
 
     const labels: string[] = [];
     const values: number[] = [];
@@ -631,11 +845,19 @@ export default function EventDetailsPage() {
       const nextDate = new Date(currentDate);
       nextDate.setDate(nextDate.getDate() + 1);
       let dailySum = 0;
-      while (payIdx < sortedPayments.length && new Date(sortedPayments[payIdx].createdAt) < nextDate) {
+      while (
+        payIdx < sortedPayments.length &&
+        new Date(sortedPayments[payIdx].createdAt) < nextDate
+      ) {
         dailySum += sortedPayments[payIdx].amount;
         payIdx++;
       }
-      labels.push(currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+      labels.push(
+        currentDate.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        }),
+      );
       values.push(dailySum / 100);
       total += dailySum;
       currentDate = nextDate;
@@ -643,52 +865,77 @@ export default function EventDetailsPage() {
     return { labels, values, total: total / 100 };
   }, [event, payments]);
 
-  const maxRevenueVal = Math.max(...(revenueChartData.values.length ? revenueChartData.values : [5]), 5);
-  const revenueBarChartData = useMemo(() => ({
-    labels: revenueChartData.labels,
-    datasets: [
-      {
-        label: "Revenue",
-        data: revenueChartData.values,
-        backgroundColor: revenueChartData.values.map((v) =>
-          v === maxRevenueVal && v > 0 ? "#7CB342" : "#c5e1a5"
-        ),
-        borderRadius: 4,
+  const maxRevenueVal = Math.max(
+    ...(revenueChartData.values.length ? revenueChartData.values : [5]),
+    5,
+  );
+  const revenueBarChartData = useMemo(
+    () => ({
+      labels: revenueChartData.labels,
+      datasets: [
+        {
+          label: "Revenue",
+          data: revenueChartData.values,
+          backgroundColor: revenueChartData.values.map((v) =>
+            v === maxRevenueVal && v > 0 ? "#7CB342" : "#c5e1a5",
+          ),
+          borderRadius: 4,
+        },
+      ],
+    }),
+    [revenueChartData, maxRevenueVal],
+  );
+
+  const revenueBarChartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: "#999", font: { size: 10 } },
+        },
+        y: { display: false },
       },
-    ],
-  }), [revenueChartData, maxRevenueVal]);
+    }),
+    [],
+  );
 
-  const revenueBarChartOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      x: { grid: { display: false }, ticks: { color: "#999", font: { size: 10 } } },
-      y: { display: false },
-    },
-  }), []);
+  const pieData = useMemo(
+    () => ({
+      labels: Object.keys(departmentStats),
+      datasets: [
+        {
+          data: Object.values(departmentStats),
+          backgroundColor: [
+            "#7CB342",
+            "#00BCD4",
+            "#3F51B5",
+            "#9C27B0",
+            "#FF9800",
+            "#F44336",
+            "#E91E63",
+            "#4CAF50",
+          ],
+          borderWidth: 2,
+          borderColor: "#ffffff",
+        },
+      ],
+    }),
+    [departmentStats],
+  );
 
-  const pieData = useMemo(() => ({
-    labels: Object.keys(departmentStats),
-    datasets: [
-      {
-        data: Object.values(departmentStats),
-        backgroundColor: [
-          "#7CB342", "#00BCD4", "#3F51B5", "#9C27B0", "#FF9800", "#F44336", "#E91E63", "#4CAF50",
-        ],
-        borderWidth: 2,
-        borderColor: "#ffffff",
+  const pieOptions = useMemo(
+    () => ({
+      plugins: {
+        legend: { display: false },
       },
-    ],
-  }), [departmentStats]);
-
-  const pieOptions = useMemo(() => ({
-    plugins: {
-      legend: { display: false },
-    },
-    cutout: "70%",
-    maintainAspectRatio: false,
-  }), []);
+      cutout: "70%",
+      maintainAspectRatio: false,
+    }),
+    [],
+  );
 
   if (loading) {
     return (
@@ -715,9 +962,10 @@ export default function EventDetailsPage() {
   }
 
   const eventDate = new Date(event.date);
-  const conversionRate = event.views > 0 
-    ? ((registrations.length / event.views) * 100).toFixed(1) 
-    : "0.0";
+  const conversionRate =
+    event.views > 0
+      ? ((registrations.length / event.views) * 100).toFixed(1)
+      : "0.0";
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-8 min-h-screen">
@@ -739,7 +987,7 @@ export default function EventDetailsPage() {
             />
           </div>
         )}
-        
+
         <div className="flex-1 bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm flex flex-col justify-start gap-4">
           <div className="flex flex-col gap-3 flex-grow">
             <div className="flex flex-wrap items-center gap-3">
@@ -750,25 +998,35 @@ export default function EventDetailsPage() {
                 <span className="text-[10px] font-bold text-slate-600 bg-slate-100/80 border border-slate-200 px-2 py-0.5 rounded uppercase tracking-wide">
                   {event.eventType === "team" ? "Team" : "Individual"} Format
                 </span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wide ${
-                  event.status === "live"
-                    ? "text-[#7CB342] bg-[#f0f7e6] border-[#c5d6a8]"
-                    : event.status === "completed"
-                    ? "text-blue-700 bg-blue-50 border-blue-200"
-                    : "text-slate-600 bg-slate-100 border-slate-200"
-                }`}>
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wide ${
+                    event.status === "live"
+                      ? "text-[#7CB342] bg-[#f0f7e6] border-[#c5d6a8]"
+                      : event.status === "completed"
+                        ? "text-blue-700 bg-blue-50 border-blue-200"
+                        : "text-slate-600 bg-slate-100 border-slate-200"
+                  }`}
+                >
                   {event.status}
                 </span>
                 {event.superEvent && event.superEvent.name && (
                   <span className="text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2.5 py-0.5 rounded flex items-center gap-1">
-                    {event.superEvent.image && <img src={event.superEvent.image} className="w-3 h-3 rounded-full object-cover" />}
+                    {event.superEvent.image && (
+                      <img
+                        src={event.superEvent.image}
+                        className="w-3 h-3 rounded-full object-cover"
+                      />
+                    )}
                     {event.superEvent.name}
                   </span>
                 )}
               </div>
             </div>
             <div className="flex-grow min-h-0">
-              <p className={`text-sm text-slate-500 font-medium leading-relaxed max-w-3xl ${!descExpanded ? "line-clamp-3 lg:line-clamp-8" : ""}`} title={event.description}>
+              <p
+                className={`text-sm text-slate-500 font-medium leading-relaxed max-w-3xl ${!descExpanded ? "line-clamp-3 lg:line-clamp-8" : ""}`}
+                title={event.description}
+              >
                 {event.description || "No description provided."}
               </p>
               {event.description && event.description.length > 250 && (
@@ -780,16 +1038,22 @@ export default function EventDetailsPage() {
                 </button>
               )}
             </div>
-            
+
             {/* Minimal metadata info strip */}
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-3 text-xs text-slate-500 font-semibold border-t border-slate-100 mt-auto">
               <span className="flex items-center gap-1.5">
                 <Calendar size={13} className="text-slate-400" />
-                {eventDate.toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric' })}
+                {eventDate.toLocaleDateString("en-IN", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
               </span>
               <span className="flex items-center gap-1.5">
                 <IndianRupee size={13} className="text-slate-400" />
-                {event.registrationFee > 0 ? event.registrationFee.toLocaleString() : "Free Event"}
+                {event.registrationFee > 0
+                  ? event.registrationFee.toLocaleString()
+                  : "Free Event"}
               </span>
               {event.maxRegistrations && (
                 <span className="flex items-center gap-1.5">
@@ -799,7 +1063,7 @@ export default function EventDetailsPage() {
               )}
             </div>
           </div>
-          
+
           {/* Action buttons */}
           <div className="flex items-center gap-3 shrink-0 flex-wrap pt-2">
             <button
@@ -807,7 +1071,11 @@ export default function EventDetailsPage() {
               disabled={downloadingBill}
               className="px-4 py-2 text-sm font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-xl transition-all shadow-sm flex items-center gap-2"
             >
-              {downloadingBill ? <Loader2 size={14} className="animate-spin" /> : <Receipt size={14} />}
+              {downloadingBill ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Receipt size={14} />
+              )}
               Download Bill
             </button>
             <button
@@ -828,7 +1096,9 @@ export default function EventDetailsPage() {
                 disabled={statusLoading}
                 className="px-4 py-2 text-sm font-semibold text-white bg-[#7CB342] hover:bg-[#689F38] rounded-xl transition-all shadow-sm flex items-center gap-2"
               >
-                {statusLoading && <Loader2 size={14} className="animate-spin" />}
+                {statusLoading && (
+                  <Loader2 size={14} className="animate-spin" />
+                )}
                 Publish Live
               </button>
             )}
@@ -838,7 +1108,9 @@ export default function EventDetailsPage() {
                 disabled={statusLoading}
                 className="px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-all shadow-sm flex items-center gap-2"
               >
-                {statusLoading && <Loader2 size={14} className="animate-spin" />}
+                {statusLoading && (
+                  <Loader2 size={14} className="animate-spin" />
+                )}
                 Complete Event
               </button>
             )}
@@ -847,14 +1119,17 @@ export default function EventDetailsPage() {
       </div>
 
       {/* Dynamic Insights Row */}
-      {(event.eventType === "team" || (event.customQuestions && event.customQuestions.length > 0) || true) && (
+      {(event.eventType === "team" ||
+        (event.customQuestions && event.customQuestions.length > 0) ||
+        true) && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          
           {/* Registration Trend */}
           <div className="bg-white rounded-2xl border border-slate-200/60 p-6 flex flex-col justify-between shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp size={18} className="text-[#7CB342]" />
-              <h3 className="text-sm font-bold text-slate-800">Registration Trend</h3>
+              <h3 className="text-sm font-bold text-slate-800">
+                Registration Trend
+              </h3>
             </div>
             <div className="h-32 w-full flex-1">
               <Line data={lineChartData} options={lineChartOptions as any} />
@@ -866,9 +1141,14 @@ export default function EventDetailsPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <PieChart size={18} className="text-[#00BCD4]" />
-                <h3 className="text-sm font-bold text-slate-800">Demographics</h3>
+                <h3 className="text-sm font-bold text-slate-800">
+                  Demographics
+                </h3>
               </div>
-              <Link href={`/club-admin/events/${eventId}/demographics`} className="p-1 rounded hover:bg-slate-50 transition-colors text-slate-400 hover:text-[#00BCD4]">
+              <Link
+                href={`/club-admin/events/${eventId}/demographics`}
+                className="p-1 rounded hover:bg-slate-50 transition-colors text-slate-400 hover:text-[#00BCD4]"
+              >
                 <ChevronRight size={16} />
               </Link>
             </div>
@@ -878,26 +1158,51 @@ export default function EventDetailsPage() {
                   <Pie data={pieData} options={pieOptions} />
                 ) : (
                   <div className="w-full h-full rounded-full border-4 border-slate-100 flex items-center justify-center">
-                    <span className="text-xs font-medium text-slate-400">No Data</span>
+                    <span className="text-xs font-medium text-slate-400">
+                      No Data
+                    </span>
                   </div>
                 )}
                 {totalDemographics > 0 && (
                   <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-                    <span className="text-2xl font-bold text-slate-800 leading-none">{totalDemographics}</span>
-                    <span className="text-[10px] text-slate-400 font-medium">Total Users</span>
+                    <span className="text-2xl font-bold text-slate-800 leading-none">
+                      {totalDemographics}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      Total Users
+                    </span>
                   </div>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-x-2 gap-y-1 mt-auto">
-                {Object.entries(departmentStats).slice(0, 4).map(([dept, count], i) => (
-                  <div key={dept} className="flex items-center gap-1.5 min-w-0">
-                    <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: pieData.datasets[0].backgroundColor[i] }} />
-                    <span className="text-[10px] font-medium text-slate-600 truncate flex-1" title={dept}>{dept}</span>
-                    <span className="text-[10px] font-bold text-slate-800 shrink-0">
-                      {totalDemographics > 0 ? ((count / totalDemographics) * 100).toFixed(0) : 0}%
-                    </span>
-                  </div>
-                ))}
+                {Object.entries(departmentStats)
+                  .slice(0, 4)
+                  .map(([dept, count], i) => (
+                    <div
+                      key={dept}
+                      className="flex items-center gap-1.5 min-w-0"
+                    >
+                      <div
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{
+                          backgroundColor:
+                            pieData.datasets[0].backgroundColor[i],
+                        }}
+                      />
+                      <span
+                        className="text-[10px] font-medium text-slate-600 truncate flex-1"
+                        title={dept}
+                      >
+                        {dept}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-800 shrink-0">
+                        {totalDemographics > 0
+                          ? ((count / totalDemographics) * 100).toFixed(0)
+                          : 0}
+                        %
+                      </span>
+                    </div>
+                  ))}
               </div>
             </div>
           </div>
@@ -914,106 +1219,169 @@ export default function EventDetailsPage() {
               </span>
             </div>
             <div className="h-32 w-full flex-1">
-              <Bar data={revenueBarChartData} options={revenueBarChartOptions as any} />
+              <Bar
+                data={revenueBarChartData}
+                options={revenueBarChartOptions as any}
+              />
             </div>
           </div>
-
         </div>
       )}
 
       <div className="bg-white border border-slate-200/80 rounded-3xl shadow-sm overflow-hidden mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 py-6 border-b border-slate-100 bg-white">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Event Records</h2>
-            <p className="text-xs text-slate-400 font-medium mt-0.5">Manage participants, check attendance, and view reviews.</p>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+              Event Records
+            </h2>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">
+              Manage participants, check attendance, and view reviews.
+            </p>
           </div>
- 
-           {activeTab === "participants" && (
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="flex items-center bg-slate-50 border border-slate-200 focus-within:border-[#7CB342] focus-within:ring-2 focus-within:ring-[#f0f7e6] rounded-xl px-3.5 py-2 gap-2 w-full sm:w-64 transition-all shadow-sm">
-                <Search size={14} className="text-slate-400 shrink-0" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={event.eventType === "team" ? "Search team name..." : "Search name..."}
-                  className="bg-transparent text-sm text-slate-750 placeholder:text-slate-400 outline-none w-full font-medium"
-                />
-              </div>
-              <button
-                onClick={downloadCSV}
-                className="px-4 py-2.5 text-xs font-bold text-white bg-[#7CB342] border border-[#7CB342] hover:bg-[#689F38] rounded-xl transition-all shadow-sm flex items-center gap-2 whitespace-nowrap"
-              >
-                <Download size={13} /> Export CSV
-              </button>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={downloadCSV}
+              className="px-4 py-2.5 text-xs font-bold text-white bg-[#7CB342] border border-[#7CB342] hover:bg-[#689F38] rounded-xl transition-all shadow-sm flex items-center gap-2 whitespace-nowrap cursor-pointer"
+            >
+              <Download size={13} /> Export CSV
+            </button>
+          </div>
+        </div>
+
+        {/* Sub Header for tabs with Search bar to the right */}
+        <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide bg-slate-200/50 p-1 rounded-xl">
+            <button
+              onClick={() => setActiveTab("participants")}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all outline-none shrink-0 flex items-center gap-2 cursor-pointer ${
+                activeTab === "participants"
+                  ? "text-[#689F38] bg-white shadow-sm border border-[#c5d6a8]"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-white/50 border border-transparent"
+              }`}
+            >
+              Participants ({registrations.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("winners")}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all outline-none shrink-0 flex items-center gap-2 cursor-pointer ${
+                activeTab === "winners"
+                  ? "text-[#689F38] bg-white shadow-sm border border-[#c5d6a8]"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-white/50 border border-transparent"
+              }`}
+            >
+              Winners ({currentWinners.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("finance")}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all outline-none shrink-0 flex items-center gap-2 cursor-pointer ${
+                activeTab === "finance"
+                  ? "text-[#689F38] bg-white shadow-sm border border-[#c5d6a8]"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-white/50 border border-transparent"
+              }`}
+            >
+              Transactions ({payments.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("feedback")}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all outline-none shrink-0 flex items-center gap-2 cursor-pointer ${
+                activeTab === "feedback"
+                  ? "text-[#689F38] bg-white shadow-sm border border-[#c5d6a8]"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-white/50 border border-transparent"
+              }`}
+            >
+              Reviews ({feedbacks.length})
+            </button>
+          </div>
+
+          {activeTab === "participants" && (
+            <div className="flex items-center bg-white border border-slate-200 focus-within:border-[#7CB342] focus-within:ring-2 focus-within:ring-[#f0f7e6] rounded-xl px-3.5 py-1.5 gap-2 w-full sm:w-64 transition-all shadow-2xs">
+              <Search size={14} className="text-slate-400 shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={
+                  event.eventType === "team"
+                    ? "Search team name..."
+                    : "Search name..."
+                }
+                className="bg-transparent text-xs text-slate-900 placeholder:text-slate-400 outline-none w-full font-medium"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              )}
             </div>
           )}
         </div>
-        
-        {/* Sub Header for tabs */}
-        <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center gap-4">
-           <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide bg-slate-200/50 p-1 rounded-xl">
-              <button
-                onClick={() => setActiveTab("participants")}
-                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all outline-none shrink-0 flex items-center gap-2 ${
-                  activeTab === "participants"
-                    ? "text-[#689F38] bg-white shadow-sm border border-[#c5d6a8]"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-white/50 border border-transparent"
-                }`}
-              >
-                Participants ({registrations.length})
-              </button>
-              <button
-                onClick={() => setActiveTab("finance")}
-                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all outline-none shrink-0 flex items-center gap-2 ${
-                  activeTab === "finance"
-                    ? "text-[#689F38] bg-white shadow-sm border border-[#c5d6a8]"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-white/50 border border-transparent"
-                }`}
-              >
-                Transactions ({payments.length})
-              </button>
-              <button
-                onClick={() => setActiveTab("feedback")}
-                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all outline-none shrink-0 flex items-center gap-2 ${
-                  activeTab === "feedback"
-                    ? "text-[#689F38] bg-white shadow-sm border border-[#c5d6a8]"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-white/50 border border-transparent"
-                }`}
-              >
-                Reviews ({feedbacks.length})
-              </button>
-           </div>
-        </div>
- 
-         {/* Tab content panel */}
+
+        {/* Tab content panel */}
         <div className="max-h-[550px] overflow-auto">
           {activeTab === "participants" && (
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100 sticky top-0 bg-white z-10">
-                  <th className="py-3.5 pl-6 pr-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase w-8"><input type="checkbox" className="rounded border-slate-300 cursor-pointer" disabled/></th>
-                  {event.eventType === "team" && <th className="py-3.5 px-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">Team / Leader</th>}
-                  {event.eventType === "individual" && <th className="py-3.5 px-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">Participant</th>}
-                  <th className="py-3.5 px-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">Date Registered</th>
+                  <th className="py-3.5 pl-6 pr-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase w-8">
+                    <input
+                      type="checkbox"
+                      className="rounded border-slate-300 cursor-pointer"
+                      disabled
+                    />
+                  </th>
+                  {event.eventType === "team" && (
+                    <th className="py-3.5 px-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">
+                      Team / Leader
+                    </th>
+                  )}
+                  {event.eventType === "individual" && (
+                    <th className="py-3.5 px-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">
+                      Participant
+                    </th>
+                  )}
+                  <th className="py-3.5 px-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">
+                    Date Registered
+                  </th>
                   {event.customQuestions?.map((q) => (
-                    <th key={q.id} className="py-3.5 px-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">{q.question}</th>
+                    <th
+                      key={q.id}
+                      className="py-3.5 px-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase"
+                    >
+                      {q.question}
+                    </th>
                   ))}
-                  <th className="py-3.5 pl-4 pr-6 font-bold text-slate-400 text-[10px] tracking-wider uppercase text-right">Attendance</th>
+                  <th className="py-3.5 pl-4 pr-6 font-bold text-slate-400 text-[10px] tracking-wider uppercase text-right">
+                    Attendance
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredRegistrations.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-16 text-center text-slate-400 font-semibold text-xs">
+                    <td
+                      colSpan={6}
+                      className="py-16 text-center text-slate-400 font-semibold text-xs"
+                    >
                       No registrations logged.
                     </td>
                   </tr>
                 ) : (
                   filteredRegistrations.map((reg) => {
                     return (
-                      <tr key={reg._id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="py-4 pl-6 pr-4 whitespace-nowrap"><input type="checkbox" className="rounded border-slate-300 cursor-pointer text-[#7CB342] focus:ring-[#7CB342]" /></td>
+                      <tr
+                        key={reg._id}
+                        className="hover:bg-slate-50/50 transition-colors"
+                      >
+                        <td className="py-4 pl-6 pr-4 whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            className="rounded border-slate-300 cursor-pointer text-[#7CB342] focus:ring-[#7CB342]"
+                          />
+                        </td>
                         <td className="py-4 px-4 max-w-[220px] sm:max-w-[280px]">
                           {event.eventType === "team" ? (
                             <div className="space-y-2 py-1">
@@ -1025,18 +1393,22 @@ export default function EventDetailsPage() {
                                   {reg.groupId?.members?.length || 0} Members
                                 </span>
                               </div>
-                              
+
                               {/* Overlapping Avatar Stack with Interactive Hover Animations */}
                               <div className="flex items-center">
                                 <div className="flex -space-x-2 mr-3 py-1 shrink-0">
                                   {reg.groupId?.members?.map((m, idx) => (
-                                    <div 
-                                      key={m._id} 
+                                    <div
+                                      key={m._id}
                                       className="inline-block h-7 w-7 rounded-full ring-2 ring-white bg-slate-100 relative group shrink-0 hover:scale-125 hover:z-30 transition-all duration-150 cursor-pointer"
                                     >
                                       <div className="w-full h-full rounded-full overflow-hidden">
                                         {m.image ? (
-                                          <img src={m.image} alt="" className="h-full w-full object-cover" />
+                                          <img
+                                            src={m.image}
+                                            alt=""
+                                            className="h-full w-full object-cover"
+                                          />
                                         ) : (
                                           <div className="h-full w-full flex items-center justify-center text-[9px] font-black text-slate-450 uppercase">
                                             {m.name.charAt(0)}
@@ -1046,25 +1418,40 @@ export default function EventDetailsPage() {
                                       {m._id === reg.groupId?.leader?._id && (
                                         <div className="absolute inset-0 border border-[#7CB342] rounded-full" />
                                       )}
-                                      
+
                                       {/* Minimalist Creme Tooltip positioned downwards */}
-                                      <div className={`opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 bg-[#FAF6EE] text-slate-700 text-[10px] px-2 py-1 rounded border border-[#E8DFD0] absolute top-full mt-1.5 whitespace-nowrap z-50 shadow-sm font-semibold leading-none ${
-                                        idx === 0 ? "left-0 translate-x-0" : "left-1/2 -translate-x-1/2"
-                                      }`}>
+                                      <div
+                                        className={`opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 bg-[#FAF6EE] text-slate-700 text-[10px] px-2 py-1 rounded border border-[#E8DFD0] absolute top-full mt-1.5 whitespace-nowrap z-50 shadow-sm font-semibold leading-none ${
+                                          idx === 0
+                                            ? "left-0 translate-x-0"
+                                            : "left-1/2 -translate-x-1/2"
+                                        }`}
+                                      >
                                         {/* Creme arrow tail */}
-                                        <div className={`absolute bottom-full w-0 h-0 border-4 border-transparent border-b-[#E8DFD0] ${
-                                          idx === 0 ? "left-3" : "left-1/2 -translate-x-1/2"
-                                        }`} />
-                                        <div className={`absolute bottom-full w-0 h-0 border-[3px] border-transparent border-b-[#FAF6EE] translate-y-[1px] ${
-                                          idx === 0 ? "left-[13px]" : "left-1/2 -translate-x-1/2"
-                                        }`} />
+                                        <div
+                                          className={`absolute bottom-full w-0 h-0 border-4 border-transparent border-b-[#E8DFD0] ${
+                                            idx === 0
+                                              ? "left-3"
+                                              : "left-1/2 -translate-x-1/2"
+                                          }`}
+                                        />
+                                        <div
+                                          className={`absolute bottom-full w-0 h-0 border-[3px] border-transparent border-b-[#FAF6EE] translate-y-[1px] ${
+                                            idx === 0
+                                              ? "left-[13px]"
+                                              : "left-1/2 -translate-x-1/2"
+                                          }`}
+                                        />
                                         <span>{m.name}</span>
                                       </div>
                                     </div>
                                   ))}
                                 </div>
                                 <span className="text-[10px] text-slate-400 font-medium truncate max-w-[100px]">
-                                  Leader: <span className="font-bold text-slate-600">{reg.groupId?.leader?.name || "Unknown"}</span>
+                                  Leader:{" "}
+                                  <span className="font-bold text-slate-600">
+                                    {reg.groupId?.leader?.name || "Unknown"}
+                                  </span>
                                 </span>
                               </div>
                             </div>
@@ -1072,36 +1459,53 @@ export default function EventDetailsPage() {
                             <div className="flex items-center gap-2.5">
                               <div className="w-7 h-7 rounded-full bg-slate-100 overflow-hidden flex items-center justify-center shrink-0 border border-[#eaeaea]">
                                 {reg.userId?.image ? (
-                                  <img src={reg.userId.image} alt="" className="w-full h-full object-cover" />
+                                  <img
+                                    src={reg.userId.image}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                  />
                                 ) : (
                                   <User size={11} className="text-slate-400" />
                                 )}
                               </div>
                               <div className="min-w-0">
-                                <p className="font-bold text-slate-800 truncate max-w-[160px]">{reg.userId?.name || "Unknown user"}</p>
-                                <p className="text-[10px] text-slate-400 font-normal truncate max-w-[160px]">{reg.userId?.email}</p>
+                                <p className="font-bold text-slate-800 truncate max-w-[160px]">
+                                  {reg.userId?.name || "Unknown user"}
+                                </p>
+                                <p className="text-[10px] text-slate-400 font-normal truncate max-w-[160px]">
+                                  {reg.userId?.email}
+                                </p>
                               </div>
                             </div>
                           )}
                         </td>
 
                         <td className="py-4 px-4 text-slate-600 font-medium text-sm">
-                          {new Date(reg.registeredAt).toLocaleDateString("en-IN", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
+                          {new Date(reg.registeredAt).toLocaleDateString(
+                            "en-IN",
+                            {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            },
+                          )}
                         </td>
 
                         {event.customQuestions?.map((q) => {
-                          const ansObj = reg.customQuestionAnswers?.find((ans) => ans.questionId === q.id);
+                          const ansObj = reg.customQuestionAnswers?.find(
+                            (ans) => ans.questionId === q.id,
+                          );
                           const formattedAns = ansObj
                             ? Array.isArray(ansObj.answer)
                               ? ansObj.answer.join(", ")
                               : ansObj.answer
                             : "-";
                           return (
-                            <td key={q.id} className="py-4 px-4 text-slate-600 font-medium text-sm max-w-[150px] truncate" title={formattedAns}>
+                            <td
+                              key={q.id}
+                              className="py-4 px-4 text-slate-600 font-medium text-sm max-w-[150px] truncate"
+                              title={formattedAns}
+                            >
                               {formattedAns}
                             </td>
                           );
@@ -1110,7 +1514,12 @@ export default function EventDetailsPage() {
                         <td className="py-4 pl-4 pr-6 text-right">
                           <select
                             value={reg.status}
-                            onChange={(e) => handleAttendanceChange(reg._id, e.target.value as any)}
+                            onChange={(e) =>
+                              handleAttendanceChange(
+                                reg._id,
+                                e.target.value as any,
+                              )
+                            }
                             className={`px-3 py-1 text-[10px] font-bold rounded-full border outline-none cursor-pointer transition-colors shadow-sm ${
                               reg.status === "attended"
                                 ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100/50"
@@ -1119,9 +1528,24 @@ export default function EventDetailsPage() {
                                   : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
                             }`}
                           >
-                            <option value="registered" className="bg-white text-slate-800 font-medium">Registered</option>
-                            <option value="attended" className="bg-white text-slate-800 font-medium">Attended</option>
-                            <option value="absent" className="bg-white text-slate-800 font-medium">Absent</option>
+                            <option
+                              value="registered"
+                              className="bg-white text-slate-800 font-medium"
+                            >
+                              Registered
+                            </option>
+                            <option
+                              value="attended"
+                              className="bg-white text-slate-800 font-medium"
+                            >
+                              Attended
+                            </option>
+                            <option
+                              value="absent"
+                              className="bg-white text-slate-800 font-medium"
+                            >
+                              Absent
+                            </option>
                           </select>
                         </td>
                       </tr>
@@ -1136,29 +1560,47 @@ export default function EventDetailsPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100 sticky top-0 bg-white z-10">
-                  <th className="py-3.5 pl-6 pr-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">Transaction ID</th>
-                  <th className="py-3.5 px-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">Participant</th>
-                  <th className="py-3.5 px-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">Date & Time</th>
-                  <th className="py-3.5 pl-4 pr-6 font-bold text-slate-400 text-[10px] tracking-wider uppercase text-right">Amount</th>
+                  <th className="py-3.5 pl-6 pr-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">
+                    Transaction ID
+                  </th>
+                  <th className="py-3.5 px-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">
+                    Participant
+                  </th>
+                  <th className="py-3.5 px-4 font-bold text-slate-400 text-[10px] tracking-wider uppercase">
+                    Date & Time
+                  </th>
+                  <th className="py-3.5 pl-4 pr-6 font-bold text-slate-400 text-[10px] tracking-wider uppercase text-right">
+                    Amount
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {payments.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="py-16 text-center text-slate-400 font-semibold text-xs">
+                    <td
+                      colSpan={4}
+                      className="py-16 text-center text-slate-400 font-semibold text-xs"
+                    >
                       No transactions registered.
                     </td>
                   </tr>
                 ) : (
                   payments.map((p) => (
-                    <tr key={p.razorpayOrderId} className="hover:bg-slate-50/50 transition-colors">
+                    <tr
+                      key={p.razorpayOrderId}
+                      className="hover:bg-slate-50/50 transition-colors"
+                    >
                       <td className="py-4 pl-6 pr-4 font-mono font-semibold text-xs text-slate-600">
                         {p.razorpayPaymentId || p.razorpayOrderId}
                       </td>
                       <td className="py-4 px-4">
                         <div>
-                          <p className="font-bold text-slate-800 text-sm">{p.userId?.name || "Participant"}</p>
-                          <p className="text-xs text-slate-400 font-normal">{p.userId?.email}</p>
+                          <p className="font-bold text-slate-800 text-sm">
+                            {p.userId?.name || "Participant"}
+                          </p>
+                          <p className="text-xs text-slate-400 font-normal">
+                            {p.userId?.email}
+                          </p>
                         </div>
                       </td>
                       <td className="py-4 px-4 text-slate-600 font-medium text-sm">
@@ -1182,20 +1624,33 @@ export default function EventDetailsPage() {
             <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Star Rating Distribution chart */}
               <div className="bg-slate-50/70 rounded-3xl p-6 border border-slate-200/60 h-fit shadow-sm">
-                <h4 className="text-sm font-bold text-slate-800 mb-4">Rating Breakdown</h4>
+                <h4 className="text-sm font-bold text-slate-800 mb-4">
+                  Rating Breakdown
+                </h4>
                 <div className="space-y-3">
                   {[5, 4, 3, 2, 1].map((rating) => {
                     const count = ratingStats.stars[rating] || 0;
-                    const pct = feedbacks.length > 0 
-                      ? ((count / feedbacks.length) * 100).toFixed(0)
-                      : "0";
+                    const pct =
+                      feedbacks.length > 0
+                        ? ((count / feedbacks.length) * 100).toFixed(0)
+                        : "0";
                     return (
-                      <div key={rating} className="flex items-center gap-3 text-xs font-semibold text-slate-600">
-                        <span className="w-5 text-slate-500 font-bold">{rating}★</span>
+                      <div
+                        key={rating}
+                        className="flex items-center gap-3 text-xs font-semibold text-slate-600"
+                      >
+                        <span className="w-5 text-slate-500 font-bold">
+                          {rating}★
+                        </span>
                         <div className="flex-1 bg-slate-200/80 h-2 rounded-full overflow-hidden">
-                          <div className="bg-[#7CB342] h-full rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
+                          <div
+                            className="bg-[#7CB342] h-full rounded-full transition-all duration-300"
+                            style={{ width: `${pct}%` }}
+                          />
                         </div>
-                        <span className="w-8 text-right text-slate-400 text-xs font-medium">{count}</span>
+                        <span className="w-8 text-right text-slate-400 text-xs font-medium">
+                          {count}
+                        </span>
                       </div>
                     );
                   })}
@@ -1210,23 +1665,34 @@ export default function EventDetailsPage() {
                   </div>
                 ) : (
                   feedbacks.map((fb) => (
-                    <div key={fb._id} className="p-5 bg-white rounded-3xl border border-slate-200/60 shadow-sm hover:shadow transition-shadow">
+                    <div
+                      key={fb._id}
+                      className="p-5 bg-white rounded-3xl border border-slate-200/60 shadow-sm hover:shadow transition-shadow"
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-800 text-sm">{fb.userId.name}</span>
+                          <span className="font-bold text-slate-800 text-sm">
+                            {fb.userId.name}
+                          </span>
                         </div>
                         <div className="flex items-center gap-0.5">
                           {[1, 2, 3, 4, 5].map((i) => (
                             <Star
                               key={i}
                               size={12}
-                              className={i <= fb.rating ? "text-amber-400 fill-amber-400" : "text-slate-200"}
+                              className={
+                                i <= fb.rating
+                                  ? "text-amber-400 fill-amber-400"
+                                  : "text-slate-200"
+                              }
                             />
                           ))}
                         </div>
                       </div>
                       {fb.comment && (
-                        <p className="text-slate-600 mt-2 text-xs font-medium leading-relaxed">{fb.comment}</p>
+                        <p className="text-slate-600 mt-2 text-xs font-medium leading-relaxed">
+                          {fb.comment}
+                        </p>
                       )}
                     </div>
                   ))
@@ -1235,6 +1701,374 @@ export default function EventDetailsPage() {
             </div>
           )}
 
+          {activeTab === "winners" && (
+            <div className="p-6 sm:p-8 pb-8">
+              <motion.div 
+                layout
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="flex flex-col lg:flex-row items-end justify-center gap-8 lg:gap-12 max-w-7xl mx-auto px-2 sm:px-4 mt-2 sm:mt-4 min-h-[420px] relative"
+              >
+                {/* Left/Center: Podium */}
+                <motion.div 
+                  layout
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  className={`w-full flex items-end justify-center gap-2 sm:gap-6 ${
+                    openDropdownPos !== null ? "flex-1 max-w-xl" : "max-w-xl mx-auto"
+                  }`}
+                >
+                  {[2, 1, 3].map((pos) => {
+                    if (pos > (event.numberOfWinners || 1)) return null;
+                    const winner = currentWinners.find(
+                      (w) => w.position === pos,
+                    )?.participant;
+                    let theme = {
+                      color: "text-orange-500",
+                      bg: "bg-orange-500",
+                      lightBg: "bg-orange-50",
+                      border: "border-orange-200",
+                      label: "3rd Place",
+                    };
+                    if (pos === 1)
+                      theme = {
+                        color: "text-amber-500",
+                        bg: "bg-amber-500",
+                        lightBg: "bg-amber-50",
+                        border: "border-amber-200",
+                        label: "1st Place",
+                      };
+                    if (pos === 2)
+                      theme = {
+                        color: "text-slate-400",
+                        bg: "bg-slate-400",
+                        lightBg: "bg-slate-50",
+                        border: "border-slate-200",
+                        label: "2nd Place",
+                      };
+
+                    const height =
+                      pos === 1 ? "h-[160px]" : pos === 2 ? "h-[120px]" : "h-[90px]";
+                    const isOpen = openDropdownPos === pos;
+
+                    return (
+                      <div
+                        key={pos}
+                        className="flex flex-col items-center justify-end flex-1 max-w-[200px] relative"
+                      >
+                        <div className="mb-4 w-full relative group/slot">
+                          <button
+                            onClick={() => setOpenDropdownPos(isOpen ? null : pos)}
+                            className="w-full outline-none text-left relative cursor-pointer"
+                          >
+                            {winner ? (
+                              <div
+                                className={`relative p-3 rounded-lg border ${theme.border} ${theme.lightBg} shadow-sm text-center transform transition-transform hover:scale-105 flex flex-col items-center justify-center`}
+                              >
+                                {event.eventType === "team" ? (
+                                  <div className="flex flex-col items-center justify-center space-y-2">
+                                    <div className="flex -space-x-2 py-1 shrink-0">
+                                      {winner.groupId?.members?.slice(0, 4).map((m: any) => (
+                                        <div
+                                          key={m._id}
+                                          className="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-slate-100 relative group shrink-0"
+                                        >
+                                          <div className="w-full h-full rounded-full overflow-hidden">
+                                            {m.image ? (
+                                              <img src={m.image} alt="" className="h-full w-full object-cover" />
+                                            ) : (
+                                              <div className="h-full w-full flex items-center justify-center text-[10px] font-black text-slate-450 uppercase">
+                                                {m.name?.charAt(0)}
+                                              </div>
+                                            )}
+                                          </div>
+                                          {m._id === winner.groupId?.leader?._id && (
+                                            <div className="absolute inset-0 border-2 border-amber-500 rounded-full" />
+                                          )}
+                                        </div>
+                                      ))}
+                                      {(winner.groupId?.members?.length || 0) > 4 && (
+                                        <div className="inline-block h-8 w-8 rounded-full ring-2 ring-white bg-slate-100 relative shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-500">
+                                          +{(winner.groupId?.members?.length || 0) - 4}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <p className="font-bold text-slate-800 text-xs truncate max-w-[140px]" title={winner.groupId?.name}>
+                                      {winner.groupId?.name}
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className="w-10 h-10 mx-auto rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden mb-2">
+                                      {winner.userId?.image ? (
+                                        <img src={winner.userId.image} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <span className="font-bold text-slate-400 text-xs">{winner.userId?.name?.charAt(0)}</span>
+                                      )}
+                                    </div>
+                                    <p className="font-bold text-slate-800 text-xs truncate max-w-[140px]" title={winner.userId?.name}>
+                                      {winner.userId?.name}
+                                    </p>
+                                  </>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="px-2">
+                                <div
+                                  className={`p-3 rounded-lg border border-dashed ${
+                                    isOpen ? theme.border : "border-slate-300"
+                                  } ${
+                                    isOpen ? theme.lightBg : "bg-slate-50"
+                                  } text-center opacity-80 hover:opacity-100 transition-all`}
+                                >
+                                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                                    Assign...
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </button>
+
+                          {/* Quick Unassign X button */}
+                          {winner && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                unassignWinner(pos);
+                              }}
+                              disabled={loadingId === `unassign-${pos}`}
+                              className="absolute -top-2 -right-2 p-1 bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-full border border-slate-200 shadow-sm transition-all opacity-0 group-hover/slot:opacity-100 cursor-pointer z-20 hover:scale-110"
+                              title="Unassign winner"
+                            >
+                              <X size={12} />
+                            </button>
+                          )}
+                        </div>
+
+                        <div
+                          className={`w-full ${height} ${theme.bg} rounded-t-lg flex flex-col items-center pt-3 shadow-inner relative overflow-hidden pointer-events-none`}
+                        >
+                          <div className="absolute inset-0 bg-white/20" />
+                          <span className="relative font-black text-white text-3xl opacity-90">
+                            {pos}
+                          </span>
+                          <span className="relative text-[10px] font-bold text-white uppercase tracking-wider opacity-80 mt-1">
+                            {theme.label}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </motion.div>
+
+                {/* Right Side: Animated Assignment Table */}
+                <AnimatePresence mode="wait">
+                  {openDropdownPos !== null && (
+                    <motion.div
+                      key={`assignment-table-${openDropdownPos}`}
+                      initial={{ opacity: 0, x: 30, scale: 0.96 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{ opacity: 0, x: 30, scale: 0.96, transition: { duration: 0.15 } }}
+                      transition={{ type: "spring", stiffness: 320, damping: 28 }}
+                      className="flex-1 w-full flex flex-col justify-end h-auto max-w-2xl"
+                    >
+                      <div className="h-[420px] flex flex-col border border-slate-200 rounded-xl shadow-sm bg-white overflow-hidden">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-slate-100 shrink-0 bg-slate-50/70">
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2.5 h-2.5 rounded-full ${
+                              openDropdownPos === 1 ? 'bg-amber-500' : openDropdownPos === 2 ? 'bg-slate-400' : 'bg-orange-500'
+                            }`} />
+                            <h3 className="font-bold text-slate-800 text-sm">
+                              Assign {openDropdownPos === 1 ? '1st Place' : openDropdownPos === 2 ? '2nd Place' : '3rd Place'}
+                            </h3>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {currentWinners.some((w) => w.position === openDropdownPos) && (
+                              <button
+                                onClick={() => unassignWinner(openDropdownPos)}
+                                disabled={loadingId === `unassign-${openDropdownPos}`}
+                                className="text-xs text-rose-600 hover:text-rose-700 font-semibold px-2.5 py-1 rounded-md bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
+                              >
+                                Unassign
+                              </button>
+                            )}
+                            <button 
+                              onClick={() => {
+                                setOpenDropdownPos(null);
+                                setWinnerSearchQuery("");
+                              }} 
+                              className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors border border-transparent cursor-pointer"
+                              title="Close"
+                              aria-label="Close"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Search Bar */}
+                        <div className="p-2.5 border-b border-slate-100 bg-white shrink-0">
+                          <div className="relative">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                            <input 
+                              type="text"
+                              placeholder={event.eventType === "team" ? "Search teams or members..." : "Search participants by name or email..."}
+                              value={winnerSearchQuery}
+                              onChange={(e) => setWinnerSearchQuery(e.target.value)}
+                              className="w-full pl-9 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-slate-400"
+                            />
+                            {winnerSearchQuery && (
+                              <button 
+                                onClick={() => setWinnerSearchQuery("")}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                              >
+                                <X size={12} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Table Content */}
+                        <div className="flex-1 overflow-y-auto min-h-0 relative">
+                          <table className="w-full text-left border-collapse absolute top-0 w-full">
+                            <thead className="sticky top-0 z-10">
+                              <tr className="bg-slate-50 border-b border-slate-100 shadow-2xs">
+                                {event.eventType === "team" ? (
+                                  <th className="py-2.5 px-6 font-bold text-slate-400 text-[10px] tracking-wider uppercase bg-slate-50">
+                                    Team / Leader
+                                  </th>
+                                ) : (
+                                  <th className="py-2.5 px-6 font-bold text-slate-400 text-[10px] tracking-wider uppercase bg-slate-50">
+                                    Participant
+                                  </th>
+                                )}
+                                <th className="py-2.5 px-6 font-bold text-slate-400 text-[10px] tracking-wider uppercase text-right bg-slate-50">
+                                  Action
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 bg-white">
+                              {(() => {
+                                const filtered = registrations.filter(p => {
+                                  const isAlreadyWinner = currentWinners.some((w) => w.participant._id === p._id);
+                                  if (isAlreadyWinner) return false;
+                                  const id = event.eventType === "team" ? p.groupId?._id : p.userId?._id;
+                                  if (!id) return false;
+
+                                  if (!winnerSearchQuery.trim()) return true;
+                                  const q = winnerSearchQuery.toLowerCase();
+                                  if (event.eventType === "team") {
+                                    const teamName = p.groupId?.name?.toLowerCase() || "";
+                                    const leaderName = p.groupId?.leader?.name?.toLowerCase() || "";
+                                    const hasMember = p.groupId?.members?.some((m: any) => m.name?.toLowerCase().includes(q)) || false;
+                                    return teamName.includes(q) || leaderName.includes(q) || hasMember;
+                                  } else {
+                                    const userName = p.userId?.name?.toLowerCase() || "";
+                                    const userEmail = p.userId?.email?.toLowerCase() || "";
+                                    return userName.includes(q) || userEmail.includes(q);
+                                  }
+                                });
+
+                                if (filtered.length === 0) {
+                                  return (
+                                    <tr>
+                                      <td colSpan={2} className="py-12 text-center text-xs font-medium text-slate-400">
+                                        {winnerSearchQuery.trim() ? `No results found for "${winnerSearchQuery}"` : "No participants available to assign"}
+                                      </td>
+                                    </tr>
+                                  );
+                                }
+
+                                return filtered.map(p => {
+                                  const id = event.eventType === "team" ? p.groupId?._id : p.userId?._id;
+                                  const name = event.eventType === "team" ? p.groupId?.name : p.userId?.name;
+
+                                  return (
+                                    <tr key={p._id} className="hover:bg-slate-50/60 transition-colors group">
+                                      <td className="py-3 px-6">
+                                        {event.eventType === "team" ? (
+                                          <div className="space-y-1.5 py-0.5">
+                                            <div className="flex items-center gap-2">
+                                              <p className="font-bold text-slate-800 text-xs sm:text-sm truncate max-w-[200px]">
+                                                {p.groupId?.name || "Unknown Team"}
+                                              </p>
+                                              <span className="text-[9px] font-bold text-[#7CB342] bg-[#f0f7e6] border border-[#7CB342]/10 px-1.5 py-0.5 rounded-sm shrink-0">
+                                                {p.groupId?.members?.length || 0} Members
+                                              </span>
+                                            </div>
+                                            <div className="flex items-center">
+                                              <div className="flex -space-x-2 py-0.5 shrink-0">
+                                                {p.groupId?.members?.slice(0, 5).map((m: any) => (
+                                                  <div
+                                                    key={m._id}
+                                                    className="inline-block h-7 w-7 rounded-full ring-2 ring-white bg-slate-100 relative shrink-0"
+                                                  >
+                                                    <div className="w-full h-full rounded-full overflow-hidden">
+                                                      {m.image ? (
+                                                        <img src={m.image} alt="" className="h-full w-full object-cover" />
+                                                      ) : (
+                                                        <div className="h-full w-full flex items-center justify-center text-[9px] font-black text-slate-450 uppercase">
+                                                          {m.name?.charAt(0)}
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                    {m._id === p.groupId?.leader?._id && (
+                                                      <div className="absolute inset-0 border border-[#7CB342] rounded-full" />
+                                                    )}
+                                                  </div>
+                                                ))}
+                                                {(p.groupId?.members?.length || 0) > 5 && (
+                                                  <div className="inline-block h-7 w-7 rounded-full ring-2 ring-white bg-slate-100 relative shrink-0 flex items-center justify-center text-[9px] font-bold text-slate-500">
+                                                    +{(p.groupId?.members?.length || 0) - 5}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                                              {p.userId?.image ? (
+                                                <img src={p.userId.image} alt="" className="w-full h-full object-cover" />
+                                              ) : (
+                                                <span className="font-bold text-slate-400 text-xs">
+                                                  {(name || "?")?.charAt(0)}
+                                                </span>
+                                              )}
+                                            </div>
+                                            <div>
+                                              <p className="font-bold text-slate-800 text-sm">{name}</p>
+                                              <p className="text-[10px] text-slate-500 mt-0.5">{p.userId?.email}</p>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </td>
+                                      <td className="py-3 px-6 text-right">
+                                        <button
+                                          onClick={() => {
+                                            assignWinner(id, openDropdownPos);
+                                            setOpenDropdownPos(null);
+                                            setWinnerSearchQuery("");
+                                          }}
+                                          disabled={loadingId !== null}
+                                          className="px-4 py-2 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 rounded-lg transition-all shadow-2xs opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
+                                        >
+                                          Assign
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  );
+                                });
+                              })()}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1246,7 +2080,9 @@ export default function EventDetailsPage() {
               <Heart size={18} className="text-rose-500 fill-rose-500" />
               Event Admirers & Engagement
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">Real-time audience interaction and users who liked this event.</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Real-time audience interaction and users who liked this event.
+            </p>
           </div>
           <span className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 px-3 py-1 rounded-full flex items-center gap-1.5">
             <Heart size={12} className="fill-rose-500" />
@@ -1258,7 +2094,9 @@ export default function EventDetailsPage() {
           <div className="bg-rose-50/60 rounded-2xl p-5 border border-rose-100/80 flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-rose-600">Total Likes</p>
-              <p className="text-2xl font-extrabold text-slate-900 mt-1">{event.likedBy?.length || event.likes}</p>
+              <p className="text-2xl font-extrabold text-slate-900 mt-1">
+                {event.likedBy?.length || event.likes}
+              </p>
             </div>
             <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
               <Heart size={20} className="fill-rose-500 text-rose-500" />
@@ -1267,8 +2105,12 @@ export default function EventDetailsPage() {
 
           <div className="bg-blue-50/60 rounded-2xl p-5 border border-blue-100/80 flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-blue-600">Total Page Views</p>
-              <p className="text-2xl font-extrabold text-slate-900 mt-1">{event.views}</p>
+              <p className="text-xs font-semibold text-blue-600">
+                Total Page Views
+              </p>
+              <p className="text-2xl font-extrabold text-slate-900 mt-1">
+                {event.views}
+              </p>
             </div>
             <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
               <Eye size={20} />
@@ -1277,9 +2119,17 @@ export default function EventDetailsPage() {
 
           <div className="bg-emerald-50/60 rounded-2xl p-5 border border-emerald-100/80 flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-emerald-600">Engagement Rate</p>
+              <p className="text-xs font-semibold text-emerald-600">
+                Engagement Rate
+              </p>
               <p className="text-2xl font-extrabold text-slate-900 mt-1">
-                {event.views > 0 ? (((event.likedBy?.length || event.likes) / event.views) * 100).toFixed(1) : 0}%
+                {event.views > 0
+                  ? (
+                      ((event.likedBy?.length || event.likes) / event.views) *
+                      100
+                    ).toFixed(1)
+                  : 0}
+                %
               </p>
             </div>
             <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
@@ -1288,27 +2138,40 @@ export default function EventDetailsPage() {
           </div>
         </div>
 
-        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Liked By</h4>
+        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">
+          Liked By
+        </h4>
         {!event.likedBy || event.likedBy.length === 0 ? (
           <div className="text-center py-12 text-slate-400 border border-dashed border-slate-200 rounded-2xl font-semibold text-xs">
-            {event.likes > 0 
+            {event.likes > 0
               ? `${event.likes} guest user(s) liked this event.`
               : "No likes logged for this event yet."}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
             {event.likedBy.map((user) => (
-              <div key={user._id} className="p-3.5 bg-slate-50/50 hover:bg-white rounded-xl border border-slate-200/60 shadow-xs flex items-center gap-3 hover:shadow-sm transition-all">
+              <div
+                key={user._id}
+                className="p-3.5 bg-slate-50/50 hover:bg-white rounded-xl border border-slate-200/60 shadow-xs flex items-center gap-3 hover:shadow-sm transition-all"
+              >
                 <div className="w-9 h-9 rounded-full bg-white overflow-hidden flex items-center justify-center shrink-0 border border-slate-200">
                   {user.image ? (
-                    <img src={user.image} alt="" className="w-full h-full object-cover" />
+                    <img
+                      src={user.image}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <User size={16} className="text-slate-400" />
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-bold text-slate-800 text-sm truncate">{user.name}</p>
-                  <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                  <p className="font-bold text-slate-800 text-sm truncate">
+                    {user.name}
+                  </p>
+                  <p className="text-xs text-slate-400 truncate">
+                    {user.email}
+                  </p>
                 </div>
                 <div className="w-6 h-6 rounded-full bg-rose-50 flex items-center justify-center shrink-0">
                   <Heart size={11} className="fill-rose-500 text-rose-500" />
@@ -1330,136 +2193,511 @@ export default function EventDetailsPage() {
       )}
 
       {/* ── Hidden Bill – renders off-screen, cloned into iframe for PDF ── */}
-      <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-        <div ref={billRef} style={{
-          width: '794px',
-          background: '#ffffff',
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-          color: '#0f172a',
-          fontSize: '13px',
-          lineHeight: '1.6',
-        }}>
+      <div style={{ position: "absolute", left: "-9999px", top: "-9999px" }}>
+        <div
+          ref={billRef}
+          style={{
+            width: "794px",
+            background: "#ffffff",
+            fontFamily:
+              '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+            color: "#0f172a",
+            fontSize: "13px",
+            lineHeight: "1.6",
+          }}
+        >
           {/* Main content */}
-          <div style={{ padding: '52px 60px 60px' }}>
-
+          <div style={{ padding: "52px 60px 60px" }}>
             {/* ── HEADER ── */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '52px' }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "52px",
+              }}
+            >
               {/* Brand */}
               <div>
-                <div style={{ fontSize: '20px', fontWeight: '850', color: '#0f172a', letterSpacing: '-0.3px', lineHeight: '1.1' }}>Clubly</div>
-                <div style={{ fontSize: '10px', fontWeight: '600', color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: '6px' }}>Event Management Platform</div>
+                <div
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: "850",
+                    color: "#0f172a",
+                    letterSpacing: "-0.3px",
+                    lineHeight: "1.1",
+                  }}
+                >
+                  Clubly
+                </div>
+                <div
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: "600",
+                    color: "#94a3b8",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    marginTop: "6px",
+                  }}
+                >
+                  Event Management Platform
+                </div>
               </div>
 
               {/* Invoice meta */}
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '22px', fontWeight: '850', color: '#0f172a', letterSpacing: '-0.5px', marginBottom: '6px' }}>Settlement Statement</div>
-                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500' }}>
-                  <span style={{ color: '#94a3b8' }}>Ref. </span>#ST-{event._id.slice(-6).toUpperCase()}
+              <div style={{ textAlign: "right" }}>
+                <div
+                  style={{
+                    fontSize: "22px",
+                    fontWeight: "850",
+                    color: "#0f172a",
+                    letterSpacing: "-0.5px",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Settlement Statement
                 </div>
-                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500', marginTop: '2px' }}>
-                  <span style={{ color: '#94a3b8' }}>Issued </span>{new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "#64748b",
+                    fontWeight: "500",
+                  }}
+                >
+                  <span style={{ color: "#94a3b8" }}>Ref. </span>#ST-
+                  {event._id.slice(-6).toUpperCase()}
+                </div>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "#64748b",
+                    fontWeight: "500",
+                    marginTop: "2px",
+                  }}
+                >
+                  <span style={{ color: "#94a3b8" }}>Issued </span>
+                  {new Date().toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric",
+                  })}
                 </div>
               </div>
             </div>
 
             {/* ── DIVIDER ── */}
-            <div style={{ height: '1px', background: '#e2e8f0', marginBottom: '40px' }} />
+            <div
+              style={{
+                height: "1px",
+                background: "#e2e8f0",
+                marginBottom: "40px",
+              }}
+            />
 
             {/* ── EVENT DETAILS BAND ── */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '44px' }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "44px",
+              }}
+            >
               <div>
-                <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Event</div>
-                <div style={{ fontSize: '20px', fontWeight: '850', color: '#0f172a', letterSpacing: '-0.3px', marginBottom: '5px' }}>{event.name}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '12px', color: '#64748b', fontWeight: '500' }}>
-                  <span>{new Date(event.date).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                  <span style={{ color: '#cbd5e1' }}>·</span>
-                  <span style={{ textTransform: 'capitalize' }}>{event.eventType} Format</span>
-                  <span style={{ color: '#cbd5e1' }}>·</span>
+                <div
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: "700",
+                    color: "#94a3b8",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    marginBottom: "10px",
+                  }}
+                >
+                  Event
+                </div>
+                <div
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: "850",
+                    color: "#0f172a",
+                    letterSpacing: "-0.3px",
+                    marginBottom: "5px",
+                  }}
+                >
+                  {event.name}
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    fontSize: "12px",
+                    color: "#64748b",
+                    fontWeight: "500",
+                  }}
+                >
+                  <span>
+                    {new Date(event.date).toLocaleDateString("en-IN", {
+                      weekday: "short",
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                  <span style={{ color: "#cbd5e1" }}>·</span>
+                  <span style={{ textTransform: "capitalize" }}>
+                    {event.eventType} Format
+                  </span>
+                  <span style={{ color: "#cbd5e1" }}>·</span>
                   <span>{registrations.length} Registrations</span>
                 </div>
               </div>
-              <div style={{
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '10px',
-                padding: '12px 20px 18px',
-                textAlign: 'center',
-                minWidth: '120px',
-              }}>
-                <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px' }}>Ticket Price</div>
-                <div style={{ fontSize: '22px', fontWeight: '850', color: '#0f172a', letterSpacing: '-0.5px' }}>₹{event.registrationFee.toLocaleString()}</div>
+              <div
+                style={{
+                  background: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "10px",
+                  padding: "12px 20px 18px",
+                  textAlign: "center",
+                  minWidth: "120px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: "700",
+                    color: "#94a3b8",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Ticket Price
+                </div>
+                <div
+                  style={{
+                    fontSize: "22px",
+                    fontWeight: "850",
+                    color: "#0f172a",
+                    letterSpacing: "-0.5px",
+                  }}
+                >
+                  ₹{event.registrationFee.toLocaleString()}
+                </div>
               </div>
             </div>
 
             {/* ── LEDGER TABLE ── */}
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '0' }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                marginBottom: "0",
+              }}
+            >
               <thead>
-                <tr style={{ borderBottom: '1.5px solid #0f172a' }}>
-                  <th style={{ padding: '0 0 12px 0', textAlign: 'left', fontSize: '10px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Description</th>
-                  <th style={{ padding: '0 0 12px 0', textAlign: 'center', fontSize: '10px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Qty</th>
-                  <th style={{ padding: '0 0 12px 0', textAlign: 'center', fontSize: '10px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Unit Price</th>
-                  <th style={{ padding: '0 0 12px 0', textAlign: 'right', fontSize: '10px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Amount</th>
+                <tr style={{ borderBottom: "1.5px solid #0f172a" }}>
+                  <th
+                    style={{
+                      padding: "0 0 12px 0",
+                      textAlign: "left",
+                      fontSize: "10px",
+                      fontWeight: "700",
+                      color: "#94a3b8",
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Description
+                  </th>
+                  <th
+                    style={{
+                      padding: "0 0 12px 0",
+                      textAlign: "center",
+                      fontSize: "10px",
+                      fontWeight: "700",
+                      color: "#94a3b8",
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Qty
+                  </th>
+                  <th
+                    style={{
+                      padding: "0 0 12px 0",
+                      textAlign: "center",
+                      fontSize: "10px",
+                      fontWeight: "700",
+                      color: "#94a3b8",
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Unit Price
+                  </th>
+                  <th
+                    style={{
+                      padding: "0 0 12px 0",
+                      textAlign: "right",
+                      fontSize: "10px",
+                      fontWeight: "700",
+                      color: "#94a3b8",
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Amount
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '18px 0' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a', marginBottom: '3px' }}>Event Registration Tickets</div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>Paid registrations via Clubly portal</div>
+                <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                  <td style={{ padding: "18px 0" }}>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        color: "#0f172a",
+                        marginBottom: "3px",
+                      }}
+                    >
+                      Event Registration Tickets
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "#94a3b8",
+                        fontWeight: "500",
+                      }}
+                    >
+                      Paid registrations via Clubly portal
+                    </div>
                   </td>
-                  <td style={{ padding: '18px 0', textAlign: 'center', fontSize: '13px', fontWeight: '600', color: '#334155' }}>{registrations.length}</td>
-                  <td style={{ padding: '18px 0', textAlign: 'center', fontSize: '13px', fontWeight: '600', color: '#334155' }}>₹{event.registrationFee.toLocaleString()}</td>
-                  <td style={{ padding: '18px 0', textAlign: 'right', fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>₹{(event.registrationFee * registrations.length).toLocaleString()}</td>
+                  <td
+                    style={{
+                      padding: "18px 0",
+                      textAlign: "center",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "#334155",
+                    }}
+                  >
+                    {registrations.length}
+                  </td>
+                  <td
+                    style={{
+                      padding: "18px 0",
+                      textAlign: "center",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "#334155",
+                    }}
+                  >
+                    ₹{event.registrationFee.toLocaleString()}
+                  </td>
+                  <td
+                    style={{
+                      padding: "18px 0",
+                      textAlign: "right",
+                      fontSize: "14px",
+                      fontWeight: "700",
+                      color: "#0f172a",
+                    }}
+                  >
+                    ₹
+                    {(
+                      event.registrationFee * registrations.length
+                    ).toLocaleString()}
+                  </td>
                 </tr>
-                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '18px 0' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#0f172a', marginBottom: '3px' }}>Razorpay Payment Gateway Fee</div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>Standard platform processing fee</div>
+                <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
+                  <td style={{ padding: "18px 0" }}>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        color: "#0f172a",
+                        marginBottom: "3px",
+                      }}
+                    >
+                      Razorpay Payment Gateway Fee
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "#94a3b8",
+                        fontWeight: "500",
+                      }}
+                    >
+                      Standard platform processing fee
+                    </div>
                   </td>
-                  <td style={{ padding: '18px 0', textAlign: 'center', fontSize: '13px', fontWeight: '600', color: '#334155' }}>—</td>
-                  <td style={{ padding: '18px 0', textAlign: 'center', fontSize: '13px', fontWeight: '600', color: '#334155' }}>2.0%</td>
-                  <td style={{ padding: '18px 0', textAlign: 'right', fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>− ₹{Math.round(event.registrationFee * registrations.length * 0.02).toLocaleString()}</td>
+                  <td
+                    style={{
+                      padding: "18px 0",
+                      textAlign: "center",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "#334155",
+                    }}
+                  >
+                    —
+                  </td>
+                  <td
+                    style={{
+                      padding: "18px 0",
+                      textAlign: "center",
+                      fontSize: "13px",
+                      fontWeight: "600",
+                      color: "#334155",
+                    }}
+                  >
+                    2.0%
+                  </td>
+                  <td
+                    style={{
+                      padding: "18px 0",
+                      textAlign: "right",
+                      fontSize: "14px",
+                      fontWeight: "700",
+                      color: "#0f172a",
+                    }}
+                  >
+                    − ₹
+                    {Math.round(
+                      event.registrationFee * registrations.length * 0.02,
+                    ).toLocaleString()}
+                  </td>
                 </tr>
               </tbody>
             </table>
 
             {/* ── TOTAL BLOCK ── */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '32px', marginBottom: '52px' }}>
-              <div style={{ width: '300px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748b', fontWeight: '500', padding: '7px 0', borderBottom: '1px solid #f1f5f9' }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginTop: "32px",
+                marginBottom: "52px",
+              }}
+            >
+              <div style={{ width: "300px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "12px",
+                    color: "#64748b",
+                    fontWeight: "500",
+                    padding: "7px 0",
+                    borderBottom: "1px solid #f1f5f9",
+                  }}
+                >
                   <span>Gross Revenue</span>
-                  <span>₹{(event.registrationFee * registrations.length).toLocaleString()}</span>
+                  <span>
+                    ₹
+                    {(
+                      event.registrationFee * registrations.length
+                    ).toLocaleString()}
+                  </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748b', fontWeight: '500', padding: '7px 0' }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "12px",
+                    color: "#64748b",
+                    fontWeight: "500",
+                    padding: "7px 0",
+                  }}
+                >
                   <span>Gateway Fee (2%)</span>
-                  <span>− ₹{Math.round(event.registrationFee * registrations.length * 0.02).toLocaleString()}</span>
+                  <span>
+                    − ₹
+                    {Math.round(
+                      event.registrationFee * registrations.length * 0.02,
+                    ).toLocaleString()}
+                  </span>
                 </div>
                 {/* Net payout highlight - double top border for clean alignment */}
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  borderTop: '2px solid #0f172a',
-                  paddingTop: '16px',
-                  marginTop: '10px',
-                }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    borderTop: "2px solid #0f172a",
+                    paddingTop: "16px",
+                    marginTop: "10px",
+                  }}
+                >
                   <div>
-                    <div style={{ fontSize: '11px', fontWeight: '700', color: '#0f172a', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Net Settlement</div>
-                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '500', marginTop: '2px' }}>After all deductions</div>
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: "700",
+                        color: "#0f172a",
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Net Settlement
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        color: "#64748b",
+                        fontWeight: "500",
+                        marginTop: "2px",
+                      }}
+                    >
+                      After all deductions
+                    </div>
                   </div>
-                  <div style={{ fontSize: '24px', fontWeight: '850', color: '#0f172a', letterSpacing: '-0.5px' }}>
-                    ₹{Math.round(event.registrationFee * registrations.length * 0.98).toLocaleString()}
+                  <div
+                    style={{
+                      fontSize: "24px",
+                      fontWeight: "850",
+                      color: "#0f172a",
+                      letterSpacing: "-0.5px",
+                    }}
+                  >
+                    ₹
+                    {Math.round(
+                      event.registrationFee * registrations.length * 0.98,
+                    ).toLocaleString()}
                   </div>
                 </div>
               </div>
             </div>
 
             {/* ── DIVIDER ── */}
-            <div style={{ height: '1px', background: '#e2e8f0', marginBottom: '24px' }} />
+            <div
+              style={{
+                height: "1px",
+                background: "#e2e8f0",
+                marginBottom: "24px",
+              }}
+            />
 
             {/* ── FOOTER ── */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-              <span style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: '500' }}>Computer generated. No signature required.</span>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                alignItems: "center",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "11px",
+                  color: "#cbd5e1",
+                  fontWeight: "500",
+                }}
+              >
+                Computer generated. No signature required.
+              </span>
             </div>
           </div>
         </div>
@@ -1593,7 +2831,10 @@ function CreateEditDrawer({
       formData.append("eventType", eventType);
       formData.append("providesCertificate", String(providesCertificate));
       formData.append("registrationFee", registrationFee || "0");
-      formData.append("status", asDraft ? "draft" : editEvent?.status || "live");
+      formData.append(
+        "status",
+        asDraft ? "draft" : editEvent?.status || "live",
+      );
 
       if (eventType === "team") {
         if (teamSizeMin && teamSizeMax) {
@@ -1604,7 +2845,8 @@ function CreateEditDrawer({
         }
       }
       if (prize) formData.append("prize", prize);
-      if (maxRegistrations) formData.append("maxRegistrations", maxRegistrations);
+      if (maxRegistrations)
+        formData.append("maxRegistrations", maxRegistrations);
       if (whatsappLink) formData.append("whatsappGroupLink", whatsappLink);
 
       if (customQuestions.length > 0) {
@@ -1651,9 +2893,7 @@ function CreateEditDrawer({
             <h2 className="text-base font-bold text-slate-800">
               Edit event details
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Step {step} of 3
-            </p>
+            <p className="text-xs text-slate-400 mt-0.5">Step {step} of 3</p>
           </div>
           <button
             onClick={onClose}
@@ -1933,7 +3173,9 @@ function CreateEditDrawer({
                   >
                     <span
                       className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                        providesCertificate ? "translate-x-4" : "translate-x-0.5"
+                        providesCertificate
+                          ? "translate-x-4"
+                          : "translate-x-0.5"
                       }`}
                     />
                   </button>

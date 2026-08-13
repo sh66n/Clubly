@@ -59,6 +59,12 @@ const eventSchema = new Schema<IEvent>(
       winner: {
         type: Number,
       },
+      second: {
+        type: Number,
+      },
+      third: {
+        type: Number,
+      },
     },
     winner: {
       type: Schema.Types.ObjectId,
@@ -68,6 +74,18 @@ const eventSchema = new Schema<IEvent>(
       type: Schema.Types.ObjectId,
       ref: "Group",
     },
+    numberOfWinners: {
+      type: Number,
+      enum: [1, 2, 3],
+      default: 1,
+    },
+    winners: [
+      {
+        user: { type: Schema.Types.ObjectId, ref: "User" },
+        group: { type: Schema.Types.ObjectId, ref: "Group" },
+        position: { type: Number, enum: [1, 2, 3] },
+      },
+    ],
     image: {
       type: String,
       required: false,

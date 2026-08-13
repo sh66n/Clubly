@@ -16,8 +16,11 @@ export const zEvent = z.object({
   points: z.object({
     participation: z.number(),
     winner: z.number(),
+    second: z.number().optional(),
+    third: z.number().optional(),
   }),
-  winner: z.string().regex(/^[0-9a-fA-F]{24}$/),
+  winner: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
+  numberOfWinners: z.number().min(1).max(3).default(1).optional(),
   image: z.optional(z.string()),
   maxRegistrations: z.number(),
   isRegistrationOpen: z.boolean().default(true),
@@ -66,9 +69,17 @@ export interface IEvent {
   points: {
     participation: number;
     winner: number;
+    second?: number;
+    third?: number;
   };
-  winner: Types.ObjectId;
-  winnerGroup: Types.ObjectId;
+  winner?: Types.ObjectId;
+  winnerGroup?: Types.ObjectId;
+  numberOfWinners: number;
+  winners: {
+    user?: Types.ObjectId;
+    group?: Types.ObjectId;
+    position: number;
+  }[];
   image: string;
   maxRegistrations: number;
   superEvent: Types.ObjectId;

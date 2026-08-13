@@ -59,7 +59,7 @@ export async function GET(
       },
     })
       .sort({ date: 1 })
-      .select("_id name date image")
+      .select("_id name date image numberOfWinners")
       .lean();
 
     const eventIds = events.map((e: any) => e._id);
@@ -80,6 +80,7 @@ export async function GET(
       eventName: event.name,
       eventDate: event.date,
       eventImage: event.image,
+      numberOfWinners: event.numberOfWinners || 1,
       badgeType: badgeMap.get(event._id.toString()) || null, // null = not attended
     }));
 

@@ -77,6 +77,18 @@ export default async function AssignWinner({
     }
   });
 
+  // Find winners directly from participants based on event.winners array
+  const currentWinners = (event.winners || []).map((w: any) => {
+    const pId = eventType === "team" ? w.group?.toString() : w.user?.toString();
+    const participant = participants.find((p: any) => p._id === pId);
+    return { participant, position: w.position };
+  }).filter((w: any) => w.participant);
+
+  // Fallback for old schema
+  if (currentWinners.length === 0 && currentWinner) {
+    currentWinners.push({ participant: currentWinner, position: 1 });
+  }
+
   return (
     <div>
       <BackButton link={`/events/${eventId}`} />
@@ -89,7 +101,8 @@ export default async function AssignWinner({
         participants={participants}
         eventId={eventId}
         eventType={eventType}
-        currentWinner={currentWinner}
+        currentWinners={currentWinners}
+        numberOfWinners={event.numberOfWinners || 1}
       />
     </div>
   );

@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IBadge extends Document {
   userId: mongoose.Types.ObjectId;
   eventId: mongoose.Types.ObjectId;
-  type: "participation" | "winner";
+  type: "participation" | "winner" | "winner_1" | "winner_2" | "winner_3";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -14,7 +14,7 @@ const badgeSchema = new Schema<IBadge>(
     eventId: { type: Schema.Types.ObjectId, ref: "Event", required: true },
     type: {
       type: String,
-      enum: ["participation", "winner"],
+      enum: ["participation", "winner", "winner_1", "winner_2", "winner_3"],
       default: "participation",
     },
   },

@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Trophy, Award, X } from "lucide-react";
 import { Caveat } from "next/font/google";
 
-import { createPortal } from "react-dom";
 
 const handwritingFont = Caveat({
   subsets: ["latin"],
@@ -17,7 +16,8 @@ interface Sticker {
   eventName: string;
   eventDate: string;
   eventImage: string | null;
-  badgeType: "participation" | "winner" | null;
+  numberOfWinners?: number;
+  badgeType: "participation" | "winner" | "winner_1" | "winner_2" | "winner_3" | null;
 }
 
 interface StreakCardData {
@@ -59,12 +59,18 @@ export default function StreakCard({ clubId }: StreakCardProps) {
 
   if (!mounted || loading || error || !data) return null; // Don't render anything if not available
 
-  return createPortal(
+  return (
     <>
       <style>{`
         @keyframes spinBadge {
           0% { transform: rotateY(0deg); }
           100% { transform: rotateY(360deg); }
+        }
+        @keyframes badgeShine {
+          0% { transform: translateX(-150%) skewX(-30deg); opacity: 0; }
+          10% { opacity: 0.5; }
+          20% { transform: translateX(150%) skewX(-30deg); opacity: 0; }
+          100% { transform: translateX(150%) skewX(-30deg); opacity: 0; }
         }
       `}</style>
 
@@ -172,8 +178,7 @@ export default function StreakCard({ clubId }: StreakCardProps) {
           </motion.div>
         )}
       </AnimatePresence>
-    </>,
-    document.body
+    </>
   );
 }
 
@@ -183,7 +188,45 @@ function StickerSlot({ sticker, index }: { sticker?: Sticker; index: number }) {
     return <div className="w-full h-full" />;
   }
 
-  const isWinner = sticker.badgeType === "winner";
+  const badgeType = sticker.badgeType;
+  const isWinner = badgeType?.startsWith("winner");
+  
+  let edgeColor = "bg-[#78716c] border-[#57534e]";
+  let frontColor = "border-stone-400 ring-stone-200/90 bg-gradient-to-tr from-[#d6d3d1] via-[#f5f5f4] to-[#a8a29e] shadow-[0_4px_10px_rgba(0,0,0,0.15)]";
+  let backColor = "border-stone-400 ring-stone-200/90 bg-gradient-to-bl from-[#d6d3d1] via-[#f5f5f4] to-[#a8a29e] shadow-[0_4px_10px_rgba(0,0,0,0.15)]";
+  let textColorFront = "text-stone-800";
+  let textColorBack = "text-stone-900";
+  let iconColor = "text-stone-700";
+  let badgeLabel = "Participant";
+
+  if (badgeType === "winner" || badgeType === "winner_1") {
+    // Gold
+    edgeColor = "bg-[#b45309] border-[#92400e]";
+    frontColor = "border-amber-500 ring-amber-200/90 bg-gradient-to-tr from-[#f59e0b] via-[#fef08a] to-[#d97706] shadow-[0_0_12px_rgba(245,158,11,0.6)]";
+    backColor = "border-amber-500 ring-amber-200/90 bg-gradient-to-bl from-[#f59e0b] via-[#fef08a] to-[#d97706] shadow-[0_0_12px_rgba(245,158,11,0.6)]";
+    textColorFront = "text-amber-950";
+    textColorBack = "text-amber-950";
+    iconColor = "text-amber-900";
+    badgeLabel = "Winner";
+  } else if (badgeType === "winner_2") {
+    // Crisp Metallic Silver
+    edgeColor = "bg-[#475569] border-[#334155]";
+    frontColor = "border-slate-300 ring-white/90 bg-gradient-to-tr from-[#94a3b8] via-[#ffffff] to-[#64748b] shadow-[0_0_12px_rgba(203,213,225,0.7)]";
+    backColor = "border-slate-300 ring-white/90 bg-gradient-to-bl from-[#94a3b8] via-[#ffffff] to-[#64748b] shadow-[0_0_12px_rgba(203,213,225,0.7)]";
+    textColorFront = "text-slate-900";
+    textColorBack = "text-slate-900";
+    iconColor = "text-slate-800";
+    badgeLabel = sticker.numberOfWinners === 2 ? "Runner Up" : "2nd Place";
+  } else if (badgeType === "winner_3") {
+    // Bronze
+    edgeColor = "bg-[#9a3412] border-[#7c2d12]";
+    frontColor = "border-orange-500 ring-orange-200/90 bg-gradient-to-tr from-[#ea580c] via-[#fed7aa] to-[#c2410c] shadow-[0_0_12px_rgba(234,88,12,0.6)]";
+    backColor = "border-orange-500 ring-orange-200/90 bg-gradient-to-bl from-[#ea580c] via-[#fed7aa] to-[#c2410c] shadow-[0_0_12px_rgba(234,88,12,0.6)]";
+    textColorFront = "text-orange-950";
+    textColorBack = "text-orange-950";
+    iconColor = "text-orange-900";
+    badgeLabel = "3rd Place";
+  }
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-between overflow-hidden">
@@ -211,11 +254,7 @@ function StickerSlot({ sticker, index }: { sticker?: Sticker; index: number }) {
           {[-2, -1.2, -0.4, 0.4, 1.2, 2].map((zOffset, i) => (
             <div
               key={i}
-              className={`absolute inset-0 rounded-full border-2 sm:border-[3px] ${
-                isWinner
-                  ? "bg-[#b45309] border-[#92400e]"
-                  : "bg-[#64748b] border-[#475569]"
-              }`}
+              className={`absolute inset-0 rounded-full border-2 sm:border-[3px] ${edgeColor}`}
               style={{
                 transform: `translateZ(${zOffset}px)`,
               }}
@@ -224,49 +263,57 @@ function StickerSlot({ sticker, index }: { sticker?: Sticker; index: number }) {
 
           {/* Front of Coin (Pushed Forward) */}
           <div
-            className={`absolute inset-0 rounded-full border-2 sm:border-[3px] ring-1 sm:ring-2 ring-inset flex flex-col items-center justify-center p-0.5 sm:p-1 shadow-lg [backface-visibility:hidden] ${
-              isWinner
-                ? "border-amber-500 ring-amber-200/90 bg-gradient-to-tr from-[#f59e0b] via-[#fef08a] to-[#d97706] shadow-[0_0_12px_rgba(245,158,11,0.6)]"
-                : "border-slate-400 ring-slate-200/90 bg-gradient-to-tr from-[#cbd5e1] via-[#ffffff] to-[#94a3b8] shadow-[0_4px_10px_rgba(0,0,0,0.18)]"
-            }`}
+            className={`absolute inset-0 rounded-full border-2 sm:border-[3px] ring-1 sm:ring-2 ring-inset flex flex-col items-center justify-center p-0.5 sm:p-1 shadow-lg [backface-visibility:hidden] overflow-hidden ${frontColor}`}
             style={{
               transform: "translateZ(2.5px)",
             }}
           >
             {isWinner ? (
-              <Trophy className="text-amber-900 mb-0.5 w-3 h-3 sm:w-4 sm:h-4" />
+              <Trophy className={`${iconColor} mb-0.5 w-3 h-3 sm:w-4 sm:h-4 relative z-10`} />
             ) : (
-              <Award className="text-slate-700 mb-0.5 w-3 h-3 sm:w-4 sm:h-4" />
+              <Award className={`${iconColor} mb-0.5 w-3 h-3 sm:w-4 sm:h-4 relative z-10`} />
             )}
             <span
-              className={`text-[5px] sm:text-[6.5px] font-black uppercase tracking-tight text-center leading-[1.05] ${
-                isWinner ? "text-amber-950" : "text-slate-800"
-              }`}
+              className={`text-[5px] sm:text-[6.5px] font-black uppercase tracking-tight text-center leading-[1.05] relative z-10 ${textColorFront}`}
             >
-              {isWinner ? "Winner" : "Participant"}
+              {badgeLabel}
               <br />
               Badge
             </span>
+
+            {/* Shine Animation */}
+            {isWinner && (
+              <div className="absolute inset-0 z-20 pointer-events-none">
+                <div 
+                  className="absolute top-0 bottom-0 w-1/2 bg-white/50 blur-sm animate-[badgeShine_3s_ease-in-out_infinite]"
+                  style={{ animationDelay: `${(index % 3) * 0.4}s` }}
+                />
+              </div>
+            )}
           </div>
 
           {/* Back of Coin with standard clean font (Pushed Backward) */}
           <div
-            className={`absolute inset-0 rounded-full border-2 sm:border-[3px] ring-1 sm:ring-2 ring-inset flex flex-col items-center justify-center p-0.5 sm:p-1.5 shadow-lg [backface-visibility:hidden] ${
-              isWinner
-                ? "border-amber-500 ring-amber-200/90 bg-gradient-to-bl from-[#f59e0b] via-[#fef08a] to-[#d97706] shadow-[0_0_12px_rgba(245,158,11,0.6)]"
-                : "border-slate-400 ring-slate-200/90 bg-gradient-to-bl from-[#cbd5e1] via-[#ffffff] to-[#94a3b8] shadow-[0_4px_10px_rgba(0,0,0,0.18)]"
-            }`}
+            className={`absolute inset-0 rounded-full border-2 sm:border-[3px] ring-1 sm:ring-2 ring-inset flex flex-col items-center justify-center p-0.5 sm:p-1.5 shadow-lg [backface-visibility:hidden] overflow-hidden ${backColor}`}
             style={{
               transform: "translateZ(-2.5px) rotateY(180deg)",
             }}
           >
             <span
-              className={`font-black uppercase text-[6.5px] sm:text-[8px] md:text-[8.5px] tracking-tight text-center line-clamp-3 leading-tight px-0.5 ${
-                isWinner ? "text-amber-950" : "text-slate-900"
-              }`}
+              className={`font-black uppercase text-[6.5px] sm:text-[8px] md:text-[8.5px] tracking-tight text-center line-clamp-3 leading-tight px-0.5 relative z-10 ${textColorBack}`}
             >
               {sticker.eventName}
             </span>
+
+            {/* Shine Animation Back */}
+            {isWinner && (
+              <div className="absolute inset-0 z-20 pointer-events-none">
+                <div 
+                  className="absolute top-0 bottom-0 w-1/2 bg-white/50 blur-sm animate-[badgeShine_3s_ease-in-out_infinite]"
+                  style={{ animationDelay: `${((index % 3) * 0.4) + 1.5}s` }} // offset the back shine
+                />
+              </div>
+            )}
           </div>
         </motion.div>
       </div>
