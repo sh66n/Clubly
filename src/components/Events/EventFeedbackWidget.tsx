@@ -154,7 +154,7 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
   const [certDownloading, setCertDownloading] = useState(false);
 
   useEffect(() => {
-    checkStatus();
+    checkStatus(true);
   }, [eventId]);
 
   useEffect(() => {
@@ -165,14 +165,19 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
     }
   }, [certificate]);
 
-  const checkStatus = async () => {
+  const checkStatus = async (isInitial = false) => {
     try {
-      setLoading(true);
+      if (isInitial) setLoading(true);
       const formRes = await fetch(`/api/events/${eventId}/feedback`);
       if (formRes.ok) {
         const formData = await formRes.json();
         if (formData.certificate) {
           setCertificate(formData.certificate);
+          // Preload certificate template image for instantaneous rendering
+          if (formData.certificate.url) {
+            const preloadImg = new Image();
+            preloadImg.src = formData.certificate.url;
+          }
           if (formData.certificate.layout?.tokens) {
             formData.certificate.layout.tokens.forEach((t: any) => {
               if (t.fontFamily) loadGoogleFont(t.fontFamily);
@@ -200,7 +205,7 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
     } catch (error) {
       console.error(error);
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
     }
   };
 
@@ -237,7 +242,7 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
       setFeedbackSubmitted(true);
       setFeedbackRequired(false);
       triggerConfetti();
-      checkStatus();
+      checkStatus(false);
     } catch (err: any) {
       toast.error(err.message);
     } finally {
