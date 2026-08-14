@@ -6,7 +6,7 @@ import {
 } from "@/lib/certificate";
 import cloudinary from "@/lib/cloudinary";
 import { connectToDb } from "@/lib/connectToDb";
-import { Event, Group, Registration } from "@/models";
+import { Event, Group, Registration, Certificate, CertificateFolder } from "@/models";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -548,6 +548,13 @@ export const PATCH = async (
       }
     }
 
+    // Keep base certificate and certificatesByPosition.participation synchronized
+    if (body.certificate && !body["certificatesByPosition.participation"]) {
+      body["certificatesByPosition.participation"] = body.certificate;
+    } else if (body["certificatesByPosition.participation"] && !body.certificate) {
+      body.certificate = body["certificatesByPosition.participation"];
+    }
+
     const updatePayload: Record<string, any> = { $set: body };
     if (Object.keys(unsetBody).length > 0) {
       updatePayload.$unset = unsetBody;
@@ -556,6 +563,58 @@ export const PATCH = async (
     event.set(body);
     for (const unsetKey of Object.keys(unsetBody)) {
       event.set(unsetKey, undefined);
+    }
+
+    if (event.providesCertificate) {
+      let folder = await CertificateFolder.findOne({
+        $or: [{ event: event._id }, { name: `Event: ${event.name}`, club: event.organizingClub?._id || event.organizingClub }],
+      });
+
+      const clubId = event.organizingClub?._id || event.organizingClub;
+
+      if (!folder) {
+        folder = await CertificateFolder.create({
+          club: clubId,
+          name: `Event: ${event.name}`,
+          event: event._id,
+        });
+      } else if (!folder.event) {
+        folder.event = event._id;
+        await folder.save();
+      }
+
+      const layout = getDefaultCertificateLayout();
+      const numWinners = event.numberOfWinners || 1;
+
+      if (!event.certificatesByPosition?.participation) {
+        const partCert = await Certificate.create({
+          club: clubId,
+          folder: folder._id,
+          name: `${event.name} - Participant`,
+          url: "",
+          publicId: "",
+          isDraft: true,
+          layout,
+        });
+        event.set("certificatesByPosition.participation", partCert._id);
+      }
+
+      for (let i = 1; i <= numWinners; i++) {
+        const posKey = i === 1 ? "first" : i === 2 ? "second" : "third";
+        const currentVal = event.certificatesByPosition?.[posKey as "first" | "second" | "third"];
+        if (!currentVal) {
+          const cert = await Certificate.create({
+            club: clubId,
+            folder: folder._id,
+            name: `${event.name} - ${i}${i === 1 ? 'st' : i === 2 ? 'nd' : 'rd'} Place`,
+            url: "",
+            publicId: "",
+            isDraft: true,
+            layout,
+          });
+          event.set(`certificatesByPosition.${posKey}`, cert._id);
+        }
+      }
     }
 
     const updatedEvent = await event.save();

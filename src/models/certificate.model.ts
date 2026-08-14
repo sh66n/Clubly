@@ -8,17 +8,24 @@ const certificateSchema = new Schema<ICertificate>(
       ref: "Club",
       required: true,
     },
+    folder: {
+      type: Schema.Types.ObjectId,
+      ref: "CertificateFolder",
+      required: false,
+    },
     name: {
       type: String,
       required: true,
     },
     url: {
       type: String,
-      required: true,
+      required: false,
+      default: "",
     },
     publicId: {
       type: String,
-      required: true,
+      required: false,
+      default: "",
     },
     uploadedAt: {
       type: Date,
@@ -58,4 +65,8 @@ const certificateSchema = new Schema<ICertificate>(
 
 certificateSchema.index({ club: 1 });
 
-export const Certificate = models?.Certificate || model<ICertificate>("Certificate", certificateSchema);
+if (models && models.Certificate) {
+  delete (models as any).Certificate;
+}
+
+export const Certificate = model<ICertificate>("Certificate", certificateSchema);

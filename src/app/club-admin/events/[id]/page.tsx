@@ -311,15 +311,35 @@ export default function EventDetailsPage() {
     regId: string,
     newStatus: "registered" | "attended" | "absent",
   ) => {
+    // Optimistically update local state
+    setRegistrations((prev) =>
+      prev.map((reg) =>
+        reg._id === regId ? { ...reg, status: newStatus } : reg,
+      ),
+    );
+
     try {
-      toast.success("Attendance status updated");
-      setRegistrations((prev) =>
-        prev.map((reg) =>
-          reg._id === regId ? { ...reg, status: newStatus } : reg,
-        ),
+      const res = await fetch(`/api/events/${eventId}/attendance`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registrationId: regId, status: newStatus }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to update attendance");
+      }
+
+      toast.success(
+        newStatus === "attended"
+          ? "Marked as attended"
+          : newStatus === "absent"
+            ? "Marked as absent"
+            : "Marked as registered"
       );
     } catch (err: any) {
-      toast.error("Failed to update attendance");
+      toast.error(err.message || "Failed to update attendance");
+      fetchRegistrations();
     }
   };
 
@@ -2135,11 +2155,19 @@ export default function EventDetailsPage() {
                       <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Base Template (Participation)</label>
                       <select
                         value={
-                          typeof event.certificate === "object"
-                            ? event.certificate?._id || ""
-                            : event.certificate || ""
+                          typeof event.certificatesByPosition?.participation === "object"
+                            ? event.certificatesByPosition?.participation?._id || ""
+                            : event.certificatesByPosition?.participation ||
+                              (typeof event.certificate === "object"
+                                ? event.certificate?._id || ""
+                                : event.certificate || "")
                         }
-                        onChange={(e) => updateEventCertificates({ certificate: e.target.value })}
+                        onChange={(e) =>
+                          updateEventCertificates({
+                            certificate: e.target.value,
+                            "certificatesByPosition.participation": e.target.value,
+                          })
+                        }
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-[#7CB342] focus:ring-2 focus:ring-[#f0f7e6] transition-all"
                       >
                         <option value="">-- No Certificate --</option>

@@ -29,19 +29,33 @@ export async function GET(
 
     // Get all events organized by this club
     const events = await Event.find({ organizingClub: session.user.adminClub })
-      .select("_id name date providesCertificate certificate")
+      .select("_id name date providesCertificate certificate certificatesByPosition")
       .sort({ date: -1 })
       .lean();
 
-    const formattedEvents = events.map((event) => ({
-      _id: event._id.toString(),
-      name: event.name,
-      date: event.date,
-      providesCertificate: Boolean(event.providesCertificate),
-      isLinked: event.certificate?.toString() === certId,
-      isLinkedToOther:
-        Boolean(event.certificate) && event.certificate?.toString() !== certId,
-    }));
+    const formattedEvents = events.map((event: any) => {
+      const isBaseLinked = event.certificate?.toString() === certId;
+      const isPartLinked = event.certificatesByPosition?.participation?.toString() === certId;
+      const isFirstLinked = event.certificatesByPosition?.first?.toString() === certId;
+      const isSecondLinked = event.certificatesByPosition?.second?.toString() === certId;
+      const isThirdLinked = event.certificatesByPosition?.third?.toString() === certId;
+
+      const isLinked = isBaseLinked || isPartLinked || isFirstLinked || isSecondLinked || isThirdLinked;
+
+      const otherLinked = Boolean(
+        (event.certificate && !isBaseLinked) ||
+        (event.certificatesByPosition?.participation && !isPartLinked)
+      );
+
+      return {
+        _id: event._id.toString(),
+        name: event.name,
+        date: event.date,
+        providesCertificate: Boolean(event.providesCertificate),
+        isLinked,
+        isLinkedToOther: otherLinked,
+      };
+    });
 
     return NextResponse.json({ events: formattedEvents }, { status: 200 });
   } catch (error) {
@@ -79,33 +93,60 @@ export async function POST(
       return NextResponse.json({ error: "Certificate not found" }, { status: 404 });
     }
 
+    const certNameLower = (certificate.name || "").toLowerCase();
+    const isFirst = certNameLower.includes("1st") || certNameLower.includes("first");
+    const isSecond = certNameLower.includes("2nd") || certNameLower.includes("second");
+    const isThird = certNameLower.includes("3rd") || certNameLower.includes("third");
+
     // 1. Link selected events to this certificate
     if (eventIds.length > 0) {
+      const setPayload: Record<string, any> = { providesCertificate: true };
+      if (isFirst) {
+        setPayload["certificatesByPosition.first"] = certificate._id;
+      } else if (isSecond) {
+        setPayload["certificatesByPosition.second"] = certificate._id;
+      } else if (isThird) {
+        setPayload["certificatesByPosition.third"] = certificate._id;
+      } else {
+        setPayload.certificate = certificate._id;
+        setPayload["certificatesByPosition.participation"] = certificate._id;
+      }
+
       await Event.updateMany(
         {
           _id: { $in: eventIds },
           organizingClub: session.user.adminClub,
         },
-        {
-          $set: {
-            certificate: certificate._id,
-            providesCertificate: true,
-          },
-        }
+        { $set: setPayload }
       );
     }
 
-    // 2. Unlink any events from this certificate that were not selected
+    // 2. Unlink any events from this certificate that were unselected
+    const unsetPayload: Record<string, any> = {};
+    if (isFirst) {
+      unsetPayload["certificatesByPosition.first"] = 1;
+    } else if (isSecond) {
+      unsetPayload["certificatesByPosition.second"] = 1;
+    } else if (isThird) {
+      unsetPayload["certificatesByPosition.third"] = 1;
+    } else {
+      unsetPayload.certificate = 1;
+      unsetPayload["certificatesByPosition.participation"] = 1;
+    }
+
     await Event.updateMany(
       {
         organizingClub: session.user.adminClub,
-        certificate: certificate._id,
         _id: { $nin: eventIds },
+        $or: [
+          { certificate: certificate._id },
+          { "certificatesByPosition.participation": certificate._id },
+          { "certificatesByPosition.first": certificate._id },
+          { "certificatesByPosition.second": certificate._id },
+          { "certificatesByPosition.third": certificate._id },
+        ],
       },
-      {
-        $set: { providesCertificate: false },
-        $unset: { certificate: 1 },
-      }
+      { $unset: unsetPayload }
     );
 
     return NextResponse.json(

@@ -16,6 +16,7 @@ import { Badge } from "./badge.model";
 import { ClubFeature } from "./clubfeature.model";
 import { FeedbackForm } from "./feedbackform.model";
 import { Certificate } from "./certificate.model";
+import { CertificateFolder } from "./certificateFolder.model";
 
 // 2. Export them as a single block.
 // When you import { Event } from "@/models" in your API,
@@ -36,4 +37,5 @@ export {
   ClubFeature,
   FeedbackForm,
   Certificate,
+  CertificateFolder
 };

@@ -188,10 +188,11 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
   const renderCertificatePreview = () => {
     if (certificate?.url) {
       const tokens = certificate.layout?.tokens || [];
+      const rankText = certificate.rankValue || (certificate.position === 1 ? "Winner" : certificate.position === 2 ? "Runner-up" : certificate.position === 3 ? "Third Place" : "Participant");
       const valueMap: Record<string, string> = {
         $name: userName,
         $year: "Year 3",
-        $rank: "Winner",
+        $rank: rankText,
         $event: eventName,
         $club: "Clubly",
         $date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),

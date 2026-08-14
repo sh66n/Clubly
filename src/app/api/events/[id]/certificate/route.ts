@@ -228,21 +228,35 @@ export async function GET(
     }
 
     let position = 0;
+    const userIdStr = session.user.id.toString();
+
     if (event.eventType === "individual") {
-      const match = (event.winners || []).find((w: any) => w.user?.toString() === session.user.id.toString());
+      const match = (event.winners || []).find(
+        (w: any) => (w.user?._id || w.user)?.toString() === userIdStr
+      );
       if (match) position = match.position;
-      else if (event.winner?.toString() === session.user.id.toString()) position = 1;
+      else if ((event.winner?._id || event.winner)?.toString() === userIdStr) position = 1;
     } else if (group) {
-      const match = (event.winners || []).find((w: any) => w.group?.toString() === group._id.toString());
+      const groupIdStr = (group._id || group).toString();
+      const match = (event.winners || []).find(
+        (w: any) => (w.group?._id || w.group)?.toString() === groupIdStr
+      );
       if (match) position = match.position;
-      else if (event.winnerGroup?.toString() === group._id.toString()) position = 1;
+      else if ((event.winnerGroup?._id || event.winnerGroup)?.toString() === groupIdStr) position = 1;
     }
 
-    const posCerts = event.certificatesByPosition;
-    let certId = posCerts?.participation || (event.certificate as any)?._id;
-    if (position === 1 && posCerts?.first) certId = posCerts.first;
-    else if (position === 2 && posCerts?.second) certId = posCerts.second;
-    else if (position === 3 && posCerts?.third) certId = posCerts.third;
+    const posCerts: any = event.certificatesByPosition;
+    let certId: any = null;
+
+    if (position === 1 && posCerts?.first) {
+      certId = posCerts.first;
+    } else if (position === 2 && posCerts?.second) {
+      certId = posCerts.second;
+    } else if (position === 3 && posCerts?.third) {
+      certId = posCerts.third;
+    } else {
+      certId = posCerts?.participation || (event.certificate as any)?._id || event.certificate;
+    }
 
     let certObj: any = null;
     if (certId) {

@@ -17,44 +17,83 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const event = await Event.findById(id)
       .select("feedbackForm certificate certificatesByPosition certificateTemplate name eventType winner winnerGroup winners")
-      .populate("certificate")
       .lean();
 
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    let certObj: any = (event as any).certificate;
-    const posCerts: any = (event as any).certificatesByPosition;
-    let certId = posCerts?.participation || certObj?._id;
-
     let position = 0;
+    const userIdStr = session.user.id.toString();
+
     if (event.eventType === "individual") {
-      const match = (event.winners || []).find((w: any) => w.user?.toString() === session.user.id.toString());
+      const match = (event.winners || []).find(
+        (w: any) => (w.user?._id || w.user)?.toString() === userIdStr
+      );
       if (match) position = match.position;
-      else if (event.winner?.toString() === session.user.id.toString()) position = 1;
+      else if ((event.winner?._id || event.winner)?.toString() === userIdStr) position = 1;
+    } else {
+      const { Group } = await import("@/models");
+      const group = await Group.findOne({
+        event: event._id,
+        members: session.user.id,
+      }).select("_id");
+
+      if (group) {
+        const groupIdStr = group._id.toString();
+        const match = (event.winners || []).find(
+          (w: any) => (w.group?._id || w.group)?.toString() === groupIdStr
+        );
+        if (match) position = match.position;
+        else if ((event.winnerGroup?._id || event.winnerGroup)?.toString() === groupIdStr) position = 1;
+      }
     }
 
-    if (position === 1 && posCerts?.first) certId = posCerts.first;
-    else if (position === 2 && posCerts?.second) certId = posCerts.second;
-    else if (position === 3 && posCerts?.third) certId = posCerts.third;
+    const posCerts: any = (event as any).certificatesByPosition;
+    let targetCertId: any = null;
 
-    if (certId && certId.toString() !== certObj?._id?.toString()) {
+    if (position === 1 && posCerts?.first) {
+      targetCertId = posCerts.first;
+    } else if (position === 2 && posCerts?.second) {
+      targetCertId = posCerts.second;
+    } else if (position === 3 && posCerts?.third) {
+      targetCertId = posCerts.third;
+    } else {
+      targetCertId = posCerts?.participation || (event as any).certificate;
+    }
+
+    let certObj: any = null;
+    const certIdStr = typeof targetCertId === "object" ? targetCertId?._id?.toString() : targetCertId?.toString();
+    if (certIdStr) {
       const { Certificate } = await import("@/models");
-      certObj = await Certificate.findById(certId).lean();
+      certObj = await Certificate.findById(certIdStr).lean();
     }
     if (!certObj && (event as any).certificateTemplate?.url) {
       certObj = (event as any).certificateTemplate;
     }
 
+    let rankValue = "Participant";
+    if (position === 1) rankValue = "Winner";
+    else if (position === 2) rankValue = "Runner-up";
+    else if (position === 3) rankValue = "Third Place";
+
     const certificateInfo = certObj ? {
       url: certObj.url,
       layout: certObj.layout,
       name: certObj.name || event.name,
+      position,
+      rankValue,
     } : null;
 
     if (!event.feedbackForm) {
-      return NextResponse.json({ submitted: true, form: null, certificate: certificateInfo });
+      return NextResponse.json({
+        submitted: true,
+        form: null,
+        certificate: certificateInfo,
+        userName: session.user.name || "Student",
+        position,
+        rankValue,
+      });
     }
 
     const hasFeedback = await Feedback.exists({

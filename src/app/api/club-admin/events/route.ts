@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { connectToDb } from "@/lib/connectToDb";
-import { Event, Payment, Registration, Feedback, Club } from "@/models";
+import { Event, Payment, Registration, Feedback, Club, Certificate, CertificateFolder } from "@/models";
 import cloudinary from "@/lib/cloudinary";
 import {
   getDefaultCertificateLayout,
@@ -191,6 +191,9 @@ export async function POST(req: NextRequest) {
     const providesCertificate = formData.get("providesCertificate") === "true";
     const registrationFee = formData.get("registrationFee") as string | null;
     const maxRegistrations = formData.get("maxRegistrations") as string | null;
+    const numberOfWinners = formData.get("numberOfWinners")
+      ? Number(formData.get("numberOfWinners"))
+      : 1;
     const whatsappGroupLink = formData.get("whatsappGroupLink") as string | null;
     const customQuestionsRaw = formData.get("customQuestions") as string | null;
     
@@ -219,6 +222,49 @@ export async function POST(req: NextRequest) {
       imageUrl = uploadResult.secure_url;
     }
 
+    let certificatesByPosition: any = undefined;
+    let createdFolderId: any = undefined;
+
+    if (providesCertificate) {
+      const folder = await CertificateFolder.create({
+        club: organizingClub,
+        name: `Event: ${name}`,
+        event: undefined, // We will assign event later if needed, but the folder itself belongs to the club
+      });
+      createdFolderId = folder._id;
+
+      const layout = getDefaultCertificateLayout();
+
+      const partCert = await Certificate.create({
+        club: organizingClub,
+        folder: folder._id,
+        name: `${name} - Participant`,
+        url: "",
+        publicId: "",
+        isDraft: true,
+        layout,
+      });
+
+      const winnerCerts: any = {};
+      for (let i = 1; i <= numberOfWinners; i++) {
+        const cert = await Certificate.create({
+          club: organizingClub,
+          folder: folder._id,
+          name: `${name} - ${i}${i === 1 ? 'st' : i === 2 ? 'nd' : 'rd'} Place`,
+          url: "",
+          publicId: "",
+          isDraft: true,
+          layout,
+        });
+        winnerCerts[i === 1 ? 'first' : i === 2 ? 'second' : 'third'] = cert._id;
+      }
+
+      certificatesByPosition = {
+        participation: partCert._id,
+        ...winnerCerts,
+      };
+    }
+
     const newEvent = await Event.create({
       organizingClub,
       name,
@@ -229,15 +275,23 @@ export async function POST(req: NextRequest) {
       teamSizeRange,
       prize: prize ? Number(prize) : undefined,
       providesCertificate,
+      numberOfWinners,
       registrationFee: registrationFee ? Number(registrationFee) : 0,
       image: imageUrl,
       maxRegistrations: maxRegistrations ? Number(maxRegistrations) : undefined,
       whatsappGroupLink: whatsappGroupLink || undefined,
       customQuestions,
-      certificate: providesCertificate && certificateId ? certificateId : undefined,
+      certificatesByPosition,
       status,
       isRegistrationOpen: status === "live",
     });
+
+    if (providesCertificate && createdFolderId) {
+      await CertificateFolder.updateOne(
+        { _id: createdFolderId },
+        { event: newEvent._id }
+      );
+    }
 
     if (status === "live") {
       try {
