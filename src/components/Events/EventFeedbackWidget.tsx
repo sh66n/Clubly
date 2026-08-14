@@ -271,7 +271,7 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0, scale: 0.8 }}
-            className="fixed bottom-6 right-6 z-40"
+            className="fixed bottom-24 right-4 md:bottom-6 md:right-6 z-40"
           >
             <button
               onClick={() => setIsOpen(true)}
@@ -317,7 +317,7 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-md"
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md"
           >
             <motion.div
               layoutId="widget"
