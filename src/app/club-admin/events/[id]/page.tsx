@@ -241,8 +241,9 @@ export default function EventDetailsPage() {
     setExpandedFeedbacks((prev) => ({ ...prev, [fbId]: !prev[fbId] }));
   };
 
-  // Custom dropdown state for certificate assignment
+  // Custom dropdown state for certificate assignment & feedback form
   const [activeCertDropdownTier, setActiveCertDropdownTier] = useState<string | null>(null);
+  const [feedbackDropdownOpen, setFeedbackDropdownOpen] = useState(false);
 
   const fetchDetails = useCallback(async () => {
     try {
@@ -1459,7 +1460,7 @@ export default function EventDetailsPage() {
                   : "text-slate-500 hover:text-slate-700 hover:bg-white/50 border border-transparent"
               }`}
             >
-              Certificates
+              Certificates ({1 + (event?.numberOfWinners || 1)})
             </button>
           </div>
 
@@ -1818,27 +1819,44 @@ export default function EventDetailsPage() {
                     Attach a feedback form to enable attendee ratings, question reviews, and analytics for this event.
                   </p>
 
-                  <div className="w-full bg-slate-50/80 rounded-2xl p-6 border border-slate-200/80 shadow-sm text-left space-y-4">
+                  <div className="w-full bg-slate-50/80 rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-sm text-left space-y-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                        Select a Feedback Form
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
+                        Choose a Feedback Form to Unlock
                       </label>
-                      <select
-                        value=""
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            updateEventCertificates({ feedbackForm: e.target.value });
-                          }
-                        }}
-                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-[#7CB342] focus:ring-2 focus:ring-[#f0f7e6] transition-all cursor-pointer shadow-2xs"
-                      >
-                        <option value="">-- Choose a Feedback Form to Unlock --</option>
-                        {availableFeedbackForms.map((form) => (
-                          <option key={form._id} value={form._id}>
-                            {form.name} ({form.questions?.length || 0} questions)
-                          </option>
-                        ))}
-                      </select>
+                      {availableFeedbackForms.length === 0 ? (
+                        <div className="p-4 rounded-xl bg-white border border-slate-200 text-center text-xs text-slate-400">
+                          No feedback forms found for your club.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-1">
+                          {availableFeedbackForms.map((form) => (
+                            <button
+                              key={form._id}
+                              type="button"
+                              onClick={() => updateEventCertificates({ feedbackForm: form._id })}
+                              className="w-full p-3 rounded-xl bg-white border border-slate-200 hover:border-[#7CB342] hover:bg-[#f0f7e6]/40 flex items-center justify-between text-left transition-all group cursor-pointer shadow-2xs"
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-[#7CB342] group-hover:text-white text-slate-400 flex items-center justify-center transition-colors shrink-0">
+                                  <FileText size={15} />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-xs font-bold text-slate-800 group-hover:text-[#558B2F] truncate">
+                                    {form.name}
+                                  </p>
+                                  <p className="text-[10px] text-slate-400 font-medium">
+                                    {form.questions?.length || 0} questions
+                                  </p>
+                                </div>
+                              </div>
+                              <span className="text-xs font-bold text-[#689F38] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-2">
+                                Select & Unlock →
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between pt-3 border-t border-slate-200/80 text-xs">
@@ -1857,40 +1875,114 @@ export default function EventDetailsPage() {
 
             return (
               <div className="p-6 space-y-6">
-                {/* Form Selector & Status Banner */}
-                <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl px-5 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-2xs">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#f0f7e6] text-[#558b2f] border border-[#dcedc8] flex items-center justify-center font-bold text-xs">
-                      <FileText size={16} />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-800">
-                          Active Form: {currentFormName}
-                        </span>
-                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-md border border-emerald-200">
-                          Active
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-                        Participants must submit this feedback form to unlock event certificates.
-                      </p>
-                    </div>
-                  </div>
+                {/* Top Action Bar: Form Selector & Delete Button on the Top Right */}
+                <div className="flex items-center justify-end">
+                  <div className="relative">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setFeedbackDropdownOpen(!feedbackDropdownOpen)}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-xs font-bold text-slate-800 shadow-2xs hover:bg-slate-50 transition-all cursor-pointer"
+                      >
+                        <FileText size={13} className="text-[#689F38]" />
+                        <span className="max-w-[170px] truncate">{currentFormName}</span>
+                        <ChevronDown
+                          size={13}
+                          className={`text-slate-400 transition-transform ${feedbackDropdownOpen ? "rotate-180" : ""}`}
+                        />
+                      </button>
 
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={currentFormId}
-                      onChange={(e) => updateEventCertificates({ feedbackForm: e.target.value })}
-                      className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700 font-semibold focus:outline-none focus:border-[#7CB342] focus:ring-2 focus:ring-[#f0f7e6] transition-all cursor-pointer shadow-2xs"
-                    >
-                      {availableFeedbackForms.map((form) => (
-                        <option key={form._id} value={form._id}>
-                          {form.name}
-                        </option>
-                      ))}
-                      <option value="">-- Remove Form (Lock Tab) --</option>
-                    </select>
+                      <button
+                        type="button"
+                        onClick={() => updateEventCertificates({ feedbackForm: "" })}
+                        className="p-1.5 rounded-xl bg-white border border-slate-200 hover:border-rose-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 shadow-2xs transition-colors cursor-pointer"
+                        title="Remove Feedback Form"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+
+                    {/* Floating Dropdown Modal */}
+                    <AnimatePresence>
+                      {feedbackDropdownOpen && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setFeedbackDropdownOpen(false)}
+                          />
+                          <motion.div
+                            initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute right-0 top-full mt-2 w-72 z-50 bg-white rounded-2xl shadow-xl border border-slate-200 p-2 flex flex-col space-y-1"
+                          >
+                            <div className="px-2.5 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 flex items-center justify-between">
+                              <span>Select Feedback Form</span>
+                              <span>{availableFeedbackForms.length} available</span>
+                            </div>
+
+                            <div className="max-h-56 overflow-y-auto space-y-1 py-1">
+                              {availableFeedbackForms.map((form) => {
+                                const isSelected = currentFormId === form._id;
+                                return (
+                                  <button
+                                    key={form._id}
+                                    type="button"
+                                    onClick={() => {
+                                      updateEventCertificates({ feedbackForm: form._id });
+                                      setFeedbackDropdownOpen(false);
+                                    }}
+                                    className={`w-full p-2 rounded-xl text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                                      isSelected
+                                        ? "bg-[#f0f7e6] text-[#558B2F]"
+                                        : "hover:bg-slate-50 text-slate-700"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <div
+                                        className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                                          isSelected
+                                            ? "bg-[#7CB342] text-white"
+                                            : "bg-slate-100 text-slate-400"
+                                        }`}
+                                      >
+                                        <FileText size={13} />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="text-xs font-bold truncate text-slate-800">
+                                          {form.name}
+                                        </p>
+                                        <p className="text-[10px] text-slate-400 font-medium">
+                                          {form.questions?.length || 0} questions
+                                        </p>
+                                      </div>
+                                    </div>
+                                    {isSelected && (
+                                      <CheckCircle2 size={14} className="text-[#7CB342] shrink-0" />
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            <div className="pt-1 border-t border-slate-100 space-y-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateEventCertificates({ feedbackForm: "" });
+                                  setFeedbackDropdownOpen(false);
+                                }}
+                                className="w-full p-2 rounded-xl text-left flex items-center gap-2 text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer text-xs font-bold"
+                              >
+                                <Trash2 size={13} />
+                                <span>Remove Feedback Form</span>
+                              </button>
+                            </div>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
 

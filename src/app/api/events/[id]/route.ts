@@ -236,8 +236,8 @@ export const PATCH = async (
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // check if club-admin
-    if (session.user.role !== "club-admin") {
+    // check if club-admin or admin
+    if (session.user.role !== "club-admin" && session.user.role !== "admin") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -252,8 +252,11 @@ export const PATCH = async (
     }
 
     // check if the event being updated belongs to the club of the club-admin
+    const organizingClubId = (event.organizingClub?._id || event.organizingClub)?.toString();
+    const userAdminClubId = session?.user?.adminClub?.toString();
     if (
-      event.organizingClub.toString() !== session?.user?.adminClub?.toString()
+      session.user.role !== "admin" &&
+      organizingClubId !== userAdminClubId
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }

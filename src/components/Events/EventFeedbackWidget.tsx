@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Download, X, Loader2, Award, ArrowRight, Eye } from "lucide-react";
+import { Star, Download, X, Loader2, Award, ArrowRight, Eye, Share2, Check, Copy, ExternalLink, Sparkles } from "lucide-react";
+import { FaWhatsapp, FaLinkedinIn, FaInstagram, FaXTwitter } from "react-icons/fa6";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import BorderedDiv from "@/components/BorderedDiv";
@@ -280,6 +281,95 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
   const handleDismiss = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsDismissed(true);
+  };
+
+  // Share States & Handlers
+  const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+
+  const getShareData = () => {
+    const origin =
+      (typeof window !== "undefined" && window.location.origin)
+        ? window.location.origin
+        : (process.env.NEXT_PUBLIC_BASE_URL || "https://clubly.in");
+    const shareUrl = `${origin}/events/${eventId}`;
+    const shareTitle = `Certificate of Achievement - ${eventName}`;
+    const shareText = `🎓 I earned my certificate for participating in ${eventName} on Clubly! Check it out:`;
+    return { origin, shareUrl, shareTitle, shareText };
+  };
+
+  const handleCopyLink = async () => {
+    const { shareUrl } = getShareData();
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = shareUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        textArea.remove();
+      }
+      setIsCopied(true);
+      toast.success("Certificate & event link copied to clipboard!");
+      setTimeout(() => setIsCopied(false), 2500);
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  };
+
+  const handleSharePlatform = async (platform: "whatsapp" | "linkedin" | "instagram" | "twitter" | "native") => {
+    const { shareUrl, shareTitle, shareText } = getShareData();
+
+    if (platform === "native") {
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: shareTitle,
+            text: shareText,
+            url: shareUrl,
+          });
+          toast.success("Shared successfully!");
+          setIsShareMenuOpen(false);
+          return;
+        } catch (err: any) {
+          if (err.name !== "AbortError") {
+            toast.error("Could not complete native share");
+          }
+          return;
+        }
+      }
+    }
+
+    if (platform === "whatsapp") {
+      const fullText = `${shareText} ${shareUrl}`;
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(fullText)}`, "_blank", "noopener,noreferrer");
+      toast.success("Opening WhatsApp...");
+      setIsShareMenuOpen(false);
+    } else if (platform === "linkedin") {
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+        }
+      } catch (_) {}
+      window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, "_blank", "noopener,noreferrer");
+      toast.success("Opening LinkedIn (Caption copied to clipboard!)");
+      setIsShareMenuOpen(false);
+    } else if (platform === "instagram") {
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+        }
+      } catch (_) {}
+      toast.success("Caption copied to clipboard! Paste it into your Instagram post or story.");
+      window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+      setIsShareMenuOpen(false);
+    } else if (platform === "twitter") {
+      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, "_blank", "noopener,noreferrer");
+      toast.success("Opening X (Twitter)...");
+      setIsShareMenuOpen(false);
+    }
   };
 
   if (loading) return null;
@@ -572,21 +662,166 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
                   {renderCertificatePreview()}
                 </div>
 
-                {/* Download Button with icon */}
-                <button
-                  onClick={handleDownloadCertificate}
-                  disabled={certDownloading}
-                  className="mt-6 w-auto px-7 py-2.5 bg-white hover:bg-zinc-200 active:bg-zinc-300 text-black font-semibold rounded-full text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-2xl"
-                >
-                  {certDownloading ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-black" />
-                  ) : (
-                    <>
-                      <Download size={16} />
-                      <span>Download</span>
-                    </>
-                  )}
-                </button>
+                {/* Action Buttons: Download & Share */}
+                <div className="relative mt-6 flex flex-wrap items-center justify-center gap-3 z-30">
+                  {/* Download Button */}
+                  <button
+                    onClick={handleDownloadCertificate}
+                    disabled={certDownloading}
+                    className="w-auto px-6 py-2.5 bg-white hover:bg-zinc-200 active:bg-zinc-300 text-black font-semibold rounded-full text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-2xl disabled:opacity-50"
+                  >
+                    {certDownloading ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-black" />
+                    ) : (
+                      <>
+                        <Download size={16} />
+                        <span>Download</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Share Button */}
+                  <button
+                    type="button"
+                    onClick={() => setIsShareMenuOpen((prev) => !prev)}
+                    className="w-auto px-6 py-2.5 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white font-semibold rounded-full text-sm flex items-center justify-center gap-2 transition-all cursor-pointer backdrop-blur-md border border-white/15 shadow-2xl"
+                  >
+                    <Share2 size={16} />
+                    <span>Share</span>
+                  </button>
+
+                  {/* Share Popover Menu */}
+                  <AnimatePresence>
+                    {isShareMenuOpen && (
+                      <>
+                        {/* Backdrop to close on click outside */}
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setIsShareMenuOpen(false)}
+                        />
+
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.92, y: 10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.92, y: 10 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                          className="absolute bottom-full mb-3.5 z-50 w-[92vw] max-w-sm sm:max-w-md bg-[#0e1015]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-5 shadow-2xl text-white"
+                        >
+                          {/* Share Header */}
+                          <div className="flex items-center justify-between pb-3 mb-3.5 border-b border-white/[0.08]">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-white">
+                                <Share2 size={14} />
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-semibold text-white leading-none">Share Certificate</h4>
+                                <p className="text-[11px] text-gray-400 mt-1">Showcase your achievement with your network</p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setIsShareMenuOpen(false)}
+                              className="w-6 h-6 rounded-full bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+
+                          {/* Social Platforms Grid */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3.5">
+                            {/* WhatsApp */}
+                            <button
+                              type="button"
+                              onClick={() => handleSharePlatform("whatsapp")}
+                              className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-white/[0.04] hover:bg-[#25D366]/15 hover:border-[#25D366]/40 border border-transparent transition-all group cursor-pointer"
+                            >
+                              <div className="w-10 h-10 rounded-full bg-[#25D366]/20 text-[#25D366] flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <FaWhatsapp size={20} />
+                              </div>
+                              <span className="text-xs font-medium text-gray-200 group-hover:text-white">WhatsApp</span>
+                            </button>
+
+                            {/* LinkedIn */}
+                            <button
+                              type="button"
+                              onClick={() => handleSharePlatform("linkedin")}
+                              className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-white/[0.04] hover:bg-[#0A66C2]/15 hover:border-[#0A66C2]/40 border border-transparent transition-all group cursor-pointer"
+                            >
+                              <div className="w-10 h-10 rounded-full bg-[#0A66C2]/20 text-[#0A66C2] flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <FaLinkedinIn size={18} />
+                              </div>
+                              <span className="text-xs font-medium text-gray-200 group-hover:text-white">LinkedIn</span>
+                            </button>
+
+                            {/* Instagram */}
+                            <button
+                              type="button"
+                              onClick={() => handleSharePlatform("instagram")}
+                              className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-white/[0.04] hover:bg-[#E1306C]/15 hover:border-[#E1306C]/40 border border-transparent transition-all group cursor-pointer"
+                            >
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#fd5949]/20 via-[#d6249f]/20 to-[#285AEB]/20 text-[#f56040] flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <FaInstagram size={19} />
+                              </div>
+                              <span className="text-xs font-medium text-gray-200 group-hover:text-white">Instagram</span>
+                            </button>
+
+                            {/* X / Twitter */}
+                            <button
+                              type="button"
+                              onClick={() => handleSharePlatform("twitter")}
+                              className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-white/[0.04] hover:bg-white/10 hover:border-white/20 border border-transparent transition-all group cursor-pointer"
+                            >
+                              <div className="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <FaXTwitter size={17} />
+                              </div>
+                              <span className="text-xs font-medium text-gray-200 group-hover:text-white">X (Twitter)</span>
+                            </button>
+                          </div>
+
+                          {/* Quick Copy Link Box */}
+                          <div className="flex items-center gap-2 p-1.5 pl-3 bg-black/40 border border-white/[0.08] rounded-xl">
+                            <span className="text-xs text-gray-400 truncate flex-1 font-mono">
+                              {typeof window !== "undefined" ? `${window.location.origin}/events/${eventId}` : `/events/${eventId}`}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleCopyLink}
+                              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                                isCopied
+                                  ? "bg-emerald-600 text-white"
+                                  : "bg-white/10 hover:bg-white/20 text-white"
+                              }`}
+                            >
+                              {isCopied ? (
+                                <>
+                                  <Check size={13} />
+                                  <span>Copied</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy size={13} />
+                                  <span>Copy</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Native Device Share Sheet Trigger (if supported) */}
+                          {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
+                            <button
+                              type="button"
+                              onClick={() => handleSharePlatform("native")}
+                              className="mt-2.5 w-full py-1.5 text-center text-xs text-gray-400 hover:text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                            >
+                              <ExternalLink size={12} />
+                              <span>More sharing options on this device</span>
+                            </button>
+                          )}
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
               </motion.div>
             )}
           </motion.div>
