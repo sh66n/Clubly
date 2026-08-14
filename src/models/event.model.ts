@@ -141,6 +141,16 @@ const eventSchema = new Schema<IEvent>(
       type: Schema.Types.ObjectId,
       ref: "Certificate",
     },
+    certificatesByPosition: {
+      participation: { type: Schema.Types.ObjectId, ref: "Certificate" },
+      first: { type: Schema.Types.ObjectId, ref: "Certificate" },
+      second: { type: Schema.Types.ObjectId, ref: "Certificate" },
+      third: { type: Schema.Types.ObjectId, ref: "Certificate" },
+    },
+    feedbackForm: {
+      type: Schema.Types.ObjectId,
+      ref: "FeedbackForm",
+    },
     likes: {
       type: Number,
       default: 0,

@@ -94,6 +94,7 @@ export const GET = async (
     const event = await Event.findById(id)
       .populate("contact")
       .populate("organizingClub")
+      .populate("certificate")
       .populate("winner")
       .populate({
         path: "winnerGroup",
@@ -268,6 +269,8 @@ export const PATCH = async (
       "teamSizeRange.max",
       "prize",
       "providesCertificate",
+      "certificateId",
+      "certificate",
       "registrationFee",
       "maxRegistrations",
       "isRegistrationOpen",
@@ -279,6 +282,11 @@ export const PATCH = async (
       "certificateNameFontSize",
       "certificateNameColor",
       "removeCertificateTemplate",
+      "feedbackForm",
+      "certificatesByPosition.participation",
+      "certificatesByPosition.first",
+      "certificatesByPosition.second",
+      "certificatesByPosition.third",
     ];
 
     //  Convert FormData → plain object
@@ -484,9 +492,60 @@ export const PATCH = async (
     }
 
     const unsetBody: Record<string, 1> = {};
-    if (body.certificateTemplate === undefined) {
-      delete body.certificateTemplate;
+
+    if (removeCertificateTemplate || body.providesCertificate === false) {
       unsetBody.certificateTemplate = 1;
+      delete body.certificateTemplate;
+    }
+
+    const hasCertField = formData.has("certificate") || formData.has("certificateId");
+    if (formData.has("providesCertificate")) {
+      const provCert = formData.get("providesCertificate") === "true";
+      body.providesCertificate = provCert;
+      if (!provCert) {
+        unsetBody.certificate = 1;
+        delete body.certificate;
+      } else if (hasCertField) {
+        const certificateId = (formData.get("certificateId") || formData.get("certificate")) as string | null;
+        if (certificateId && certificateId.trim() !== "" && certificateId !== "undefined" && certificateId !== "null") {
+          body.certificate = certificateId.trim();
+        } else {
+          unsetBody.certificate = 1;
+          delete body.certificate;
+        }
+      }
+    } else if (hasCertField) {
+      const certificateId = (formData.get("certificateId") || formData.get("certificate")) as string | null;
+      if (certificateId && certificateId.trim() !== "" && certificateId !== "undefined" && certificateId !== "null") {
+        body.certificate = certificateId.trim();
+        body.providesCertificate = true;
+      } else {
+        unsetBody.certificate = 1;
+        delete body.certificate;
+      }
+    }
+
+    if (formData.has("feedbackForm")) {
+      const fbVal = formData.get("feedbackForm") as string;
+      if (fbVal && fbVal.trim() !== "" && fbVal !== "undefined" && fbVal !== "null") {
+        body.feedbackForm = fbVal.trim();
+      } else {
+        unsetBody.feedbackForm = 1;
+        delete body.feedbackForm;
+      }
+    }
+
+    for (const pos of ["participation", "first", "second", "third"]) {
+      const key = `certificatesByPosition.${pos}`;
+      if (formData.has(key)) {
+        const val = formData.get(key) as string;
+        if (val && val.trim() !== "" && val !== "undefined" && val !== "null") {
+          body[key] = val.trim();
+        } else {
+          unsetBody[key] = 1;
+          delete body[key];
+        }
+      }
     }
 
     const updatePayload: Record<string, any> = { $set: body };
@@ -495,8 +554,8 @@ export const PATCH = async (
     }
 
     event.set(body);
-    if (updatePayload.$unset?.certificateTemplate) {
-      event.set("certificateTemplate", undefined);
+    for (const unsetKey of Object.keys(unsetBody)) {
+      event.set(unsetKey, undefined);
     }
 
     const updatedEvent = await event.save();

@@ -1,11 +1,99 @@
-export const CERTIFICATE_MAX_SIZE_BYTES = 4 * 1024 * 1024;
-export const CERTIFICATE_MAX_TOKENS = 10;
+export const CERTIFICATE_MAX_SIZE_BYTES = 5 * 1024 * 1024;
+export const CERTIFICATE_MAX_TOKENS = 30;
 
-export const CERTIFICATE_VARIABLE_KEYS = ["$name", "$year", "$rank"] as const;
-export type CertificateVariableKey = (typeof CERTIFICATE_VARIABLE_KEYS)[number];
+export const CERTIFICATE_VARIABLE_KEYS = [
+  "$name",
+  "$year",
+  "$rank",
+  "$event",
+  "$club",
+  "$date",
+  "$custom",
+] as const;
+export type CertificateVariableKey = (typeof CERTIFICATE_VARIABLE_KEYS)[number] | string;
 
-export const CERTIFICATE_FONT_KEYS = ["helvetica", "times", "courier", "georgia", "arial", "verdana", "impact", "trebuchet"] as const;
-export type CertificateFontKey = (typeof CERTIFICATE_FONT_KEYS)[number];
+export type CertificateFontCategory = "Calligraphy / Script" | "Serif & Luxury" | "Sans-Serif & Clean" | "Display & Modern" | "Standard / System";
+
+export interface CertificateFontOption {
+  value: string;
+  label: string;
+  category: CertificateFontCategory;
+  googleFont?: boolean;
+}
+
+export const CERTIFICATE_FONT_OPTIONS: CertificateFontOption[] = [
+  // Calligraphy & Script (Most popular for Certificates)
+  { value: "Great Vibes", label: "Great Vibes", category: "Calligraphy / Script", googleFont: true },
+  { value: "Alex Brush", label: "Alex Brush", category: "Calligraphy / Script", googleFont: true },
+  { value: "Dancing Script", label: "Dancing Script", category: "Calligraphy / Script", googleFont: true },
+  { value: "Allura", label: "Allura", category: "Calligraphy / Script", googleFont: true },
+  { value: "Pinyon Script", label: "Pinyon Script", category: "Calligraphy / Script", googleFont: true },
+  { value: "Parisienne", label: "Parisienne", category: "Calligraphy / Script", googleFont: true },
+  { value: "Pacifico", label: "Pacifico", category: "Calligraphy / Script", googleFont: true },
+  { value: "Sacramento", label: "Sacramento", category: "Calligraphy / Script", googleFont: true },
+  { value: "Satisfy", label: "Satisfy", category: "Calligraphy / Script", googleFont: true },
+  { value: "Tangerine", label: "Tangerine", category: "Calligraphy / Script", googleFont: true },
+  { value: "MonteCarlo", label: "MonteCarlo", category: "Calligraphy / Script", googleFont: true },
+  { value: "Courgette", label: "Courgette", category: "Calligraphy / Script", googleFont: true },
+  { value: "Caveat", label: "Caveat", category: "Calligraphy / Script", googleFont: true },
+  { value: "Italianno", label: "Italianno", category: "Calligraphy / Script", googleFont: true },
+  { value: "Marck Script", label: "Marck Script", category: "Calligraphy / Script", googleFont: true },
+  { value: "Herr Von Muellerhoff", label: "Herr Von Muellerhoff", category: "Calligraphy / Script", googleFont: true },
+
+  // Serif & Luxury
+  { value: "Cinzel", label: "Cinzel", category: "Serif & Luxury", googleFont: true },
+  { value: "Cinzel Decorative", label: "Cinzel Decorative", category: "Serif & Luxury", googleFont: true },
+  { value: "Playfair Display", label: "Playfair Display", category: "Serif & Luxury", googleFont: true },
+  { value: "Cormorant Garamond", label: "Cormorant Garamond", category: "Serif & Luxury", googleFont: true },
+  { value: "Bodoni Moda", label: "Bodoni Moda", category: "Serif & Luxury", googleFont: true },
+  { value: "EB Garamond", label: "EB Garamond", category: "Serif & Luxury", googleFont: true },
+  { value: "Merriweather", label: "Merriweather", category: "Serif & Luxury", googleFont: true },
+  { value: "Prata", label: "Prata", category: "Serif & Luxury", googleFont: true },
+  { value: "Lora", label: "Lora", category: "Serif & Luxury", googleFont: true },
+  { value: "Libre Baskerville", label: "Libre Baskerville", category: "Serif & Luxury", googleFont: true },
+  { value: "Spectral", label: "Spectral", category: "Serif & Luxury", googleFont: true },
+  { value: "Marcellus", label: "Marcellus", category: "Serif & Luxury", googleFont: true },
+  { value: "Noto Serif", label: "Noto Serif", category: "Serif & Luxury", googleFont: true },
+
+  // Sans-Serif & Clean
+  { value: "Montserrat", label: "Montserrat", category: "Sans-Serif & Clean", googleFont: true },
+  { value: "Poppins", label: "Poppins", category: "Sans-Serif & Clean", googleFont: true },
+  { value: "Inter", label: "Inter", category: "Sans-Serif & Clean", googleFont: true },
+  { value: "Roboto", label: "Roboto", category: "Sans-Serif & Clean", googleFont: true },
+  { value: "Open Sans", label: "Open Sans", category: "Sans-Serif & Clean", googleFont: true },
+  { value: "Lato", label: "Lato", category: "Sans-Serif & Clean", googleFont: true },
+  { value: "Raleway", label: "Raleway", category: "Sans-Serif & Clean", googleFont: true },
+  { value: "Oswald", label: "Oswald", category: "Sans-Serif & Clean", googleFont: true },
+  { value: "Bebas Neue", label: "Bebas Neue", category: "Sans-Serif & Clean", googleFont: true },
+  { value: "Plus Jakarta Sans", label: "Plus Jakarta Sans", category: "Sans-Serif & Clean", googleFont: true },
+  { value: "DM Sans", label: "DM Sans", category: "Sans-Serif & Clean", googleFont: true },
+  { value: "Work Sans", label: "Work Sans", category: "Sans-Serif & Clean", googleFont: true },
+  { value: "Nunito", label: "Nunito", category: "Sans-Serif & Clean", googleFont: true },
+  { value: "Quicksand", label: "Quicksand", category: "Sans-Serif & Clean", googleFont: true },
+  { value: "Urbanist", label: "Urbanist", category: "Sans-Serif & Clean", googleFont: true },
+
+  // Display & Modern
+  { value: "Anton", label: "Anton", category: "Display & Modern", googleFont: true },
+  { value: "Righteous", label: "Righteous", category: "Display & Modern", googleFont: true },
+  { value: "Abril Fatface", label: "Abril Fatface", category: "Display & Modern", googleFont: true },
+  { value: "Bungee", label: "Bungee", category: "Display & Modern", googleFont: true },
+  { value: "Comfortaa", label: "Comfortaa", category: "Display & Modern", googleFont: true },
+  { value: "Lobster", label: "Lobster", category: "Display & Modern", googleFont: true },
+  { value: "Alfa Slab One", label: "Alfa Slab One", category: "Display & Modern", googleFont: true },
+  { value: "Shrikhand", label: "Shrikhand", category: "Display & Modern", googleFont: true },
+
+  // Standard / System
+  { value: "helvetica", label: "Helvetica", category: "Standard / System" },
+  { value: "times", label: "Times New Roman", category: "Standard / System" },
+  { value: "courier", label: "Courier New", category: "Standard / System" },
+  { value: "georgia", label: "Georgia", category: "Standard / System" },
+  { value: "arial", label: "Arial", category: "Standard / System" },
+  { value: "verdana", label: "Verdana", category: "Standard / System" },
+  { value: "impact", label: "Impact", category: "Standard / System" },
+  { value: "trebuchet", label: "Trebuchet MS", category: "Standard / System" },
+];
+
+export type CertificateFontKey = string;
 
 export type CertificateTextAlign = "left" | "center" | "right";
 
@@ -16,7 +104,7 @@ export interface CertificateTextToken {
   y: number;
   fontSize: number;
   colorHex: string;
-  fontFamily: CertificateFontKey;
+  fontFamily: string;
   bold: boolean;
   italic: boolean;
   align: CertificateTextAlign;
@@ -25,60 +113,6 @@ export interface CertificateTextToken {
 export interface CertificateLayout {
   tokens: CertificateTextToken[];
 }
-
-export interface LegacyCertificateNameConfig {
-  preset: "center" | "lower-third" | "top-center";
-  xOffset: number;
-  yOffset: number;
-  fontSize: number;
-  colorHex: string;
-}
-
-export const convertLegacyNameConfigToLayout = (
-  legacy?: LegacyCertificateNameConfig,
-): CertificateLayout | null => {
-  if (!legacy) return null;
-
-  const baseY =
-    legacy.preset === "top-center"
-      ? 0.72
-      : legacy.preset === "lower-third"
-        ? 0.34
-        : 0.5;
-  const convertedX = clamp(0.5 + legacy.xOffset / 1200, 0, 1);
-  const convertedY = clamp(baseY + legacy.yOffset / 1200, 0, 1);
-
-  return {
-    tokens: [
-      {
-        id: "name-legacy",
-        variable: "$name",
-        x: convertedX,
-        y: convertedY,
-        fontSize: clamp(legacy.fontSize || 44, 16, 120),
-        colorHex: legacy.colorHex || "#111111",
-        fontFamily: "helvetica",
-        bold: true,
-        italic: false,
-        align: "center",
-      },
-    ],
-  };
-};
-
-export const CERTIFICATE_FONT_OPTIONS: Array<{
-  value: CertificateFontKey;
-  label: string;
-}> = [
-  { value: "helvetica", label: "Helvetica" },
-  { value: "times", label: "Times" },
-  { value: "courier", label: "Courier" },
-  { value: "georgia", label: "Georgia" },
-  { value: "arial", label: "Arial" },
-  { value: "verdana", label: "Verdana" },
-  { value: "impact", label: "Impact" },
-  { value: "trebuchet", label: "Trebuchet MS" },
-];
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
@@ -94,7 +128,7 @@ const createToken = (
   x: number,
   y: number,
 ): CertificateTextToken => ({
-  id: `${variable.replace("$", "")}-${Math.random().toString(36).slice(2, 9)}`,
+  id: `${variable.replace(/[^a-zA-Z0-9]/g, "") || "var"}-${Math.random().toString(36).slice(2, 9)}`,
   variable,
   x,
   y,
@@ -116,13 +150,11 @@ export const getDefaultCertificateLayout = (): CertificateLayout => ({
 
 const isValidId = (id: string) => /^[a-zA-Z0-9$-_.]{2,40}$/.test(id);
 
-const isValidVariable = (
-  variable: string,
-): variable is CertificateVariableKey =>
-  CERTIFICATE_VARIABLE_KEYS.includes(variable as CertificateVariableKey);
+const isValidVariable = (variable: string): boolean =>
+  typeof variable === "string" && variable.trim().length >= 1 && variable.trim().length <= 50;
 
-const isValidFont = (font: string): font is CertificateFontKey =>
-  CERTIFICATE_FONT_KEYS.includes(font as CertificateFontKey);
+const isValidFont = (font: string): boolean =>
+  typeof font === "string" && font.trim().length >= 1 && font.trim().length <= 80;
 
 const isValidAlign = (align: string): align is CertificateTextAlign =>
   ["left", "center", "right"].includes(align);
@@ -155,7 +187,6 @@ export const validateCertificateLayout = (
     };
   }
 
-  const seenVariables = new Set<string>();
   const normalizedTokens: CertificateTextToken[] = [];
 
   for (const rawToken of tokens) {
@@ -180,14 +211,6 @@ export const validateCertificateLayout = (
         error: `Unsupported certificate variable: ${variable}`,
       };
     }
-
-    if (seenVariables.has(variable)) {
-      return {
-        valid: false,
-        error: `Duplicate variable placement for ${variable}`,
-      };
-    }
-    seenVariables.add(variable);
 
     if (!isValidFont(fontFamily)) {
       return { valid: false, error: "Invalid certificate font" };
@@ -220,6 +243,41 @@ export const validateCertificateLayout = (
   }
 
   return { valid: true, layout: { tokens: normalizedTokens } };
+};
+
+export interface LegacyCertificateNameConfig {
+  preset: "center" | "lower-third" | "top-center";
+  xOffset: number;
+  yOffset: number;
+  fontSize: number;
+  colorHex: string;
+}
+
+export const convertLegacyNameConfigToLayout = (
+  config?: LegacyCertificateNameConfig
+): CertificateLayout | null => {
+  if (!config) return null;
+
+  let y = 0.5;
+  if (config.preset === "lower-third") y = 0.7;
+  else if (config.preset === "top-center") y = 0.3;
+
+  return {
+    tokens: [
+      {
+        id: "legacy-name",
+        variable: "$name",
+        x: 0.5 + (config.xOffset || 0) / 1000,
+        y: y + (config.yOffset || 0) / 1000,
+        fontSize: config.fontSize || 44,
+        colorHex: config.colorHex || "#111111",
+        fontFamily: "Great Vibes",
+        bold: false,
+        italic: false,
+        align: "center",
+      },
+    ],
+  };
 };
 
 export const parseCertificateLayoutFromFormData = (

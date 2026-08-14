@@ -362,6 +362,8 @@ export const POST = async (req: NextRequest) => {
       ? Number(formData.get("numberOfWinners"))
       : 1;
 
+    const certificateId = (formData.get("certificateId") || formData.get("certificate")) as string | null;
+
     /* ---------- Create Event ---------- */
     const event = await Event.create({
       organizingClub,
@@ -373,6 +375,7 @@ export const POST = async (req: NextRequest) => {
       teamSizeRange,
       prize: prize ? Number(prize) : undefined,
       providesCertificate,
+      certificate: providesCertificate && certificateId ? certificateId : undefined,
       registrationFee: registrationFee ? Number(registrationFee) : 0,
       image: imageUrl,
       maxRegistrations: maxRegistrations ? Number(maxRegistrations) : undefined,

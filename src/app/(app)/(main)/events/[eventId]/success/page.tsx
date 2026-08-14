@@ -6,7 +6,6 @@ import { MessageCircle, ArrowLeft, ExternalLink } from "lucide-react";
 import { getEvent } from "@/services/getEvent";
 import { IEvent } from "@/models/event.schema";
 import SuccessIcon from "@/components/Events/SuccessIcon";
-import DownloadCertificateButton from "@/components/Events/DownloadCertificateButton";
 import { auth } from "@/auth";
 
 export default async function RegistrationSuccess({

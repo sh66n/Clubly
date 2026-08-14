@@ -61,8 +61,22 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const name = formData.get("name") as string;
     if (name) updateData.name = name;
 
+    const isDraftParam = formData.get("isDraft");
+    if (isDraftParam !== null) {
+      updateData.isDraft = isDraftParam === "true";
+    }
+
     const certificateTemplateFile = formData.get("certificateTemplateImage") as File | null;
     if (certificateTemplateFile && certificateTemplateFile.size > 0) {
+      // Destroy existing cloudinary asset if present
+      if (certificate.publicId) {
+        try {
+          await cloudinary.uploader.destroy(certificate.publicId);
+        } catch (cErr) {
+          console.error("Failed to delete old image from Cloudinary:", cErr);
+        }
+      }
+
       const certBuffer = Buffer.from(await certificateTemplateFile.arrayBuffer());
       const certUploadResult: any = await new Promise((resolve, reject) => {
         cloudinary.uploader.upload_stream({ resource_type: "image", folder: "certificates" }, (error, result) => {

@@ -18,15 +18,8 @@ export default async function EditCertificatePage({ params }: { params: Promise<
     redirect("/club-admin/certificates");
   }
 
-  // Convert ObjectIds and Dates for client component
-  const initialData = {
-    ...certificate,
-    _id: certificate._id.toString(),
-    club: certificate.club.toString(),
-    uploadedAt: certificate.uploadedAt.toISOString(),
-    createdAt: certificate.createdAt?.toISOString(),
-    updatedAt: certificate.updatedAt?.toISOString(),
-  };
+  // Convert all ObjectIds, subdocument _ids and Dates into plain JSON primitives for client component
+  const initialData = JSON.parse(JSON.stringify(certificate));
 
   return <CertificateForm initialData={initialData} />;
 }

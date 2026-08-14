@@ -37,6 +37,13 @@ export const zEvent = z.object({
     )
     .optional(),
   certificate: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
+  certificatesByPosition: z.object({
+    participation: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
+    first: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
+    second: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
+    third: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
+  }).optional(),
+  feedbackForm: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
   likes: z.number().default(0),
   views: z.number().default(0),
   likedBy: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/)).optional(),
@@ -88,6 +95,13 @@ export interface IEvent {
   status: "draft" | "live" | "completed";
   customQuestions?: ICustomQuestion[];
   certificate?: Types.ObjectId;
+  certificatesByPosition?: {
+    participation?: Types.ObjectId;
+    first?: Types.ObjectId;
+    second?: Types.ObjectId;
+    third?: Types.ObjectId;
+  };
+  feedbackForm?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
   likes: number;

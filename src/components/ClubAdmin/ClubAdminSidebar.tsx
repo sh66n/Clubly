@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  MessageSquare,
 } from "lucide-react";
 
 interface ClubAdminSidebarProps {
@@ -59,6 +60,11 @@ export default function ClubAdminSidebar({
       name: "My Club",
       icon: <UsersRound size={20} />,
       href: "/club-admin/club",
+    },
+    {
+      name: "Feedback Forms",
+      icon: <MessageSquare size={20} />,
+      href: "/club-admin/feedback-forms",
     },
   ];
 

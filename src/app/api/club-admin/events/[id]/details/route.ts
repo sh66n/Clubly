@@ -23,6 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       .populate("winner", "name email image")
       .populate("winnerGroup", "name")
       .populate("superEvent", "name image")
+      .populate("feedbackForm")
       .populate("winners.user", "name email image")
       .populate({
         path: "winners.group",

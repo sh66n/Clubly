@@ -20,7 +20,15 @@ export async function GET(req: NextRequest) {
     }
 
     const adminClubId = session.user.adminClub;
-    const certificates = await Certificate.find({ club: adminClubId }).sort({ createdAt: -1 }).lean();
+    const { searchParams } = new URL(req.url);
+    const onlyPublished = searchParams.get("published") === "true";
+
+    const filter: any = { club: adminClubId };
+    if (onlyPublished) {
+      filter.isDraft = { $ne: true };
+    }
+
+    const certificates = await Certificate.find(filter).sort({ createdAt: -1 }).lean();
 
     return NextResponse.json(certificates, { status: 200 });
   } catch (error: any) {
@@ -41,6 +49,7 @@ export async function POST(req: NextRequest) {
     const adminClubId = session.user.adminClub;
     const formData = await req.formData();
     const name = formData.get("name") as string;
+    const isDraft = formData.get("isDraft") === "true";
     
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -67,6 +76,7 @@ export async function POST(req: NextRequest) {
       url: certUploadResult.secure_url,
       publicId: certUploadResult.public_id,
       uploadedAt: new Date(),
+      isDraft,
       layout: certificateLayoutResult.layout ?? getDefaultCertificateLayout(),
     });
 

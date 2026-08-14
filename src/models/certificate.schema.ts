@@ -3,12 +3,12 @@ import { z } from "zod";
 
 export const zCertificateToken = z.object({
   id: z.string(),
-  variable: z.enum(["$name", "$year", "$rank"]),
+  variable: z.string(),
   x: z.number(),
   y: z.number(),
   fontSize: z.number(),
   colorHex: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-  fontFamily: z.enum(["helvetica", "times", "courier"]),
+  fontFamily: z.string(),
   bold: z.boolean(),
   italic: z.boolean(),
   align: z.enum(["left", "center", "right"]),
@@ -32,6 +32,7 @@ export const zCertificate = z.object({
   url: z.string().url(),
   publicId: z.string(),
   uploadedAt: z.date(),
+  isDraft: z.boolean().optional(),
   layout: zCertificateLayout.optional(),
   nameConfig: zCertificateNameConfig.optional(),
 });
@@ -43,15 +44,16 @@ export interface ICertificate {
   url: string;
   publicId: string;
   uploadedAt: Date;
+  isDraft?: boolean;
   layout?: {
     tokens: {
       id: string;
-      variable: "$name" | "$year" | "$rank";
+      variable: string;
       x: number;
       y: number;
       fontSize: number;
       colorHex: string;
-      fontFamily: "helvetica" | "times" | "courier";
+      fontFamily: string;
       bold: boolean;
       italic: boolean;
       align: "left" | "center" | "right";

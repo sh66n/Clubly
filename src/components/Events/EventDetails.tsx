@@ -29,7 +29,7 @@ import BackButton from "../BackButton";
 import CopyCodeButton from "../Groups/CopyCodeButton";
 import ContinueWithGroupModal from "../Groups/ContinueWithGroupModal";
 import RegistrationQuestionsModal from "./RegistrationQuestionsModal";
-import DownloadCertificateButton from "./DownloadCertificateButton";
+import EventFeedbackWidget from "./EventFeedbackWidget";
 import LeaveGroupButton from "../Groups/LeaveGroupButton";
 import EventQRTicket from "./EventQRTicket";
 import { getProfileStatus } from "@/lib/utils";
@@ -320,17 +320,7 @@ export default function EventDetails({
                   </div>
                 )}
 
-                {event.providesCertificate && hasCertificateTemplate && (
-                  <div className="pt-2">
-                    <DownloadCertificateButton
-                      eventId={String(event._id)}
-                      eventName={event.name}
-                    />
-                    <p className="text-xs text-gray-500 mt-2">
-                      Available once your attendance is marked.
-                    </p>
-                  </div>
-                )}
+
               </BorderedDiv>
             </div>
           )}
@@ -717,6 +707,11 @@ export default function EventDetails({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Floating Feedback & Certificate Widget */}
+      {(isAlreadyRegistered || (user?.role === "club-admin" && event?.organizingClub?._id?.toString() === user?.adminClub?.toString())) && (
+        <EventFeedbackWidget eventId={String(event._id)} eventName={event.name} />
       )}
     </>
   );

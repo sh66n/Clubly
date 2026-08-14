@@ -74,7 +74,7 @@ import html2canvas from "html2canvas";
 
 type EventStatus = "draft" | "live" | "completed";
 type EventType = "team" | "individual";
-type TabKey = "participants" | "finance" | "feedback" | "likes" | "winners";
+type TabKey = "participants" | "finance" | "feedback" | "likes" | "winners" | "certificates";
 
 interface CustomQuestion {
   id: string;
@@ -194,6 +194,8 @@ export default function EventDetailsPage() {
   const [payments, setPayments] = useState<PaymentItem[]>([]);
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
   const [groups, setGroups] = useState<GroupItem[]>([]);
+  const [availableCertificates, setAvailableCertificates] = useState<any[]>([]);
+  const [availableFeedbackForms, setAvailableFeedbackForms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -232,6 +234,18 @@ export default function EventDetailsPage() {
       setPayments(data.payments || []);
       setFeedbacks(data.feedbacks || []);
       setGroups(data.groups || []);
+      
+      const certRes = await fetch("/api/club-admin/certificates");
+      if (certRes.ok) {
+        const certData = await certRes.json();
+        setAvailableCertificates(Array.isArray(certData) ? certData : certData.certificates || []);
+      }
+      
+      const feedbackRes = await fetch("/api/club-admin/feedback-forms");
+      if (feedbackRes.ok) {
+        const feedbackData = await feedbackRes.json();
+        setAvailableFeedbackForms(feedbackData.forms || []);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -267,6 +281,29 @@ export default function EventDetailsPage() {
       toast.error(err.message);
     } finally {
       setStatusLoading(false);
+    }
+  };
+
+  const updateEventCertificates = async (payload: Record<string, any>) => {
+    try {
+      const formData = new FormData();
+      Object.entries(payload).forEach(([k, v]) => {
+        if (v !== undefined) {
+          formData.append(k, String(v));
+        }
+      });
+      const res = await fetch(`/api/events/${eventId}`, {
+        method: "PATCH",
+        body: formData,
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.error || "Failed to update configuration");
+      }
+      toast.success("Configuration updated successfully");
+      fetchDetails();
+    } catch (err: any) {
+      toast.error(err.message);
     }
   };
 
@@ -1292,6 +1329,16 @@ export default function EventDetailsPage() {
             >
               Reviews ({feedbacks.length})
             </button>
+            <button
+              onClick={() => setActiveTab("certificates")}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all outline-none shrink-0 flex items-center gap-2 cursor-pointer ${
+                activeTab === "certificates"
+                  ? "text-[#689F38] bg-white shadow-sm border border-[#c5d6a8]"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-white/50 border border-transparent"
+              }`}
+            >
+              Certificates
+            </button>
           </div>
 
           {activeTab === "participants" && (
@@ -2067,6 +2114,104 @@ export default function EventDetailsPage() {
                   )}
                 </AnimatePresence>
               </motion.div>
+            </div>
+          )}
+          {activeTab === "certificates" && (
+            <div className="p-6 sm:p-8 pb-8 space-y-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Global Settings */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+                      <Award size={18} className="text-[#7CB342]" /> Certificate Settings
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Configure base certificate and feedback requirements for participants.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Base Template (Participation)</label>
+                      <select
+                        value={
+                          typeof event.certificate === "object"
+                            ? event.certificate?._id || ""
+                            : event.certificate || ""
+                        }
+                        onChange={(e) => updateEventCertificates({ certificate: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-[#7CB342] focus:ring-2 focus:ring-[#f0f7e6] transition-all"
+                      >
+                        <option value="">-- No Certificate --</option>
+                        {availableCertificates.map(cert => (
+                          <option key={cert._id} value={cert._id}>{cert.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Feedback Form</label>
+                      <select
+                        value={
+                          typeof event.feedbackForm === "object"
+                            ? event.feedbackForm?._id || ""
+                            : event.feedbackForm || ""
+                        }
+                        onChange={(e) => updateEventCertificates({ feedbackForm: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-[#7CB342] focus:ring-2 focus:ring-[#f0f7e6] transition-all"
+                      >
+                        <option value="">-- Optional (No Form) --</option>
+                        {availableFeedbackForms.map(form => (
+                          <option key={form._id} value={form._id}>{form.name}</option>
+                        ))}
+                      </select>
+                      <p className="text-[10px] text-slate-400 mt-1.5 leading-snug">
+                        If selected, participants must fill this form before downloading their certificate.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tiered Certificates */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+                      <Trophy size={18} className="text-amber-500" /> Tiered Certificates
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Override base certificate for winners.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {[1, 2, 3].map(pos => {
+                      if (pos > (event.numberOfWinners || 1)) return null;
+                      
+                      const key = pos === 1 ? "first" : pos === 2 ? "second" : "third";
+                      const field = `certificatesByPosition.${key}`;
+                      const label = pos === 1 ? "1st Place (Winner)" : pos === 2 ? "2nd Place" : "3rd Place";
+                      const rawVal = event.certificatesByPosition?.[key as keyof typeof event.certificatesByPosition];
+                      const value = typeof rawVal === "object" ? rawVal?._id || "" : rawVal || "";
+                      
+                      return (
+                        <div key={pos}>
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">{label}</label>
+                          <select
+                            value={value}
+                            onChange={(e) => updateEventCertificates({ [field]: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-50 transition-all"
+                          >
+                            <option value="">-- Inherit Base Template --</option>
+                            {availableCertificates.map(cert => (
+                              <option key={cert._id} value={cert._id}>{cert.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
