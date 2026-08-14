@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Download, X, Loader2, Award, ArrowRight } from "lucide-react";
+import { Star, Download, X, Loader2, Award, ArrowRight, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import BorderedDiv from "@/components/BorderedDiv";
@@ -46,6 +46,92 @@ const loadGoogleFont = (fontFamily: string) => {
   }
 };
 
+const triggerConfetti = () => {
+  if (typeof window === "undefined") return;
+  const canvas = document.createElement("canvas");
+  canvas.style.position = "fixed";
+  canvas.style.top = "0";
+  canvas.style.left = "0";
+  canvas.style.width = "100vw";
+  canvas.style.height = "100vh";
+  canvas.style.pointerEvents = "none";
+  canvas.style.zIndex = "99999";
+  document.body.appendChild(canvas);
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const colors = ["#60A5FA", "#34D399", "#FBBF24", "#F472B6", "#A78BFA", "#F87171", "#FDE047", "#FFFFFF"];
+  const particles: Array<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    vx: number;
+    vy: number;
+    rot: number;
+    vrot: number;
+    color: string;
+    opacity: number;
+  }> = [];
+
+  const count = 100;
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: canvas.width / 2 + (Math.random() - 0.5) * 200,
+      y: canvas.height * 0.4 + (Math.random() - 0.5) * 100,
+      w: Math.random() * 8 + 6,
+      h: Math.random() * 6 + 4,
+      vx: (Math.random() - 0.5) * 16,
+      vy: Math.random() * -14 - 5,
+      rot: Math.random() * 360,
+      vrot: (Math.random() - 0.5) * 12,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      opacity: 1,
+    });
+  }
+
+  let animationFrameId: number;
+  const startTime = Date.now();
+  const duration = 2600;
+
+  const render = () => {
+    const elapsed = Date.now() - startTime;
+    if (elapsed > duration) {
+      cancelAnimationFrame(animationFrameId);
+      canvas.remove();
+      return;
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const progress = elapsed / duration;
+
+    particles.forEach((p) => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.38; // gravity
+      p.vx *= 0.99;
+      p.rot += p.vrot;
+      p.opacity = Math.max(0, 1 - progress);
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate((p.rot * Math.PI) / 180);
+      ctx.globalAlpha = p.opacity;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    });
+
+    animationFrameId = requestAnimationFrame(render);
+  };
+
+  animationFrameId = requestAnimationFrame(render);
+};
+
 export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbackWidgetProps) {
   const router = useRouter();
   
@@ -61,6 +147,7 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
   const [certificate, setCertificate] = useState<any>(null);
   const [userName, setUserName] = useState<string>("Student");
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [hoveredStars, setHoveredStars] = useState<Record<string, number | null>>({});
   const [imgScale, setImgScale] = useState<{ clientWidth: number; naturalWidth: number }>({ clientWidth: 600, naturalWidth: 1920 });
   
   const [submitting, setSubmitting] = useState(false);
@@ -149,6 +236,7 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
       toast.success("Thank you for your feedback! Certificate unlocked.");
       setFeedbackSubmitted(true);
       setFeedbackRequired(false);
+      triggerConfetti();
       checkStatus();
     } catch (err: any) {
       toast.error(err.message);
@@ -208,7 +296,7 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
       const scale = imgScale.naturalWidth > 0 ? imgScale.clientWidth / imgScale.naturalWidth : 0.4;
 
       return (
-        <div className="relative w-full rounded-xl overflow-hidden shadow-2xl border border-gray-700 bg-black/40 flex items-center justify-center">
+        <div className="relative w-full overflow-hidden rounded-lg flex items-center justify-center">
           <img
             src={certificate.url}
             alt="Certificate Template"
@@ -257,17 +345,7 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
       );
     }
 
-    return (
-      <div className="w-full aspect-[1.414] bg-white rounded-lg shadow-xl mb-8 flex items-center justify-center p-1 border border-gray-200">
-        <div className="w-full h-full border-[6px] border-double border-gray-300 flex flex-col items-center justify-center text-center p-8 bg-gray-50/50 relative overflow-hidden">
-          <Award className="w-20 h-20 text-blue-500 mb-4 opacity-20 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 scale-150" />
-          <h2 className="text-3xl font-serif text-gray-800 mb-2 relative z-10">Certificate of Completion</h2>
-          <p className="text-sm text-gray-500 relative z-10">Presented to</p>
-          <p className="text-xl font-bold text-gray-900 my-4 border-b border-gray-300 pb-1 relative z-10 px-8">{userName}</p>
-          <p className="text-xs text-gray-500 relative z-10 max-w-xs">{eventName}</p>
-        </div>
-      </div>
-    );
+    return null;
   };
 
   return (
@@ -347,29 +425,26 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
             ) : (
               <button
                 onClick={() => setIsOpen(true)}
-                className="group relative flex items-center justify-center p-0 rounded-2xl shadow-2xl overflow-hidden cursor-pointer transition-transform hover:scale-105 active:scale-95 w-36 h-24 bg-white border border-gray-200"
+                className="group relative flex items-center justify-center p-0 rounded-lg shadow-2xl overflow-hidden cursor-pointer transition-all duration-300 ease-out hover:rotate-[-5deg] hover:scale-110 active:scale-95 w-36 h-24 bg-black border border-zinc-800 select-none"
               >
                 {certificate?.url ? (
-                  <div className="w-full h-full relative overflow-hidden rounded-xl bg-gray-900 flex items-center justify-center">
+                  <div className="w-full h-full relative overflow-hidden rounded-lg bg-black flex items-center justify-center">
                     <img
                       src={certificate.url}
                       alt="Certificate"
-                      className="w-full h-full object-cover opacity-80 group-hover:opacity-95 transition-opacity"
+                      className="w-full h-full object-cover blur-[1.5px] scale-105 transition-transform duration-300"
                     />
-                    <div className="absolute inset-0 bg-black/30 group-hover:bg-blue-600/30 transition-colors flex flex-col items-center justify-center">
-                      <Download className="text-white w-5 h-5 mb-0.5" />
-                      <span className="text-[9px] font-bold text-white uppercase tracking-wider">Download</span>
+                    <div className="absolute inset-0 bg-black/35 flex flex-col items-center justify-center transition-opacity">
+                      <Eye className="text-white w-5 h-5 mb-1 drop-shadow" />
+                      <span className="text-[10.5px] font-semibold text-white tracking-wide drop-shadow">View</span>
                     </div>
                   </div>
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center relative bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl m-1 group-hover:border-blue-500 transition-colors">
-                    <Award className="text-blue-500 mb-1 w-6 h-6" />
-                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                      Certificate
+                  <div className="w-full h-full flex flex-col items-center justify-center relative bg-[#0a0b0d] rounded-lg">
+                    <Award className="text-white mb-1 w-6 h-6" />
+                    <span className="text-[10.5px] font-semibold text-white tracking-wide">
+                      View
                     </span>
-                    <div className="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Download className="text-blue-600 w-5 h-5" />
-                    </div>
                   </div>
                 )}
               </button>
@@ -385,104 +460,130 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md"
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm"
           >
-            <motion.div
-              layoutId="widget"
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="bg-[#0f1115] w-full max-w-3xl rounded-[2rem] border border-gray-800 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
-            >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-800 shrink-0">
-                <div>
-                  <h3 className="text-xl font-bold text-white">
-                    {feedbackRequired ? "Event Feedback" : "Your Certificate"}
-                  </h3>
-                  <p className="text-sm text-gray-400 mt-1">
-                    {eventName}
-                  </p>
+            {feedbackRequired ? (
+              <motion.div
+                initial={{ scale: 0.96, opacity: 0, y: 12 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.96, opacity: 0, y: 12 }}
+                transition={{ type: "spring", stiffness: 350, damping: 28 }}
+                className="bg-[#0a0b0d] w-full max-w-lg rounded-2xl border border-white/[0.06] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+              >
+                {/* Modal Header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.04] bg-[#0a0b0d] shrink-0">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-semibold text-white tracking-tight">
+                      {eventName} Feedback
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      Fill out the feedback form to unlock your event certificate!
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors cursor-pointer"
-                >
-                  <X size={20} />
-                </button>
-              </div>
 
-              {/* Modal Body */}
-              <div className="p-6 overflow-y-auto">
-                {feedbackRequired && feedbackForm ? (
-                  <div className="space-y-8">
-                    {feedbackForm.questions.map((q: any) => (
-                      <div key={q.id} className="bg-gray-900/50 border border-gray-800 rounded-2xl p-5">
-                        <p className="text-white font-medium mb-4 text-lg">
-                          {q.text} {q.required && <span className="text-red-500">*</span>}
-                        </p>
-                        <div className="flex items-center justify-between sm:justify-start sm:gap-4">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                              key={star}
-                              onClick={() => handleRating(q.id, star)}
-                              className={`p-2 transition-all transform hover:scale-110 focus:outline-none cursor-pointer ${
-                                (answers[q.id] || 0) >= star
-                                  ? "text-amber-400"
-                                  : "text-gray-600 hover:text-gray-400"
-                              }`}
-                            >
-                              <Star
-                                size={32}
-                                className={(answers[q.id] || 0) >= star ? "fill-amber-400" : ""}
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-4">
-                    {renderCertificatePreview()}
-                  </div>
-                )}
-              </div>
+                {/* Modal Body */}
+                <div className="p-5 overflow-y-auto bg-[#0a0b0d] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/15 hover:[&::-webkit-scrollbar-thumb]:bg-white/25 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-button]:hidden">
+                  {feedbackForm ? (
+                    <div className="space-y-4">
+                      {feedbackForm.questions.map((q: any) => {
+                        const activeRating = hoveredStars[q.id] ?? answers[q.id] ?? 0;
+                        return (
+                          <div key={q.id} className="bg-[#111215] border border-white/[0.04] rounded-xl p-4">
+                            <p className="text-gray-200 font-medium mb-3 text-sm">
+                              {q.text}
+                            </p>
+                            <div className="flex items-center justify-center gap-2.5 sm:gap-3 py-1">
+                              {[1, 2, 3, 4, 5].map((star) => {
+                                const isFilled = activeRating >= star;
+                                return (
+                                  <button
+                                    key={star}
+                                    type="button"
+                                    onMouseEnter={() => setHoveredStars((prev) => ({ ...prev, [q.id]: star }))}
+                                    onMouseLeave={() => setHoveredStars((prev) => ({ ...prev, [q.id]: null }))}
+                                    onClick={() => handleRating(q.id, star)}
+                                    className={`p-1.5 transition-transform hover:scale-110 focus:outline-none cursor-pointer ${
+                                      isFilled
+                                        ? "text-amber-400"
+                                        : "text-zinc-700 hover:text-zinc-500"
+                                    }`}
+                                  >
+                                    <Star
+                                      size={26}
+                                      className={isFilled ? "fill-amber-400" : ""}
+                                    />
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
 
-              {/* Modal Footer */}
-              <div className="p-6 border-t border-gray-800 bg-gray-900/50 shrink-0">
-                {feedbackRequired ? (
+                {/* Modal Footer */}
+                <div className="px-5 py-4 border-t border-white/[0.04] bg-[#08080a] shrink-0 flex items-center justify-center">
                   <button
                     onClick={handleSubmitFeedback}
                     disabled={submitting}
-                    className="w-full py-4 bg-amber-500 hover:bg-amber-600 text-amber-950 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    className="w-auto px-6 py-2.5 bg-[#b5b8bd] hover:bg-[#c5c8cd] active:bg-[#a5a8ad] text-gray-950 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm"
                   >
                     {submitting ? (
-                      <Loader2 className="w-6 h-6 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      <>
-                        Submit & Unlock Certificate <ArrowRight size={20} />
-                      </>
+                      "Submit"
                     )}
                   </button>
-                ) : (
-                  <button
-                    onClick={handleDownloadCertificate}
-                    disabled={certDownloading}
-                    className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                  >
-                    {certDownloading ? (
-                      <Loader2 className="w-6 h-6 animate-spin" />
-                    ) : (
-                      <>
-                        <Download size={20} /> Download PDF
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-            </motion.div>
+                </div>
+              </motion.div>
+            ) : (
+              /* Direct Certificate Presentation without container box */
+              <motion.div
+                initial={{ scale: 0.94, opacity: 0, y: 15 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.94, opacity: 0, y: 15 }}
+                transition={{ type: "spring", stiffness: 350, damping: 28 }}
+                className="relative w-full max-w-2xl sm:max-w-3xl flex flex-col items-center justify-center"
+              >
+                {/* Close Button */}
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="absolute -top-12 right-0 sm:-right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 text-gray-300 hover:text-white hover:bg-white/20 transition-colors cursor-pointer backdrop-blur-md z-20"
+                >
+                  <X size={18} />
+                </button>
+
+                {/* Certificate */}
+                <div className="w-full flex items-center justify-center shadow-2xl rounded-xl overflow-hidden">
+                  {renderCertificatePreview()}
+                </div>
+
+                {/* Download Button with icon */}
+                <button
+                  onClick={handleDownloadCertificate}
+                  disabled={certDownloading}
+                  className="mt-6 w-auto px-7 py-2.5 bg-white hover:bg-zinc-200 active:bg-zinc-300 text-black font-semibold rounded-full text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-2xl"
+                >
+                  {certDownloading ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-black" />
+                  ) : (
+                    <>
+                      <Download size={16} />
+                      <span>Download</span>
+                    </>
+                  )}
+                </button>
+              </motion.div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
