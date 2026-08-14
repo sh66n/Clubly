@@ -2,7 +2,8 @@ import React from "react";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { connectToDb } from "@/lib/connectToDb";
-import { Event, User, Certificate, Registration, Group } from "@/models";
+import mongoose from "mongoose";
+import { Event, User, Certificate, Registration, Group, Feedback } from "@/models";
 import { auth } from "@/auth";
 import PublicCertificateViewer from "./PublicCertificateViewer";
 
@@ -69,6 +70,13 @@ export async function generateMetadata({
   const { id } = await params;
   const { user: userId } = await searchParams;
 
+  if (!mongoose.Types.ObjectId.isValid(id) || (userId && !mongoose.Types.ObjectId.isValid(userId))) {
+    return {
+      title: "Certificate Verification | Clubly",
+      description: "Verify event credentials on Clubly.",
+    };
+  }
+
   await connectToDb();
   const event = await Event.findById(id)
     .populate("organizingClub", "name logo")
@@ -80,6 +88,19 @@ export async function generateMetadata({
     .lean();
 
   const user = userId ? await User.findById(userId).select("name").lean() : null;
+
+  if (event?.feedbackForm && user) {
+    const hasFeedback = await Feedback.exists({
+      eventId: event._id,
+      userId: user._id,
+    });
+    if (!hasFeedback) {
+      return {
+        title: "Certificate Verification | Clubly",
+        description: "Verify event credentials on Clubly.",
+      };
+    }
+  }
 
   const isEligible = await checkCertificateEligibility(event, user);
   if (!isEligible) {
@@ -168,6 +189,10 @@ export default async function CertificateVerificationPage({
   const { user: userId } = await searchParams;
   const session = await auth();
 
+  if (!mongoose.Types.ObjectId.isValid(eventId) || (userId && !mongoose.Types.ObjectId.isValid(userId))) {
+    notFound();
+  }
+
   await connectToDb();
 
   const event = await Event.findById(eventId)
@@ -193,6 +218,16 @@ export default async function CertificateVerificationPage({
   let user = null;
   if (userId) {
     user = await User.findById(userId).select("name email year image").lean();
+  }
+
+  if (event.feedbackForm && user) {
+    const hasFeedback = await Feedback.exists({
+      eventId: event._id,
+      userId: user._id,
+    });
+    if (!hasFeedback) {
+      notFound();
+    }
   }
 
   const isEligible = await checkCertificateEligibility(event, user);

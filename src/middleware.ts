@@ -51,7 +51,9 @@ export default auth(async (req) => {
     pathname === "/clubs" ||
     /^\/clubs\/[^/]+$/.test(pathname) ||
     pathname === "/leaderboard" ||
-    /^\/superevents\/[^/]+$/.test(pathname);
+    /^\/superevents\/[^/]+$/.test(pathname) ||
+    pathname === "/certificates" ||
+    /^\/certificates\/[^/]+$/.test(pathname);
 
   if (isPublic) {
     return NextResponse.next();
