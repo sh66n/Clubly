@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Star, Download, X, Loader2, Award, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import BorderedDiv from "@/components/BorderedDiv";
 
 interface EventFeedbackWidgetProps {
   eventId: string;
@@ -51,6 +52,7 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
   // Widget states
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isDismissed, setIsDismissed] = useState(false);
   
   // Data states
   const [feedbackRequired, setFeedbackRequired] = useState(false);
@@ -182,6 +184,11 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
     }
   };
 
+  const handleDismiss = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDismissed(true);
+  };
+
   if (loading) return null;
   if (!feedbackRequired && !feedbackSubmitted && !certificate) return null;
 
@@ -267,46 +274,106 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
     <>
       {/* Persistent Bottom-Right Thumbnail */}
       <AnimatePresence>
-        {!isOpen && (
+        {!isOpen && !isDismissed && (
           <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0, scale: 0.8 }}
-            className="fixed bottom-24 right-4 md:bottom-6 md:right-6 z-40"
+            initial={{ y: 140, x: 50, opacity: 0, rotate: 90, scale: 0.8 }}
+            animate={{ y: 0, x: 0, opacity: 1, rotate: 0, scale: 1 }}
+            exit={{ y: 140, x: 50, opacity: 0, rotate: 90, scale: 0.8 }}
+            transition={{
+              type: "spring",
+              stiffness: 220,
+              damping: 20,
+              mass: 0.8,
+            }}
+            style={{ transformOrigin: "bottom right" }}
+            className="fixed bottom-24 right-3 sm:bottom-8 sm:right-10 lg:bottom-10 lg:right-12 z-40"
           >
-            <button
-              onClick={() => setIsOpen(true)}
-              className={`group relative flex items-center justify-center p-0 rounded-2xl shadow-2xl overflow-hidden cursor-pointer transition-transform hover:scale-105 active:scale-95
-                ${feedbackRequired ? 'w-48 h-16 bg-gradient-to-r from-amber-500 to-amber-600' : 'w-36 h-24 bg-white border border-gray-200'}
-              `}
-            >
-              {feedbackRequired ? (
-                <div className="flex items-center justify-center gap-3 w-full h-full text-white px-4">
-                  <Star className="fill-white w-5 h-5 animate-pulse shrink-0" />
-                  <span className="font-bold text-xs leading-tight text-left">
-                    Give feedback to unlock certificate!
-                  </span>
+            {feedbackRequired ? (
+              <BorderedDiv
+                style={{
+                  background: `
+                    radial-gradient(circle 220px at 0% 0%, rgba(186, 230, 253, 0.4) 0%, transparent 100%),
+                    radial-gradient(circle 260px at 100% 100%, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.75) 50%, transparent 100%),
+                    #051833
+                  `,
+                }}
+                className="group relative overflow-hidden border-[#1e3a5f] text-white p-5 rounded-2xl sm:rounded-3xl shadow-2xl w-[310px] sm:w-[325px] flex flex-col items-center text-center select-none"
+              >
+                {/* Grainy Noise Overlay */}
+                <div
+                  className="absolute inset-0 pointer-events-none opacity-[0.07] mix-blend-overlay"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+                  }}
+                />
+
+                {/* Dismiss Button */}
+                <button
+                  type="button"
+                  onClick={handleDismiss}
+                  aria-label="Dismiss feedback prompt for this visit"
+                  className="absolute top-3 right-3 z-20 w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 text-gray-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X size={13} />
+                </button>
+
+                <h4 className="text-white text-[14.5px] sm:text-[15.5px] font-semibold leading-snug mb-2.5 sm:mb-3 whitespace-nowrap text-center relative z-10 w-full">
+                  What did you think of this event?
+                </h4>
+
+                <div className="w-full flex items-center justify-center my-2.5 sm:my-3 relative z-10">
+                  <img
+                    src="/images/feedback.png"
+                    alt="Feedback rating stars"
+                    className="w-[200px] sm:w-[220px] h-auto object-contain select-none pointer-events-none drop-shadow-md"
+                  />
                 </div>
-              ) : certificate?.url ? (
-                <div className="w-full h-full relative overflow-hidden rounded-xl bg-gray-900 flex items-center justify-center">
-                  <img src={certificate.url} alt="Certificate" className="w-full h-full object-cover opacity-80 group-hover:opacity-95 transition-opacity" />
-                  <div className="absolute inset-0 bg-black/30 group-hover:bg-blue-600/30 transition-colors flex flex-col items-center justify-center">
-                    <Download className="text-white w-5 h-5 mb-0.5" />
-                    <span className="text-[9px] font-bold text-white uppercase tracking-wider">Download</span>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(true);
+                  }}
+                  className="w-full py-2.5 px-4 bg-[#b5b8bd] hover:bg-[#c4c7cc] active:bg-[#a6a9ae] text-gray-900 font-semibold rounded-full text-sm transition-colors duration-150 shadow-sm cursor-pointer mt-2 mb-2.5 relative z-10"
+                >
+                  Give feedback
+                </button>
+
+                <p className="text-[11.5px] italic text-[#959aa3] leading-snug font-normal relative z-10">
+                  Provide us your valuable feedback and unlock your event certificate!
+                </p>
+              </BorderedDiv>
+            ) : (
+              <button
+                onClick={() => setIsOpen(true)}
+                className="group relative flex items-center justify-center p-0 rounded-2xl shadow-2xl overflow-hidden cursor-pointer transition-transform hover:scale-105 active:scale-95 w-36 h-24 bg-white border border-gray-200"
+              >
+                {certificate?.url ? (
+                  <div className="w-full h-full relative overflow-hidden rounded-xl bg-gray-900 flex items-center justify-center">
+                    <img
+                      src={certificate.url}
+                      alt="Certificate"
+                      className="w-full h-full object-cover opacity-80 group-hover:opacity-95 transition-opacity"
+                    />
+                    <div className="absolute inset-0 bg-black/30 group-hover:bg-blue-600/30 transition-colors flex flex-col items-center justify-center">
+                      <Download className="text-white w-5 h-5 mb-0.5" />
+                      <span className="text-[9px] font-bold text-white uppercase tracking-wider">Download</span>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center relative bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl m-1 group-hover:border-blue-500 transition-colors">
-                  <Award className="text-blue-500 mb-1 w-6 h-6" />
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                    Certificate
-                  </span>
-                  <div className="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Download className="text-blue-600 w-5 h-5" />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center relative bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl m-1 group-hover:border-blue-500 transition-colors">
+                    <Award className="text-blue-500 mb-1 w-6 h-6" />
+                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                      Certificate
+                    </span>
+                    <div className="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Download className="text-blue-600 w-5 h-5" />
+                    </div>
                   </div>
-                </div>
-              )}
-            </button>
+                )}
+              </button>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
