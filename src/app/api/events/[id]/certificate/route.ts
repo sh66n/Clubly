@@ -162,7 +162,15 @@ export async function GET(
 ) {
   try {
     const session = await auth();
-    if (!session) {
+    const urlObj = new URL(_req.url);
+    const userIdQuery = urlObj.searchParams.get("user");
+
+    if (!session && !userIdQuery) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const activeUserId = userIdQuery || session?.user?.id;
+    if (!activeUserId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -184,13 +192,13 @@ export async function GET(
     if (event.eventType === "individual") {
       const reg = await Registration.exists({
         eventId: event._id,
-        userId: session.user.id,
+        userId: activeUserId,
       });
       isEligible = !!reg;
     } else {
       group = await Group.findOne({
         event: event._id,
-        members: session.user.id,
+        members: activeUserId,
       }).select("_id");
 
       if (group?._id) {
@@ -204,8 +212,8 @@ export async function GET(
 
     // Check organizer admin preview access
     const isOrganizerAdmin =
-      session.user.role === "club-admin" &&
-      session.user.adminClub?.toString() === (event.organizingClub?._id || event.organizingClub)?.toString();
+      session?.user?.role === "club-admin" &&
+      session?.user?.adminClub?.toString() === (event.organizingClub?._id || event.organizingClub)?.toString();
 
     if (!isEligible && !isOrganizerAdmin) {
       return NextResponse.json(
@@ -217,7 +225,7 @@ export async function GET(
     if (event.feedbackForm && !isOrganizerAdmin) {
       const hasFeedback = await Feedback.exists({
         eventId: event._id,
-        userId: session.user.id,
+        userId: activeUserId,
       });
       if (!hasFeedback) {
         return NextResponse.json(
@@ -228,7 +236,7 @@ export async function GET(
     }
 
     let position = 0;
-    const userIdStr = session.user.id.toString();
+    const userIdStr = activeUserId.toString();
 
     if (event.eventType === "individual") {
       const match = (event.winners || []).find(
@@ -346,10 +354,10 @@ export async function GET(
     const page = pdfDoc.addPage([width, height]);
     page.drawImage(embeddedImage, { x: 0, y: 0, width, height });
 
-    const participantName = (session.user.name || "Participant").trim();
-    const user = await User.findById(session.user.id)
-      .select("year email")
-      .lean<{ year?: number; email?: string }>();
+    const user = await User.findById(activeUserId)
+      .select("name year email")
+      .lean<{ name?: string; year?: number; email?: string }>();
+    const participantName = (user?.name || "Participant").trim();
     const yearValue =
       formatYearLabel(user?.year) !== "N/A"
         ? formatYearLabel(user?.year)

@@ -2,8 +2,27 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Download, X, Loader2, Award, ArrowRight, Eye, Share2, Check, Copy, ExternalLink, Sparkles } from "lucide-react";
-import { FaWhatsapp, FaLinkedinIn, FaInstagram, FaXTwitter } from "react-icons/fa6";
+import {
+  Star,
+  Download,
+  X,
+  Loader2,
+  Award,
+  ArrowRight,
+  Eye,
+  Share2,
+  Check,
+  Copy,
+  ExternalLink,
+  Sparkles,
+  Image as ImageIcon,
+} from "lucide-react";
+import {
+  FaWhatsapp,
+  FaLinkedinIn,
+  FaInstagram,
+  FaXTwitter,
+} from "react-icons/fa6";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import BorderedDiv from "@/components/BorderedDiv";
@@ -65,7 +84,16 @@ const triggerConfetti = () => {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  const colors = ["#60A5FA", "#34D399", "#FBBF24", "#F472B6", "#A78BFA", "#F87171", "#FDE047", "#FFFFFF"];
+  const colors = [
+    "#60A5FA",
+    "#34D399",
+    "#FBBF24",
+    "#F472B6",
+    "#A78BFA",
+    "#F87171",
+    "#FDE047",
+    "#FFFFFF",
+  ];
   const particles: Array<{
     x: number;
     y: number;
@@ -133,26 +161,50 @@ const triggerConfetti = () => {
   animationFrameId = requestAnimationFrame(render);
 };
 
-export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbackWidgetProps) {
+export default function EventFeedbackWidget({
+  eventId,
+  eventName,
+}: EventFeedbackWidgetProps) {
   const router = useRouter();
-  
+
   // Widget states
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isDismissed, setIsDismissed] = useState(false);
-  
+
   // Data states
   const [feedbackRequired, setFeedbackRequired] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [feedbackForm, setFeedbackForm] = useState<any>(null);
   const [certificate, setCertificate] = useState<any>(null);
   const [userName, setUserName] = useState<string>("Student");
+  const [userId, setUserId] = useState<string>("");
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [hoveredStars, setHoveredStars] = useState<Record<string, number | null>>({});
-  const [imgScale, setImgScale] = useState<{ clientWidth: number; naturalWidth: number }>({ clientWidth: 600, naturalWidth: 1920 });
-  
+  const [hoveredStars, setHoveredStars] = useState<
+    Record<string, number | null>
+  >({});
+  const [imgScale, setImgScale] = useState<{
+    clientWidth: number;
+    naturalWidth: number;
+  }>({ clientWidth: 600, naturalWidth: 1920 });
+
   const [submitting, setSubmitting] = useState(false);
   const [certDownloading, setCertDownloading] = useState(false);
+  const imgRef = React.useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        if (imgRef.current && imgRef.current.clientWidth > 0) {
+          setImgScale({
+            clientWidth: imgRef.current.clientWidth,
+            naturalWidth: imgRef.current.naturalWidth || 1920,
+          });
+        }
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, certificate]);
 
   useEffect(() => {
     checkStatus(true);
@@ -169,7 +221,9 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
   const checkStatus = async (isInitial = false) => {
     try {
       if (isInitial) setLoading(true);
-      const formRes = await fetch(`/api/events/${eventId}/feedback`);
+      const formRes = await fetch(
+        `/api/events/${eventId}/feedback?t=${Date.now()}`,
+      );
       if (formRes.ok) {
         const formData = await formRes.json();
         if (formData.certificate) {
@@ -187,6 +241,9 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
         }
         if (formData.userName) {
           setUserName(formData.userName);
+        }
+        if (formData.userId) {
+          setUserId(formData.userId);
         }
 
         if (formData.form && !formData.submitted) {
@@ -224,10 +281,12 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
       }
     }
 
-    const formattedAnswers = Object.entries(answers).map(([questionId, rating]) => ({
-      questionId,
-      rating,
-    }));
+    const formattedAnswers = Object.entries(answers).map(
+      ([questionId, rating]) => ({
+        questionId,
+        rating,
+      }),
+    );
 
     setSubmitting(true);
     try {
@@ -238,7 +297,7 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
       });
 
       if (!res.ok) throw new Error("Failed to submit feedback");
-      
+
       toast.success("Thank you for your feedback! Certificate unlocked.");
       setFeedbackSubmitted(true);
       setFeedbackRequired(false);
@@ -286,16 +345,147 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
   // Share States & Handlers
   const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [isImageCopied, setIsImageCopied] = useState(false);
+  const [isExportingImage, setIsExportingImage] = useState(false);
 
   const getShareData = () => {
     const origin =
-      (typeof window !== "undefined" && window.location.origin)
+      typeof window !== "undefined" && window.location.origin
         ? window.location.origin
-        : (process.env.NEXT_PUBLIC_BASE_URL || "https://clubly.in");
-    const shareUrl = `${origin}/events/${eventId}`;
+        : process.env.NEXT_PUBLIC_BASE_URL || "https://clubly.in";
+    const shareUrl = `${origin}/certificates/${eventId}${userId ? `?user=${userId}` : ""}`;
     const shareTitle = `Certificate of Achievement - ${eventName}`;
-    const shareText = `🎓 I earned my certificate for participating in ${eventName} on Clubly! Check it out:`;
+    const shareText = `🎓 I earned my certificate for participating in ${eventName} on Clubly! View my verified certificate: ${shareUrl}`;
     return { origin, shareUrl, shareTitle, shareText };
+  };
+
+  const generateCertificateImageBlob = async (): Promise<Blob | null> => {
+    if (!certificate?.url) return null;
+
+    return new Promise(async (resolve) => {
+      try {
+        const tokens = certificate.layout?.tokens || [];
+        const rankText =
+          certificate.rankValue ||
+          (certificate.position === 1
+            ? "Winner"
+            : certificate.position === 2
+              ? "Runner-up"
+              : certificate.position === 3
+                ? "Third Place"
+                : "Participant");
+        const valueMap: Record<string, string> = {
+          $name: userName,
+          $year: "Year 3",
+          $rank: rankText,
+          $event: eventName,
+          $club: "Clubly",
+          $date: new Date().toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }),
+        };
+
+        // Ensure fonts are loaded if available
+        if (typeof document !== "undefined" && document.fonts) {
+          const fontPromises = tokens.map(async (token: any) => {
+            if (token.fontFamily) {
+              loadGoogleFont(token.fontFamily);
+              try {
+                await document.fonts.load(
+                  `${token.italic ? "italic " : ""}${token.bold ? "bold " : ""}${token.fontSize || 44}px "${token.fontFamily}"`,
+                );
+              } catch (_) {}
+            }
+          });
+          await Promise.all(fontPromises);
+          await document.fonts.ready;
+        }
+
+        const renderOntoCanvas = (sourceImg: HTMLImageElement) => {
+          const width = sourceImg.naturalWidth || 1920;
+          const height = sourceImg.naturalHeight || 1080;
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(null);
+            return;
+          }
+
+          ctx.drawImage(sourceImg, 0, 0, width, height);
+
+          tokens.forEach((token: any) => {
+            const rawText =
+              valueMap[token.variable] ??
+              (token.variable?.startsWith("$")
+                ? token.variable.slice(1)
+                : token.variable);
+            const text = String(rawText || "");
+            const fontSize = token.fontSize || 44;
+            const fontName = token.fontFamily
+              ? `"${token.fontFamily}", sans-serif`
+              : "Helvetica, Arial, sans-serif";
+            const fontStyle = token.italic ? "italic " : "";
+            const fontWeight = token.bold ? "bold " : "normal ";
+
+            ctx.font = `${fontStyle}${fontWeight}${fontSize}px ${fontName}`;
+            ctx.fillStyle = token.colorHex || "#111111";
+            ctx.textAlign =
+              token.align === "left"
+                ? "left"
+                : token.align === "right"
+                  ? "right"
+                  : "center";
+            ctx.textBaseline = "middle";
+
+            const tokenX = token.x ?? 0.5;
+            const tokenY = token.y ?? 0.5;
+            const posX = tokenX * width;
+            const posY = (1 - tokenY) * height; // Coordinate flip (PDF coordinate system to Canvas)
+
+            ctx.fillText(text, posX, posY);
+          });
+
+          canvas.toBlob(
+            (blob) => {
+              resolve(blob);
+            },
+            "image/png",
+            1.0,
+          );
+        };
+
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => renderOntoCanvas(img);
+        img.onerror = async () => {
+          try {
+            const res = await fetch(certificate.url);
+            const blob = await res.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            const fallbackImg = new Image();
+            fallbackImg.onload = () => {
+              renderOntoCanvas(fallbackImg);
+              URL.revokeObjectURL(objectUrl);
+            };
+            fallbackImg.onerror = () => {
+              URL.revokeObjectURL(objectUrl);
+              resolve(null);
+            };
+            fallbackImg.src = objectUrl;
+          } catch {
+            resolve(null);
+          }
+        };
+        img.src = certificate.url;
+      } catch (err) {
+        console.error("Error creating certificate image:", err);
+        resolve(null);
+      }
+    });
   };
 
   const handleCopyLink = async () => {
@@ -312,62 +502,111 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
         textArea.remove();
       }
       setIsCopied(true);
-      toast.success("Certificate & event link copied to clipboard!");
+      toast.success("Event link copied to clipboard!");
       setTimeout(() => setIsCopied(false), 2500);
     } catch {
       toast.error("Failed to copy link");
     }
   };
 
-  const handleSharePlatform = async (platform: "whatsapp" | "linkedin" | "instagram" | "twitter" | "native") => {
-    const { shareUrl, shareTitle, shareText } = getShareData();
+  const handleCopyImage = async () => {
+    setIsExportingImage(true);
+    try {
+      const blob = await generateCertificateImageBlob();
+      if (!blob) throw new Error("Could not render certificate image");
 
-    if (platform === "native") {
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: shareTitle,
-            text: shareText,
-            url: shareUrl,
-          });
-          toast.success("Shared successfully!");
-          setIsShareMenuOpen(false);
-          return;
-        } catch (err: any) {
-          if (err.name !== "AbortError") {
-            toast.error("Could not complete native share");
-          }
-          return;
-        }
+      if (
+        typeof window !== "undefined" &&
+        window.ClipboardItem &&
+        navigator.clipboard?.write
+      ) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "image/png": blob,
+          }),
+        ]);
+        setIsImageCopied(true);
+        toast.success(
+          "Certificate image copied to clipboard! You can paste (Ctrl+V) it anywhere.",
+        );
+        setTimeout(() => setIsImageCopied(false), 3000);
+      } else {
+        // Fallback: download if clipboard item is not supported in browser context
+        handleDownloadImage();
+      }
+    } catch (err: any) {
+      console.warn(
+        "Clipboard image write failed, falling back to download:",
+        err,
+      );
+      handleDownloadImage();
+    } finally {
+      setIsExportingImage(false);
+    }
+  };
+
+  const handleDownloadImage = async () => {
+    setIsExportingImage(true);
+    try {
+      const blob = await generateCertificateImageBlob();
+      if (!blob) throw new Error("Could not generate certificate image");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${eventName}-Certificate.png`;
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+      a.remove();
+      toast.success("Certificate PNG image exported successfully!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to export image");
+    } finally {
+      setIsExportingImage(false);
+    }
+  };
+
+  const handleSharePlatform = async (
+    platform: "whatsapp" | "linkedin" | "instagram" | "twitter" | "native",
+  ) => {
+    const { shareTitle, shareText, shareUrl } = getShareData();
+
+    if (platform === "native" && navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+        toast.success("Shared successfully!");
+        setIsShareMenuOpen(false);
+        return;
+      } catch (err: any) {
+        if (err.name !== "AbortError") toast.error("Could not share");
+        return;
       }
     }
 
     if (platform === "whatsapp") {
-      const fullText = `${shareText} ${shareUrl}`;
-      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(fullText)}`, "_blank", "noopener,noreferrer");
-      toast.success("Opening WhatsApp...");
+      window.open(
+        `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`,
+        "_blank",
+      );
       setIsShareMenuOpen(false);
     } else if (platform === "linkedin") {
-      try {
-        if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-        }
-      } catch (_) {}
-      window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, "_blank", "noopener,noreferrer");
-      toast.success("Opening LinkedIn (Caption copied to clipboard!)");
+      window.open(
+        `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
+        "_blank",
+      );
       setIsShareMenuOpen(false);
     } else if (platform === "instagram") {
-      try {
-        if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
-        }
-      } catch (_) {}
-      toast.success("Caption copied to clipboard! Paste it into your Instagram post or story.");
-      window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+      window.open("https://www.instagram.com/", "_blank");
       setIsShareMenuOpen(false);
     } else if (platform === "twitter") {
-      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, "_blank", "noopener,noreferrer");
-      toast.success("Opening X (Twitter)...");
+      window.open(
+        `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`,
+        "_blank",
+      );
       setIsShareMenuOpen(false);
     }
   };
@@ -378,42 +617,72 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
   const renderCertificatePreview = () => {
     if (certificate?.url) {
       const tokens = certificate.layout?.tokens || [];
-      const rankText = certificate.rankValue || (certificate.position === 1 ? "Winner" : certificate.position === 2 ? "Runner-up" : certificate.position === 3 ? "Third Place" : "Participant");
+      const rankText =
+        certificate.rankValue ||
+        (certificate.position === 1
+          ? "Winner"
+          : certificate.position === 2
+            ? "Runner-up"
+            : certificate.position === 3
+              ? "Third Place"
+              : "Participant");
       const valueMap: Record<string, string> = {
         $name: userName,
         $year: "Year 3",
         $rank: rankText,
         $event: eventName,
         $club: "Clubly",
-        $date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+        $date: new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
       };
 
-      const scale = imgScale.naturalWidth > 0 ? imgScale.clientWidth / imgScale.naturalWidth : 0.4;
+      const scale =
+        imgScale.naturalWidth > 0
+          ? imgScale.clientWidth / imgScale.naturalWidth
+          : 0.4;
 
       return (
-        <div className="relative w-full overflow-hidden rounded-lg flex items-center justify-center">
+        <div className="relative w-full aspect-[1.414/1] overflow-hidden rounded-lg flex items-center justify-center">
           <img
+            ref={imgRef}
             src={certificate.url}
             alt="Certificate Template"
             onLoad={(e) => {
               const img = e.currentTarget;
-              setImgScale({
-                clientWidth: img.clientWidth,
-                naturalWidth: img.naturalWidth || 1920,
-              });
+              if (img.clientWidth > 0) {
+                setImgScale({
+                  clientWidth: img.clientWidth,
+                  naturalWidth: img.naturalWidth || 1920,
+                });
+              }
             }}
             className="w-full h-auto object-contain select-none pointer-events-none"
           />
           {tokens.map((token: any) => {
-            const text = valueMap[token.variable] ?? (token.variable?.startsWith("$") ? token.variable.slice(1) : token.variable);
+            const text =
+              valueMap[token.variable] ??
+              (token.variable?.startsWith("$")
+                ? token.variable.slice(1)
+                : token.variable);
             const tokenX = token.x ?? 0.5;
             const tokenY = token.y ?? 0.5;
             // token.y is stored from bottom (0 to 1 in PDF coordinates), so top is 1 - token.y
             const topPct = (1 - tokenY) * 100;
             const leftPct = tokenX * 100;
 
-            const transformOrigin = token.align === "left" ? "translate(0%, -50%)" : token.align === "right" ? "translate(-100%, -50%)" : "translate(-50%, -50%)";
-            const calculatedFontSize = Math.max(10, Math.round((token.fontSize || 44) * scale));
+            const transformOrigin =
+              token.align === "left"
+                ? "translate(0%, -50%)"
+                : token.align === "right"
+                  ? "translate(-100%, -50%)"
+                  : "translate(-50%, -50%)";
+            const calculatedFontSize = Math.max(
+              10,
+              Math.round((token.fontSize || 44) * scale),
+            );
 
             return (
               <div
@@ -514,7 +783,8 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
                 </button>
 
                 <p className="text-[11.5px] italic text-[#959aa3] leading-snug font-normal relative z-10">
-                  Provide us your valuable feedback and unlock your event certificate!
+                  Provide us your valuable feedback and unlock your event
+                  certificate!
                 </p>
               </BorderedDiv>
             ) : (
@@ -531,7 +801,9 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
                     />
                     <div className="absolute inset-0 bg-black/35 flex flex-col items-center justify-center transition-opacity">
                       <Eye className="text-white w-5 h-5 mb-1 drop-shadow" />
-                      <span className="text-[10.5px] font-semibold text-white tracking-wide drop-shadow">View</span>
+                      <span className="text-[10.5px] font-semibold text-white tracking-wide drop-shadow">
+                        View
+                      </span>
                     </div>
                   </div>
                 ) : (
@@ -572,7 +844,8 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
                       {eventName} Feedback
                     </h3>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      Fill out the feedback form to unlock your event certificate!
+                      Fill out the feedback form to unlock your event
+                      certificate!
                     </p>
                   </div>
                   <button
@@ -588,9 +861,13 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
                   {feedbackForm ? (
                     <div className="space-y-4">
                       {feedbackForm.questions.map((q: any) => {
-                        const activeRating = hoveredStars[q.id] ?? answers[q.id] ?? 0;
+                        const activeRating =
+                          hoveredStars[q.id] ?? answers[q.id] ?? 0;
                         return (
-                          <div key={q.id} className="bg-[#111215] border border-white/[0.04] rounded-xl p-4">
+                          <div
+                            key={q.id}
+                            className="bg-[#111215] border border-white/[0.04] rounded-xl p-4"
+                          >
                             <p className="text-gray-200 font-medium mb-3 text-sm">
                               {q.text}
                             </p>
@@ -601,8 +878,18 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
                                   <button
                                     key={star}
                                     type="button"
-                                    onMouseEnter={() => setHoveredStars((prev) => ({ ...prev, [q.id]: star }))}
-                                    onMouseLeave={() => setHoveredStars((prev) => ({ ...prev, [q.id]: null }))}
+                                    onMouseEnter={() =>
+                                      setHoveredStars((prev) => ({
+                                        ...prev,
+                                        [q.id]: star,
+                                      }))
+                                    }
+                                    onMouseLeave={() =>
+                                      setHoveredStars((prev) => ({
+                                        ...prev,
+                                        [q.id]: null,
+                                      }))
+                                    }
                                     onClick={() => handleRating(q.id, star)}
                                     className={`p-1.5 transition-transform hover:scale-110 focus:outline-none cursor-pointer ${
                                       isFilled
@@ -612,7 +899,9 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
                                   >
                                     <Star
                                       size={26}
-                                      className={isFilled ? "fill-amber-400" : ""}
+                                      className={
+                                        isFilled ? "fill-amber-400" : ""
+                                      }
                                     />
                                   </button>
                                 );
@@ -684,9 +973,14 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
                   <button
                     type="button"
                     onClick={() => setIsShareMenuOpen((prev) => !prev)}
-                    className="w-auto px-6 py-2.5 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white font-semibold rounded-full text-sm flex items-center justify-center gap-2 transition-all cursor-pointer backdrop-blur-md border border-white/15 shadow-2xl"
+                    disabled={isExportingImage}
+                    className="w-auto px-6 py-2.5 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white font-semibold rounded-full text-sm flex items-center justify-center gap-2 transition-all cursor-pointer backdrop-blur-md border border-white/15 shadow-2xl disabled:opacity-50"
                   >
-                    <Share2 size={16} />
+                    {isExportingImage ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    ) : (
+                      <Share2 size={16} />
+                    )}
                     <span>Share</span>
                   </button>
 
@@ -699,124 +993,94 @@ export default function EventFeedbackWidget({ eventId, eventName }: EventFeedbac
                           className="fixed inset-0 z-40"
                           onClick={() => setIsShareMenuOpen(false)}
                         />
-
                         <motion.div
                           initial={{ opacity: 0, scale: 0.92, y: 10 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.92, y: 10 }}
-                          transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                          className="absolute bottom-full mb-3.5 z-50 w-[92vw] max-w-sm sm:max-w-md bg-[#0e1015]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-5 shadow-2xl text-white"
+                          transition={{
+                            type: "spring",
+                            stiffness: 400,
+                            damping: 28,
+                          }}
+                          className="absolute right-0 bottom-full mb-3.5 z-50 w-72 sm:w-80 bg-[#121318]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl text-white"
                         >
-                          {/* Share Header */}
-                          <div className="flex items-center justify-between pb-3 mb-3.5 border-b border-white/[0.08]">
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-white">
-                                <Share2 size={14} />
-                              </div>
-                              <div>
-                                <h4 className="text-sm font-semibold text-white leading-none">Share Certificate</h4>
-                                <p className="text-[11px] text-gray-400 mt-1">Showcase your achievement with your network</p>
-                              </div>
-                            </div>
+                          <div className="flex items-center justify-between pb-2 mb-3 border-b border-white/[0.08]">
+                            <span className="text-xs font-bold text-white">
+                              Share Certificate
+                            </span>
                             <button
                               type="button"
                               onClick={() => setIsShareMenuOpen(false)}
-                              className="w-6 h-6 rounded-full bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                              className="text-gray-400 hover:text-white"
                             >
-                              <X size={13} />
+                              <X className="w-4 h-4" />
                             </button>
                           </div>
 
-                          {/* Social Platforms Grid */}
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3.5">
-                            {/* WhatsApp */}
+                          <div className="grid grid-cols-4 gap-2 mb-3">
                             <button
-                              type="button"
                               onClick={() => handleSharePlatform("whatsapp")}
-                              className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-white/[0.04] hover:bg-[#25D366]/15 hover:border-[#25D366]/40 border border-transparent transition-all group cursor-pointer"
+                              disabled={isExportingImage}
+                              className="flex flex-col items-center gap-1.5 p-2 rounded-xl bg-white/5 hover:bg-[#25D366]/20 transition-all cursor-pointer disabled:opacity-50"
                             >
-                              <div className="w-10 h-10 rounded-full bg-[#25D366]/20 text-[#25D366] flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <FaWhatsapp size={20} />
-                              </div>
-                              <span className="text-xs font-medium text-gray-200 group-hover:text-white">WhatsApp</span>
+                              <FaWhatsapp
+                                size={18}
+                                className="text-[#25D366]"
+                              />
+                              <span className="text-[11px] text-gray-300">
+                                WhatsApp
+                              </span>
                             </button>
-
-                            {/* LinkedIn */}
                             <button
-                              type="button"
                               onClick={() => handleSharePlatform("linkedin")}
-                              className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-white/[0.04] hover:bg-[#0A66C2]/15 hover:border-[#0A66C2]/40 border border-transparent transition-all group cursor-pointer"
+                              disabled={isExportingImage}
+                              className="flex flex-col items-center gap-1.5 p-2 rounded-xl bg-white/5 hover:bg-[#0A66C2]/20 transition-all cursor-pointer disabled:opacity-50"
                             >
-                              <div className="w-10 h-10 rounded-full bg-[#0A66C2]/20 text-[#0A66C2] flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <FaLinkedinIn size={18} />
-                              </div>
-                              <span className="text-xs font-medium text-gray-200 group-hover:text-white">LinkedIn</span>
+                              <FaLinkedinIn
+                                size={16}
+                                className="text-[#0A66C2]"
+                              />
+                              <span className="text-[11px] text-gray-300">
+                                LinkedIn
+                              </span>
                             </button>
-
-                            {/* Instagram */}
                             <button
-                              type="button"
                               onClick={() => handleSharePlatform("instagram")}
-                              className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-white/[0.04] hover:bg-[#E1306C]/15 hover:border-[#E1306C]/40 border border-transparent transition-all group cursor-pointer"
+                              disabled={isExportingImage}
+                              className="flex flex-col items-center gap-1.5 p-2 rounded-xl bg-white/5 hover:bg-[#E1306C]/20 transition-all cursor-pointer disabled:opacity-50"
                             >
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#fd5949]/20 via-[#d6249f]/20 to-[#285AEB]/20 text-[#f56040] flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <FaInstagram size={19} />
-                              </div>
-                              <span className="text-xs font-medium text-gray-200 group-hover:text-white">Instagram</span>
+                              <FaInstagram
+                                size={17}
+                                className="text-[#E1306C]"
+                              />
+                              <span className="text-[11px] text-gray-300">
+                                Instagram
+                              </span>
                             </button>
-
-                            {/* X / Twitter */}
                             <button
-                              type="button"
                               onClick={() => handleSharePlatform("twitter")}
-                              className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-white/[0.04] hover:bg-white/10 hover:border-white/20 border border-transparent transition-all group cursor-pointer"
+                              disabled={isExportingImage}
+                              className="flex flex-col items-center gap-1.5 p-2 rounded-xl bg-white/5 hover:bg-white/20 transition-all cursor-pointer disabled:opacity-50"
                             >
-                              <div className="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <FaXTwitter size={17} />
-                              </div>
-                              <span className="text-xs font-medium text-gray-200 group-hover:text-white">X (Twitter)</span>
+                              <FaXTwitter size={15} className="text-white" />
+                              <span className="text-[11px] text-gray-300">
+                                Twitter
+                              </span>
                             </button>
                           </div>
 
-                          {/* Quick Copy Link Box */}
-                          <div className="flex items-center gap-2 p-1.5 pl-3 bg-black/40 border border-white/[0.08] rounded-xl">
-                            <span className="text-xs text-gray-400 truncate flex-1 font-mono">
-                              {typeof window !== "undefined" ? `${window.location.origin}/events/${eventId}` : `/events/${eventId}`}
+                          <div className="flex items-center gap-2 p-1.5 pl-2.5 bg-black/50 border border-white/10 rounded-xl">
+                            <span className="text-[10px] text-zinc-400 truncate flex-1 font-mono">
+                              {getShareData().shareUrl}
                             </span>
                             <button
                               type="button"
                               onClick={handleCopyLink}
-                              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                                isCopied
-                                  ? "bg-emerald-600 text-white"
-                                  : "bg-white/10 hover:bg-white/20 text-white"
-                              }`}
+                              className="shrink-0 px-2.5 py-1 rounded bg-white text-black hover:bg-zinc-200 text-[11px] font-bold transition-colors"
                             >
-                              {isCopied ? (
-                                <>
-                                  <Check size={13} />
-                                  <span>Copied</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy size={13} />
-                                  <span>Copy</span>
-                                </>
-                              )}
+                              {isCopied ? "Copied" : "Copy"}
                             </button>
                           </div>
-
-                          {/* Native Device Share Sheet Trigger (if supported) */}
-                          {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
-                            <button
-                              type="button"
-                              onClick={() => handleSharePlatform("native")}
-                              className="mt-2.5 w-full py-1.5 text-center text-xs text-gray-400 hover:text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                            >
-                              <ExternalLink size={12} />
-                              <span>More sharing options on this device</span>
-                            </button>
-                          )}
                         </motion.div>
                       </>
                     )}

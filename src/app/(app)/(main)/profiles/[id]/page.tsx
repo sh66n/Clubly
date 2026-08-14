@@ -4,6 +4,9 @@ import Link from "next/link";
 import BorderedDiv from "@/components/BorderedDiv";
 import { getUserById } from "@/services/getUserById";
 import { getEventsAttendedByUser } from "@/services/getEventsAttendedByUser";
+import { getUserCertificates } from "@/services/getUserCertificates";
+import { Award, ShieldCheck, ArrowUpRight, Download } from "lucide-react";
+import { FaLinkedinIn } from "react-icons/fa6";
 
 export default async function ProfilePage({
   params,
@@ -58,7 +61,7 @@ export default async function ProfilePage({
             </BorderedDiv>
 
             {/* quick stats */}
-            <div className="mt-6 grid grid-cols-3 gap-3">
+            <div className="mt-6 grid grid-cols-2 gap-3">
               <div className="bg-black/30 p-3 rounded-lg text-center border border-gray-700">
                 <div className="text-lg font-semibold">{totalPoints ?? 0}</div>
                 <div className="text-xs text-gray-300">Points</div>
@@ -67,23 +70,19 @@ export default async function ProfilePage({
                 <div className="text-lg font-semibold">{eventsAttended}</div>
                 <div className="text-xs text-gray-300">Events</div>
               </div>
-              <div className="bg-black/30 p-3 rounded-lg text-center border border-gray-700">
-                <div className="text-lg font-semibold">3</div>
-                <div className="text-xs text-gray-300">Clubs</div>
-              </div>
             </div>
           </div>
 
-          {/* RIGHT: Overview or Edit form */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex space-x-6">
-                <button>Overview</button>
+          {/* RIGHT: Overview */}
+          <div className="lg:col-span-2 space-y-8">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex space-x-6">
+                  <button className="font-semibold text-white">Overview</button>
+                </div>
               </div>
-            </div>
 
-            <div className="bg-black/30 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
-              <>
+              <div className="bg-black/30 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
                 <h3 className="text-xl font-semibold mb-3">About</h3>
                 <p className="text-gray-300 leading-relaxed text-justify">
                   {user.bio ?? ""}
@@ -124,7 +123,7 @@ export default async function ProfilePage({
                     <p className="text-white">{user.address ?? "Not added"}</p>
                   </div>
                 </div>
-              </>
+              </div>
             </div>
           </div>
         </div>

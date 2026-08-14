@@ -85,6 +85,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       rankValue,
     } : null;
 
+
+
     if (!event.feedbackForm) {
       return NextResponse.json({
         submitted: true,
@@ -93,6 +95,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         userName: session.user.name || "Student",
         position,
         rankValue,
+        userId: session.user.id,
       });
     }
 
@@ -108,6 +111,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       form: hasFeedback ? null : form,
       certificate: certificateInfo,
       userName: session.user.name || "Student",
+      userId: session.user.id,
     });
   } catch (error: any) {
     console.error("GET /api/events/[id]/feedback error:", error);

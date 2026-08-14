@@ -28,7 +28,44 @@ const silkscreen = Silkscreen({
 });
 
 export const metadata: Metadata = {
-  title: "Clubly",
+  title: {
+    default: "Clubly",
+    template: "%s | Clubly",
+  },
+  description:
+    "Everything your club needs, in one platform. Plan, manage, and grow your club with Clubly.",
+  metadataBase: new URL("https://clubly-vppcoe.vercel.app"),
+  openGraph: {
+    title: "Clubly",
+    description:
+      "Everything your club needs, in one platform. Plan, manage, and grow your club with Clubly.",
+    url: "https://clubly-vppcoe.vercel.app",
+    siteName: "Clubly",
+    images: [
+      {
+        url: "/images/logo.svg",
+        width: 977,
+        height: 834,
+        alt: "Clubly Logo",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Clubly",
+    description:
+      "Everything your club needs, in one platform. Plan, manage, and grow your club with Clubly.",
+    images: ["/images/logo.svg"],
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/favicon.svg",
+  },
   verification: {
     google: "XIWiVu5dUmHaYTa9OrZAyrt_PP6MFGvYsG3W-tlH_VY",
   },
