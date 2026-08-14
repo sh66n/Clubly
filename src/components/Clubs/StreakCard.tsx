@@ -67,10 +67,16 @@ export default function StreakCard({ clubId }: StreakCardProps) {
           100% { transform: rotateY(360deg); }
         }
         @keyframes badgeShine {
-          0% { transform: translateX(-150%) skewX(-30deg); opacity: 0; }
-          10% { opacity: 0.5; }
-          20% { transform: translateX(150%) skewX(-30deg); opacity: 0; }
-          100% { transform: translateX(150%) skewX(-30deg); opacity: 0; }
+          0% { transform: translateX(-150%) rotate(25deg); opacity: 0; }
+          15% { opacity: 0.85; }
+          35% { transform: translateX(150%) rotate(25deg); opacity: 0; }
+          100% { transform: translateX(150%) rotate(25deg); opacity: 0; }
+        }
+        @keyframes sparkleStar {
+          0%, 100% { transform: scale(0) rotate(0deg); opacity: 0; }
+          20% { transform: scale(1.1) rotate(45deg); opacity: 1; filter: drop-shadow(0 0 3px rgba(255,255,255,0.9)); }
+          40% { transform: scale(0.6) rotate(90deg); opacity: 0.8; }
+          60% { transform: scale(0) rotate(135deg); opacity: 0; }
         }
       `}</style>
 
@@ -191,12 +197,12 @@ function StickerSlot({ sticker, index }: { sticker?: Sticker; index: number }) {
   const badgeType = sticker.badgeType;
   const isWinner = badgeType?.startsWith("winner");
   
-  let edgeColor = "bg-[#78716c] border-[#57534e]";
-  let frontColor = "border-stone-400 ring-stone-200/90 bg-gradient-to-tr from-[#d6d3d1] via-[#f5f5f4] to-[#a8a29e] shadow-[0_4px_10px_rgba(0,0,0,0.15)]";
-  let backColor = "border-stone-400 ring-stone-200/90 bg-gradient-to-bl from-[#d6d3d1] via-[#f5f5f4] to-[#a8a29e] shadow-[0_4px_10px_rgba(0,0,0,0.15)]";
-  let textColorFront = "text-stone-800";
-  let textColorBack = "text-stone-900";
-  let iconColor = "text-stone-700";
+  let edgeColor = "bg-[#4d7c0f] border-[#365314]";
+  let frontColor = "border-[#84cc16] ring-[#d9f99d]/90 bg-gradient-to-tr from-[#65a30d] via-[#ecfccb] to-[#4d7c0f] shadow-[0_0_12px_rgba(132,204,22,0.5)]";
+  let backColor = "border-[#84cc16] ring-[#d9f99d]/90 bg-gradient-to-bl from-[#65a30d] via-[#ecfccb] to-[#4d7c0f] shadow-[0_0_12px_rgba(132,204,22,0.5)]";
+  let textColorFront = "text-[#14532d]";
+  let textColorBack = "text-[#14532d]";
+  let iconColor = "text-[#14532d]";
   let badgeLabel = "Participant";
 
   if (badgeType === "winner" || badgeType === "winner_1") {
@@ -281,13 +287,30 @@ function StickerSlot({ sticker, index }: { sticker?: Sticker; index: number }) {
               Badge
             </span>
 
-            {/* Shine Animation */}
+            {/* Shine Animation - only for winners */}
             {isWinner && (
-              <div className="absolute inset-0 z-20 pointer-events-none">
+              <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-full">
                 <div 
-                  className="absolute top-0 bottom-0 w-1/2 bg-white/50 blur-sm animate-[badgeShine_3s_ease-in-out_infinite]"
+                  className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/70 to-transparent blur-[1px] animate-[badgeShine_2.5s_ease-in-out_infinite]"
                   style={{ animationDelay: `${(index % 3) * 0.4}s` }}
                 />
+                {/* Sparkle Stars */}
+                <div 
+                  className="absolute top-1 right-1.5 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                  style={{ animationDelay: `${((index % 3) * 0.4) + 0.15}s` }}
+                >
+                  <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                    <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                  </svg>
+                </div>
+                <div 
+                  className="absolute bottom-1 left-1.5 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                  style={{ animationDelay: `${((index % 3) * 0.4) + 0.45}s` }}
+                >
+                  <svg viewBox="0 0 24 24" className="w-2 h-2 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                    <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                  </svg>
+                </div>
               </div>
             )}
           </div>
@@ -305,13 +328,30 @@ function StickerSlot({ sticker, index }: { sticker?: Sticker; index: number }) {
               {sticker.eventName}
             </span>
 
-            {/* Shine Animation Back */}
+            {/* Shine Animation Back - only for winners */}
             {isWinner && (
-              <div className="absolute inset-0 z-20 pointer-events-none">
+              <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-full">
                 <div 
-                  className="absolute top-0 bottom-0 w-1/2 bg-white/50 blur-sm animate-[badgeShine_3s_ease-in-out_infinite]"
-                  style={{ animationDelay: `${((index % 3) * 0.4) + 1.5}s` }} // offset the back shine
+                  className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/70 to-transparent blur-[1px] animate-[badgeShine_2.5s_ease-in-out_infinite]"
+                  style={{ animationDelay: `${((index % 3) * 0.4) + 1.25}s` }}
                 />
+                {/* Sparkle Stars Back */}
+                <div 
+                  className="absolute top-1.5 left-1.5 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                  style={{ animationDelay: `${((index % 3) * 0.4) + 1.4}s` }}
+                >
+                  <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                    <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                  </svg>
+                </div>
+                <div 
+                  className="absolute bottom-1 right-1.5 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                  style={{ animationDelay: `${((index % 3) * 0.4) + 1.7}s` }}
+                >
+                  <svg viewBox="0 0 24 24" className="w-2 h-2 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                    <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                  </svg>
+                </div>
               </div>
             )}
           </div>

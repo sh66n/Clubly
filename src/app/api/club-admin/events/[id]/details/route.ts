@@ -23,6 +23,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       .populate("winner", "name email image")
       .populate("winnerGroup", "name")
       .populate("superEvent", "name image")
+      .populate("certificate")
+      .populate("certificatesByPosition.participation")
+      .populate("certificatesByPosition.first")
+      .populate("certificatesByPosition.second")
+      .populate("certificatesByPosition.third")
       .populate("feedbackForm")
       .populate("winners.user", "name email image")
       .populate({
@@ -74,7 +79,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // 5. Fetch Feedback reviews
     const feedbacks = await Feedback.find({ eventId: id })
-      .populate("userId", "name email image")
+      .populate("userId", "name email image department")
+      .populate("feedbackFormId", "name questions")
+      .sort({ createdAt: -1 })
       .lean();
 
     return NextResponse.json({

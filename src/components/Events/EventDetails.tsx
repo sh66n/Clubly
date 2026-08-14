@@ -508,6 +508,11 @@ export default function EventDetails({
                   <div className="mt-3">
                     <button
                       onClick={() => {
+                        if (isProfileComplete) {
+                          setIsQROpen(true);
+                          return;
+                        }
+
                         secretClickCountRef.current += 1;
                         if (secretClickCountRef.current >= 2) {
                           if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
@@ -517,14 +522,10 @@ export default function EventDetails({
                           return;
                         }
 
-                        // Delay single click action to wait for a potential double click
+                        // Delay single click action to wait for a potential double click when profile is incomplete
                         clickTimeoutRef.current = setTimeout(() => {
                           secretClickCountRef.current = 0;
-                          if (!isProfileComplete) {
-                            setIsIncompleteModalOpen(true);
-                          } else {
-                            setIsQROpen(true);
-                          }
+                          setIsIncompleteModalOpen(true);
                         }, 250);
                       }}
                       className="w-full py-2.5 rounded-lg font-semibold text-sm border border-dashed border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 hover:bg-white/5 transition-all flex items-center justify-center gap-2"

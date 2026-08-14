@@ -66,6 +66,9 @@ import {
   Receipt,
   FileText,
   Trophy,
+  Lock,
+  ExternalLink,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import ClublyLoader from "@/components/ClubAdmin/ClublyLoader";
@@ -112,11 +115,22 @@ interface PaymentItem {
   createdAt: string;
 }
 
+interface FeedbackAnswer {
+  questionId: string;
+  rating: number;
+}
+
 interface FeedbackItem {
   _id: string;
-  rating: number;
+  rating?: number;
   comment?: string;
-  userId: { _id: string; name: string; email: string; image?: string };
+  answers?: FeedbackAnswer[];
+  feedbackFormId?: {
+    _id: string;
+    name: string;
+    questions?: { id: string; text: string; required?: boolean }[];
+  } | string;
+  userId: { _id: string; name: string; email: string; image?: string; department?: string };
   createdAt: string;
 }
 
@@ -218,6 +232,17 @@ export default function EventDetailsPage() {
   const toggleExpandReg = (regId: string) => {
     setExpandedRegs((prev) => ({ ...prev, [regId]: !prev[regId] }));
   };
+
+  // Expand states for feedback question ratings (closed by default)
+  const [questionAveragesExpanded, setQuestionAveragesExpanded] = useState(false);
+  const [expandedFeedbacks, setExpandedFeedbacks] = useState<Record<string, boolean>>({});
+
+  const toggleExpandFeedback = (fbId: string) => {
+    setExpandedFeedbacks((prev) => ({ ...prev, [fbId]: !prev[fbId] }));
+  };
+
+  // Custom dropdown state for certificate assignment
+  const [activeCertDropdownTier, setActiveCertDropdownTier] = useState<string | null>(null);
 
   const fetchDetails = useCallback(async () => {
     try {
@@ -712,20 +737,86 @@ export default function EventDetailsPage() {
     };
   }, [registrations, payments, timeFilter]);
 
+  const getFeedbackRating = useCallback((fb: FeedbackItem): number => {
+    if (typeof fb.rating === "number" && fb.rating > 0) return fb.rating;
+    if (fb.answers && fb.answers.length > 0) {
+      const validAnswers = fb.answers.filter((a) => typeof a.rating === "number" && a.rating > 0);
+      if (validAnswers.length > 0) {
+        const sum = validAnswers.reduce((acc, a) => acc + a.rating, 0);
+        return sum / validAnswers.length;
+      }
+    }
+    return 0;
+  }, []);
+
   const ratingStats = useMemo(() => {
     if (feedbacks.length === 0)
-      return { avg: 0, stars: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
+      return { avg: "0.0", count: 0, stars: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, questionStats: [] };
+    
     const stars: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     let sum = 0;
+    let validCount = 0;
+    const qStatsMap: Record<string, { total: number; count: number }> = {};
+
     feedbacks.forEach((fb) => {
-      stars[fb.rating] = (stars[fb.rating] || 0) + 1;
-      sum += fb.rating;
+      const r = getFeedbackRating(fb);
+      if (r > 0) {
+        const rounded = Math.min(5, Math.max(1, Math.round(r)));
+        stars[rounded] = (stars[rounded] || 0) + 1;
+        sum += r;
+        validCount++;
+      }
+
+      if (fb.answers && fb.answers.length > 0) {
+        fb.answers.forEach((ans) => {
+          if (ans.questionId && typeof ans.rating === "number" && ans.rating > 0) {
+            if (!qStatsMap[ans.questionId]) {
+              qStatsMap[ans.questionId] = { total: 0, count: 0 };
+            }
+            qStatsMap[ans.questionId].total += ans.rating;
+            qStatsMap[ans.questionId].count += 1;
+          }
+        });
+      }
     });
+
+    const questionStats = Object.keys(qStatsMap).map((qId) => ({
+      questionId: qId,
+      average: (qStatsMap[qId].total / qStatsMap[qId].count).toFixed(1),
+      count: qStatsMap[qId].count,
+    }));
+
     return {
-      avg: (sum / feedbacks.length).toFixed(1),
+      avg: validCount > 0 ? (sum / validCount).toFixed(1) : "0.0",
+      count: validCount,
       stars,
+      questionStats,
     };
-  }, [feedbacks]);
+  }, [feedbacks, getFeedbackRating]);
+
+  const feedbackQuestionsMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (event?.feedbackForm && typeof event.feedbackForm === "object" && Array.isArray(event.feedbackForm.questions)) {
+      event.feedbackForm.questions.forEach((q: any) => {
+        if (q.id && q.text) map[q.id] = q.text;
+      });
+    }
+    availableFeedbackForms.forEach((form: any) => {
+      if (Array.isArray(form.questions)) {
+        form.questions.forEach((q: any) => {
+          if (q.id && q.text) map[q.id] = q.text;
+        });
+      }
+    });
+    feedbacks.forEach((fb) => {
+      if (fb.feedbackFormId && typeof fb.feedbackFormId === "object" && Array.isArray(fb.feedbackFormId.questions)) {
+        fb.feedbackFormId.questions.forEach((q: any) => {
+          if (q.id && q.text) map[q.id] = q.text;
+        });
+      }
+    });
+    return map;
+  }, [event?.feedbackForm, availableFeedbackForms, feedbacks]);
 
   const departmentStats = useMemo(() => {
     const stats: Record<string, number> = {};
@@ -1341,13 +1432,24 @@ export default function EventDetailsPage() {
             </button>
             <button
               onClick={() => setActiveTab("feedback")}
-              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all outline-none shrink-0 flex items-center gap-2 cursor-pointer ${
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all outline-none shrink-0 flex items-center gap-1.5 cursor-pointer ${
                 activeTab === "feedback"
                   ? "text-[#689F38] bg-white shadow-sm border border-[#c5d6a8]"
                   : "text-slate-500 hover:text-slate-700 hover:bg-white/50 border border-transparent"
               }`}
             >
-              Reviews ({feedbacks.length})
+              {Boolean(
+                typeof event.feedbackForm === "object"
+                  ? event.feedbackForm?._id
+                  : event.feedbackForm
+              ) ? (
+                `Feedbacks (${feedbacks.length})`
+              ) : (
+                <>
+                  <Lock size={12} className="text-amber-500" />
+                  Feedbacks
+                </>
+              )}
             </button>
             <button
               onClick={() => setActiveTab("certificates")}
@@ -1687,89 +1789,398 @@ export default function EventDetailsPage() {
             </table>
           )}
 
-          {activeTab === "feedback" && (
-            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Star Rating Distribution chart */}
-              <div className="bg-slate-50/70 rounded-3xl p-6 border border-slate-200/60 h-fit shadow-sm">
-                <h4 className="text-sm font-bold text-slate-800 mb-4">
-                  Rating Breakdown
-                </h4>
-                <div className="space-y-3">
-                  {[5, 4, 3, 2, 1].map((rating) => {
-                    const count = ratingStats.stars[rating] || 0;
-                    const pct =
-                      feedbacks.length > 0
-                        ? ((count / feedbacks.length) * 100).toFixed(0)
-                        : "0";
-                    return (
-                      <div
-                        key={rating}
-                        className="flex items-center gap-3 text-xs font-semibold text-slate-600"
+          {activeTab === "feedback" && (() => {
+            const hasForm = Boolean(
+              typeof event.feedbackForm === "object"
+                ? event.feedbackForm?._id
+                : event.feedbackForm
+            );
+            const currentFormId =
+              typeof event.feedbackForm === "object"
+                ? event.feedbackForm?._id || ""
+                : event.feedbackForm || "";
+            const currentFormName =
+              typeof event.feedbackForm === "object"
+                ? event.feedbackForm?.name || "Feedback Form"
+                : availableFeedbackForms.find((f) => f._id === event.feedbackForm)?.name ||
+                  "Feedback Form";
+
+            if (!hasForm) {
+              return (
+                <div className="p-8 sm:p-14 max-w-xl mx-auto flex flex-col items-center text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-500 flex items-center justify-center mb-4 shadow-xs">
+                    <Lock size={28} />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 mb-1">
+                    Feedbacks Tab is Locked
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-md mb-6 leading-relaxed">
+                    Attach a feedback form to enable attendee ratings, question reviews, and analytics for this event.
+                  </p>
+
+                  <div className="w-full bg-slate-50/80 rounded-2xl p-6 border border-slate-200/80 shadow-sm text-left space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                        Select a Feedback Form
+                      </label>
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            updateEventCertificates({ feedbackForm: e.target.value });
+                          }
+                        }}
+                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-[#7CB342] focus:ring-2 focus:ring-[#f0f7e6] transition-all cursor-pointer shadow-2xs"
                       >
-                        <span className="w-5 text-slate-500 font-bold">
-                          {rating}★
+                        <option value="">-- Choose a Feedback Form to Unlock --</option>
+                        {availableFeedbackForms.map((form) => (
+                          <option key={form._id} value={form._id}>
+                            {form.name} ({form.questions?.length || 0} questions)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-200/80 text-xs">
+                      <span className="text-slate-500 font-medium">Need to create one first?</span>
+                      <Link
+                        href="/club-admin/feedback-forms"
+                        className="text-[#689F38] hover:text-[#558B2F] font-bold hover:underline inline-flex items-center gap-1"
+                      >
+                        Manage Feedback Forms →
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <div className="p-6 space-y-6">
+                {/* Form Selector & Status Banner */}
+                <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl px-5 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-2xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#f0f7e6] text-[#558b2f] border border-[#dcedc8] flex items-center justify-center font-bold text-xs">
+                      <FileText size={16} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-800">
+                          Active Form: {currentFormName}
                         </span>
-                        <div className="flex-1 bg-slate-200/80 h-2 rounded-full overflow-hidden">
-                          <div
-                            className="bg-[#7CB342] h-full rounded-full transition-all duration-300"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                        <span className="w-8 text-right text-slate-400 text-xs font-medium">
-                          {count}
+                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-md border border-emerald-200">
+                          Active
                         </span>
                       </div>
-                    );
-                  })}
+                      <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                        Participants must submit this feedback form to unlock event certificates.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={currentFormId}
+                      onChange={(e) => updateEventCertificates({ feedbackForm: e.target.value })}
+                      className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-700 font-semibold focus:outline-none focus:border-[#7CB342] focus:ring-2 focus:ring-[#f0f7e6] transition-all cursor-pointer shadow-2xs"
+                    >
+                      {availableFeedbackForms.map((form) => (
+                        <option key={form._id} value={form._id}>
+                          {form.name}
+                        </option>
+                      ))}
+                      <option value="">-- Remove Form (Lock Tab) --</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Star Rating Distribution & Analytics card */}
+                  <div className="space-y-6">
+                    <div className="bg-slate-50/70 rounded-3xl p-6 border border-slate-200/60 shadow-sm">
+                      <h4 className="text-sm font-bold text-slate-800 mb-4">
+                        Rating Breakdown
+                      </h4>
+                      
+                      {/* Overall Average Display */}
+                      <div className="flex items-baseline gap-3 mb-5 pb-5 border-b border-slate-200/80">
+                        <span className="text-4xl font-extrabold text-slate-800 tracking-tight">
+                          {ratingStats.avg}
+                        </span>
+                        <div>
+                          <div className="flex items-center gap-1 text-amber-400">
+                            {[1, 2, 3, 4, 5].map((i) => {
+                              const avgNum = parseFloat(ratingStats.avg) || 0;
+                              return (
+                                <Star
+                                  key={i}
+                                  size={16}
+                                  className={
+                                    i <= Math.round(avgNum)
+                                      ? "text-amber-400 fill-amber-400"
+                                      : "text-slate-200"
+                                  }
+                                />
+                              );
+                            })}
+                          </div>
+                          <p className="text-xs text-slate-400 font-medium mt-1">
+                            Based on {feedbacks.length} {feedbacks.length === 1 ? "review" : "reviews"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        {[5, 4, 3, 2, 1].map((rating) => {
+                          const count = ratingStats.stars[rating] || 0;
+                          const pct =
+                            ratingStats.count > 0
+                              ? ((count / ratingStats.count) * 100).toFixed(0)
+                              : "0";
+                          return (
+                            <div
+                              key={rating}
+                              className="flex items-center gap-3 text-xs font-semibold text-slate-600"
+                            >
+                              <span className="w-6 text-slate-500 font-bold flex items-center gap-0.5">
+                                {rating} <Star size={10} className="text-amber-400 fill-amber-400" />
+                              </span>
+                              <div className="flex-1 bg-slate-200/80 h-2 rounded-full overflow-hidden">
+                                <div
+                                  className="bg-[#7CB342] h-full rounded-full transition-all duration-300"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <span className="w-8 text-right text-slate-400 text-xs font-medium">
+                                {count}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Per-Question Averages (if available, expandable & closed by default) */}
+                    {ratingStats.questionStats && ratingStats.questionStats.length > 0 && (
+                      <div className="bg-slate-50/70 rounded-3xl p-5 border border-slate-200/60 shadow-sm transition-all">
+                        <button
+                          onClick={() => setQuestionAveragesExpanded((prev) => !prev)}
+                          className="w-full flex items-center justify-between text-left group cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-bold text-slate-800 group-hover:text-slate-900 transition-colors">
+                              Question Averages
+                            </h4>
+                            <span className="px-2 py-0.5 bg-slate-200/70 text-slate-600 rounded-md text-[10px] font-bold">
+                              {ratingStats.questionStats.length}
+                            </span>
+                          </div>
+                          <div className="p-1 rounded-lg text-slate-400 group-hover:text-slate-700 group-hover:bg-slate-200/60 transition-colors">
+                            {questionAveragesExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                          </div>
+                        </button>
+
+                        {questionAveragesExpanded && (
+                          <div className="space-y-2.5 mt-4 pt-3 border-t border-slate-200/60 animate-in fade-in duration-200">
+                            {ratingStats.questionStats.map((qs) => {
+                              const qText = feedbackQuestionsMap[qs.questionId] || "Question";
+                              return (
+                                <div
+                                  key={qs.questionId}
+                                  className="bg-white p-3.5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center justify-between gap-3"
+                                >
+                                  <p className="text-xs font-semibold text-slate-700 leading-snug line-clamp-2">
+                                    {qText}
+                                  </p>
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#f0f7e6] text-[#558b2f] text-xs font-bold rounded-lg shrink-0 border border-[#dcedc8]">
+                                    {qs.average} <Star size={10} className="fill-[#558b2f] text-[#558b2f]" />
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Feedbacks list */}
+                  <div className="lg:col-span-2 space-y-4">
+                    {feedbacks.length === 0 ? (
+                      <div className="text-center py-16 text-slate-400 border border-dashed border-slate-200 rounded-3xl font-semibold text-xs bg-white flex flex-col items-center justify-center p-8">
+                        <MessageSquare className="w-10 h-10 text-slate-300 mb-3" />
+                        <p className="text-slate-600 font-bold text-sm">No reviews submitted yet</p>
+                        <p className="text-slate-400 text-xs mt-1">Participant feedback and ratings will appear here.</p>
+                      </div>
+                    ) : (
+                      feedbacks.map((fb) => {
+                        const avgRating = getFeedbackRating(fb);
+                        const roundedRating = Math.round(avgRating);
+                        const formattedDate = fb.createdAt
+                          ? new Date(fb.createdAt).toLocaleDateString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : null;
+
+                        const isExpanded = !!expandedFeedbacks[fb._id];
+
+                        return (
+                          <div
+                            key={fb._id}
+                            className="p-6 bg-white rounded-3xl border border-slate-200/60 shadow-sm hover:shadow transition-shadow space-y-4"
+                          >
+                            {/* Header: User Profile & Rating */}
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div className="flex items-center gap-3">
+                                {fb.userId?.image ? (
+                                  <img
+                                    src={fb.userId.image}
+                                    alt={fb.userId.name || "User"}
+                                    className="w-10 h-10 rounded-full object-cover border border-slate-200"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-full bg-[#f0f7e6] text-[#558b2f] border border-[#dcedc8] flex items-center justify-center font-bold text-sm">
+                                    {fb.userId?.name ? fb.userId.name.charAt(0).toUpperCase() : "U"}
+                                  </div>
+                                )}
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-slate-800 text-sm">
+                                      {fb.userId?.name || "Anonymous Student"}
+                                    </span>
+                                    {fb.userId?.department && (
+                                      <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-semibold rounded-md border border-slate-200">
+                                        {fb.userId.department}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs text-slate-400 font-normal mt-0.5">
+                                    {fb.userId?.email && <span>{fb.userId.email}</span>}
+                                    {fb.userId?.email && formattedDate && <span>•</span>}
+                                    {formattedDate && <span>{formattedDate}</span>}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Overall Star Rating */}
+                              <div className="flex items-center gap-1.5 bg-amber-50/80 border border-amber-200/70 px-3 py-1.5 rounded-xl">
+                                <div className="flex items-center gap-0.5">
+                                  {[1, 2, 3, 4, 5].map((i) => (
+                                    <Star
+                                      key={i}
+                                      size={13}
+                                      className={
+                                        i <= roundedRating
+                                          ? "text-amber-400 fill-amber-400"
+                                          : "text-slate-200"
+                                      }
+                                    />
+                                  ))}
+                                </div>
+                                <span className="font-bold text-amber-700 text-xs ml-1">
+                                  {avgRating.toFixed(1)}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Optional Comment */}
+                            {fb.comment && (
+                              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 text-slate-700 text-xs font-medium leading-relaxed">
+                                "{fb.comment}"
+                              </div>
+                            )}
+
+                            {/* Question by Question Ratings Breakdown (Expandable, Closed by default) */}
+                            {fb.answers && fb.answers.length > 0 && (
+                              <div className="pt-2 border-t border-slate-100">
+                                <button
+                                  onClick={() => toggleExpandFeedback(fb._id)}
+                                  className="flex items-center justify-between w-full py-1 text-slate-500 hover:text-slate-800 transition-colors text-xs font-semibold group cursor-pointer"
+                                >
+                                  <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 group-hover:text-slate-800">
+                                    Question Breakdown ({fb.answers.length})
+                                  </span>
+                                  <span className="flex items-center gap-1 text-xs font-medium text-slate-400 group-hover:text-slate-600">
+                                    {isExpanded ? "Hide" : "Show details"}
+                                    {isExpanded ? (
+                                      <ChevronUp size={14} />
+                                    ) : (
+                                      <ChevronDown size={14} />
+                                    )}
+                                  </span>
+                                </button>
+
+                                {isExpanded && (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 pt-2 animate-in fade-in duration-200">
+                                    {fb.answers.map((ans, idx) => {
+                                      const qText = feedbackQuestionsMap[ans.questionId] || `Question ${idx + 1}`;
+                                      return (
+                                        <div
+                                          key={ans.questionId || idx}
+                                          className="p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/50 flex items-center justify-between gap-2"
+                                        >
+                                          <span className="text-xs font-medium text-slate-600 truncate">
+                                            {qText}
+                                          </span>
+                                          <div className="flex items-center gap-1 shrink-0">
+                                            <div className="flex items-center gap-0.5">
+                                              {[1, 2, 3, 4, 5].map((s) => (
+                                                <Star
+                                                  key={s}
+                                                  size={10}
+                                                  className={
+                                                    s <= ans.rating
+                                                      ? "text-amber-400 fill-amber-400"
+                                                      : "text-slate-200"
+                                                  }
+                                                />
+                                              ))}
+                                            </div>
+                                            <span className="text-[11px] font-bold text-slate-700 ml-0.5">
+                                              {ans.rating}/5
+                                            </span>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               </div>
-
-              {/* Feedbacks list */}
-              <div className="md:col-span-2 space-y-3">
-                {feedbacks.length === 0 ? (
-                  <div className="text-center py-16 text-slate-400 border border-dashed border-slate-200 rounded-3xl font-semibold text-xs bg-white">
-                    No rating reviews logged yet.
-                  </div>
-                ) : (
-                  feedbacks.map((fb) => (
-                    <div
-                      key={fb._id}
-                      className="p-5 bg-white rounded-3xl border border-slate-200/60 shadow-sm hover:shadow transition-shadow"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-800 text-sm">
-                            {fb.userId.name}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-0.5">
-                          {[1, 2, 3, 4, 5].map((i) => (
-                            <Star
-                              key={i}
-                              size={12}
-                              className={
-                                i <= fb.rating
-                                  ? "text-amber-400 fill-amber-400"
-                                  : "text-slate-200"
-                              }
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      {fb.comment && (
-                        <p className="text-slate-600 mt-2 text-xs font-medium leading-relaxed">
-                          {fb.comment}
-                        </p>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {activeTab === "winners" && (
             <div className="p-6 sm:p-8 pb-8">
+              <style>{`
+                @keyframes spinBadge {
+                  0% { transform: rotateY(0deg); }
+                  100% { transform: rotateY(360deg); }
+                }
+                @keyframes badgeShine {
+                  0% { transform: translateX(-150%) rotate(25deg); opacity: 0; }
+                  15% { opacity: 0.85; }
+                  35% { transform: translateX(150%) rotate(25deg); opacity: 0; }
+                  100% { transform: translateX(150%) rotate(25deg); opacity: 0; }
+                }
+                @keyframes sparkleStar {
+                  0%, 100% { transform: scale(0) rotate(0deg); opacity: 0; }
+                  20% { transform: scale(1.1) rotate(45deg); opacity: 1; filter: drop-shadow(0 0 3px rgba(255,255,255,0.9)); }
+                  40% { transform: scale(0.6) rotate(90deg); opacity: 0.8; }
+                  60% { transform: scale(0) rotate(135deg); opacity: 0; }
+                }
+              `}</style>
               <motion.div 
                 layout
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -1812,6 +2223,37 @@ export default function EventDetailsPage() {
                         label: "2nd Place",
                       };
 
+                    const coinConfigs: Record<number, any> = {
+                      1: {
+                        edgeColor: "bg-[#b45309] border-[#92400e]",
+                        frontColor: "border-amber-500 ring-amber-200/90 bg-gradient-to-tr from-[#f59e0b] via-[#fef08a] to-[#d97706] shadow-[0_0_18px_rgba(245,158,11,0.6)]",
+                        backColor: "border-amber-500 ring-amber-200/90 bg-gradient-to-bl from-[#f59e0b] via-[#fef08a] to-[#d97706] shadow-[0_0_18px_rgba(245,158,11,0.6)]",
+                        textColor: "text-amber-950",
+                        icon: <Trophy className="text-amber-950 w-5 h-5 sm:w-6 sm:h-6 relative z-10" />,
+                        label: "Winner",
+                        delay: 0.4,
+                      },
+                      2: {
+                        edgeColor: "bg-[#475569] border-[#334155]",
+                        frontColor: "border-slate-300 ring-white/90 bg-gradient-to-tr from-[#94a3b8] via-[#ffffff] to-[#64748b] shadow-[0_0_18px_rgba(203,213,225,0.7)]",
+                        backColor: "border-slate-300 ring-white/90 bg-gradient-to-bl from-[#94a3b8] via-[#ffffff] to-[#64748b] shadow-[0_0_18px_rgba(203,213,225,0.7)]",
+                        textColor: "text-slate-900",
+                        icon: <Award className="text-slate-900 w-5 h-5 sm:w-6 sm:h-6 relative z-10" />,
+                        label: (event.numberOfWinners || 1) === 2 ? "Runner-up" : "2nd Place",
+                        delay: 0.8,
+                      },
+                      3: {
+                        edgeColor: "bg-[#9a3412] border-[#7c2d12]",
+                        frontColor: "border-orange-500 ring-orange-200/90 bg-gradient-to-tr from-[#ea580c] via-[#fed7aa] to-[#c2410c] shadow-[0_0_18px_rgba(234,88,12,0.6)]",
+                        backColor: "border-orange-500 ring-orange-200/90 bg-gradient-to-bl from-[#ea580c] via-[#fed7aa] to-[#c2410c] shadow-[0_0_18px_rgba(234,88,12,0.6)]",
+                        textColor: "text-orange-950",
+                        icon: <Award className="text-orange-950 w-5 h-5 sm:w-6 sm:h-6 relative z-10" />,
+                        label: "3rd Place",
+                        delay: 1.2,
+                      },
+                    };
+                    const coin = coinConfigs[pos] || coinConfigs[1];
+
                     const height =
                       pos === 1 ? "h-[160px]" : pos === 2 ? "h-[120px]" : "h-[90px]";
                     const isOpen = openDropdownPos === pos;
@@ -1819,8 +2261,96 @@ export default function EventDetailsPage() {
                     return (
                       <div
                         key={pos}
-                        className="flex flex-col items-center justify-end flex-1 max-w-[200px] relative"
+                        className="flex flex-col items-center justify-end flex-1 max-w-[200px] relative pt-6 sm:pt-10"
                       >
+                        {/* 3D Rotating Coin Badge Above Winner Slot */}
+                        <div className="flex flex-col items-center justify-center [perspective:600px] mb-6 sm:mb-8 z-10">
+                          <div
+                            className="relative w-16 h-16 sm:w-20 sm:h-20 [transform-style:preserve-3d] animate-[spinBadge_4s_linear_infinite]"
+                            style={{ animationDelay: `${coin.delay}s` }}
+                          >
+                            {/* Coin Thickness layers */}
+                            {[-2.5, -1.5, -0.5, 0.5, 1.5, 2.5].map((zOffset, i) => (
+                              <div
+                                key={i}
+                                className={`absolute inset-0 rounded-full border-2 sm:border-[3px] ${coin.edgeColor}`}
+                                style={{ transform: `translateZ(${zOffset}px)` }}
+                              />
+                            ))}
+
+                            {/* Front Face */}
+                            <div
+                              className={`absolute inset-0 rounded-full border-2 sm:border-[3px] ring-1 sm:ring-2 ring-inset flex flex-col items-center justify-center p-1 sm:p-1.5 shadow-xl [backface-visibility:hidden] overflow-hidden ${coin.frontColor}`}
+                              style={{ transform: "translateZ(3px)" }}
+                            >
+                              {coin.icon}
+                              <span
+                                className={`text-[7px] sm:text-[8.5px] font-black uppercase tracking-tight text-center leading-none mt-1 relative z-10 ${coin.textColor}`}
+                              >
+                                {coin.label}
+                              </span>
+                              <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-full">
+                                <div
+                                  className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/70 to-transparent blur-[1px] animate-[badgeShine_2.5s_ease-in-out_infinite]"
+                                  style={{ animationDelay: `${coin.delay}s` }}
+                                />
+                                {/* Sparkle Stars */}
+                                <div 
+                                  className="absolute top-1.5 right-2 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                                  style={{ animationDelay: `${coin.delay + 0.15}s` }}
+                                >
+                                  <svg viewBox="0 0 24 24" className="w-3 h-3 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                                    <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                                  </svg>
+                                </div>
+                                <div 
+                                  className="absolute bottom-1.5 left-2 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                                  style={{ animationDelay: `${coin.delay + 0.45}s` }}
+                                >
+                                  <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                                    <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                                  </svg>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Back Face */}
+                            <div
+                              className={`absolute inset-0 rounded-full border-2 sm:border-[3px] ring-1 sm:ring-2 ring-inset flex flex-col items-center justify-center p-1 sm:p-2 shadow-xl [backface-visibility:hidden] overflow-hidden ${coin.backColor}`}
+                              style={{ transform: "translateZ(-3px) rotateY(180deg)" }}
+                            >
+                              <span
+                                className={`font-black uppercase text-[7px] sm:text-[8.5px] tracking-tight text-center line-clamp-2 leading-tight relative z-10 px-1 ${coin.textColor}`}
+                              >
+                                {event.name || "Winner"}
+                              </span>
+                              <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-full">
+                                <div
+                                  className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/70 to-transparent blur-[1px] animate-[badgeShine_2.5s_ease-in-out_infinite]"
+                                  style={{ animationDelay: `${coin.delay + 1.25}s` }}
+                                />
+                                {/* Sparkle Stars Back */}
+                                <div 
+                                  className="absolute top-2 left-2 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                                  style={{ animationDelay: `${coin.delay + 1.4}s` }}
+                                >
+                                  <svg viewBox="0 0 24 24" className="w-3 h-3 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                                    <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                                  </svg>
+                                </div>
+                                <div 
+                                  className="absolute bottom-2 right-2 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                                  style={{ animationDelay: `${coin.delay + 1.7}s` }}
+                                >
+                                  <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                                    <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                                  </svg>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
                         <div className="mb-4 w-full relative group/slot">
                           <button
                             onClick={() => setOpenDropdownPos(isOpen ? null : pos)}
@@ -2136,112 +2666,462 @@ export default function EventDetailsPage() {
               </motion.div>
             </div>
           )}
-          {activeTab === "certificates" && (
-            <div className="p-6 sm:p-8 pb-8 space-y-8">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Global Settings */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
-                      <Award size={18} className="text-[#7CB342]" /> Certificate Settings
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      Configure base certificate and feedback requirements for participants.
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Base Template (Participation)</label>
-                      <select
-                        value={
-                          typeof event.certificatesByPosition?.participation === "object"
-                            ? event.certificatesByPosition?.participation?._id || ""
-                            : event.certificatesByPosition?.participation ||
-                              (typeof event.certificate === "object"
-                                ? event.certificate?._id || ""
-                                : event.certificate || "")
-                        }
-                        onChange={(e) =>
-                          updateEventCertificates({
-                            certificate: e.target.value,
-                            "certificatesByPosition.participation": e.target.value,
-                          })
-                        }
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-[#7CB342] focus:ring-2 focus:ring-[#f0f7e6] transition-all"
-                      >
-                        <option value="">-- No Certificate --</option>
-                        {availableCertificates.map(cert => (
-                          <option key={cert._id} value={cert._id}>{cert.name}</option>
-                        ))}
-                      </select>
-                    </div>
+          {activeTab === "certificates" && (() => {
+            const numWinners = event.numberOfWinners || 1;
+            
+            const participationCertId =
+              typeof event.certificatesByPosition?.participation === "object"
+                ? event.certificatesByPosition?.participation?._id || ""
+                : event.certificatesByPosition?.participation ||
+                  (typeof event.certificate === "object"
+                    ? event.certificate?._id || ""
+                    : event.certificate || "");
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Feedback Form</label>
-                      <select
-                        value={
-                          typeof event.feedbackForm === "object"
-                            ? event.feedbackForm?._id || ""
-                            : event.feedbackForm || ""
-                        }
-                        onChange={(e) => updateEventCertificates({ feedbackForm: e.target.value })}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-[#7CB342] focus:ring-2 focus:ring-[#f0f7e6] transition-all"
-                      >
-                        <option value="">-- Optional (No Form) --</option>
-                        {availableFeedbackForms.map(form => (
-                          <option key={form._id} value={form._id}>{form.name}</option>
-                        ))}
-                      </select>
-                      <p className="text-[10px] text-slate-400 mt-1.5 leading-snug">
-                        If selected, participants must fill this form before downloading their certificate.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+            const participationCert =
+              availableCertificates.find((c) => c._id === participationCertId) ||
+              (typeof event.certificate === "object" && event.certificate?._id === participationCertId
+                ? event.certificate
+                : typeof event.certificatesByPosition?.participation === "object"
+                ? event.certificatesByPosition.participation
+                : null);
 
-                {/* Tiered Certificates */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
-                      <Trophy size={18} className="text-amber-500" /> Tiered Certificates
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      Override base certificate for winners.
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {[1, 2, 3].map(pos => {
-                      if (pos > (event.numberOfWinners || 1)) return null;
-                      
-                      const key = pos === 1 ? "first" : pos === 2 ? "second" : "third";
-                      const field = `certificatesByPosition.${key}`;
-                      const label = pos === 1 ? "1st Place (Winner)" : pos === 2 ? "2nd Place" : "3rd Place";
-                      const rawVal = event.certificatesByPosition?.[key as keyof typeof event.certificatesByPosition];
-                      const value = typeof rawVal === "object" ? rawVal?._id || "" : rawVal || "";
-                      
-                      return (
-                        <div key={pos}>
-                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">{label}</label>
-                          <select
-                            value={value}
-                            onChange={(e) => updateEventCertificates({ [field]: e.target.value })}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-50 transition-all"
+            const firstCertId =
+              typeof event.certificatesByPosition?.first === "object"
+                ? event.certificatesByPosition?.first?._id || ""
+                : event.certificatesByPosition?.first || "";
+            const firstCert =
+              availableCertificates.find((c) => c._id === firstCertId) ||
+              (typeof event.certificatesByPosition?.first === "object" ? event.certificatesByPosition.first : null);
+
+            const secondCertId =
+              typeof event.certificatesByPosition?.second === "object"
+                ? event.certificatesByPosition?.second?._id || ""
+                : event.certificatesByPosition?.second || "";
+            const secondCert =
+              availableCertificates.find((c) => c._id === secondCertId) ||
+              (typeof event.certificatesByPosition?.second === "object" ? event.certificatesByPosition.second : null);
+
+            const thirdCertId =
+              typeof event.certificatesByPosition?.third === "object"
+                ? event.certificatesByPosition?.third?._id || ""
+                : event.certificatesByPosition?.third || "";
+            const thirdCert =
+              availableCertificates.find((c) => c._id === thirdCertId) ||
+              (typeof event.certificatesByPosition?.third === "object" ? event.certificatesByPosition.third : null);
+
+            const tiers = [
+              {
+                key: "participation",
+                coinDelay: 0,
+                coin: {
+                  edgeColor: "bg-[#4d7c0f] border-[#365314]",
+                  frontColor: "border-[#84cc16] ring-[#d9f99d]/90 bg-gradient-to-tr from-[#65a30d] via-[#ecfccb] to-[#4d7c0f] shadow-[0_0_14px_rgba(132,204,22,0.45)]",
+                  backColor: "border-[#84cc16] ring-[#d9f99d]/90 bg-gradient-to-bl from-[#65a30d] via-[#ecfccb] to-[#4d7c0f] shadow-[0_0_14px_rgba(132,204,22,0.45)]",
+                  textColor: "text-[#14532d]",
+                  icon: <Award className="text-[#14532d] w-4 h-4 relative z-10" />,
+                  label: "Participant",
+                },
+                title: "Participant Certificate",
+                subtitle: "Awarded to all participants who attend",
+                value: participationCertId,
+                selectedCert: participationCert,
+                inheritedCert: null,
+                isBase: true,
+                onChange: (val: string) =>
+                  updateEventCertificates({
+                    certificate: val,
+                    "certificatesByPosition.participation": val,
+                  }),
+              },
+              {
+                key: "first",
+                coinDelay: 0.4,
+                coin: {
+                  edgeColor: "bg-[#b45309] border-[#92400e]",
+                  frontColor: "border-amber-500 ring-amber-200/90 bg-gradient-to-tr from-[#f59e0b] via-[#fef08a] to-[#d97706] shadow-[0_0_14px_rgba(245,158,11,0.55)]",
+                  backColor: "border-amber-500 ring-amber-200/90 bg-gradient-to-bl from-[#f59e0b] via-[#fef08a] to-[#d97706] shadow-[0_0_14px_rgba(245,158,11,0.55)]",
+                  textColor: "text-amber-950",
+                  icon: <Trophy className="text-amber-950 w-4 h-4 relative z-10" />,
+                  label: "Winner",
+                },
+                title: "Winner Certificate",
+                subtitle: "Awarded to event champion",
+                value: firstCertId,
+                selectedCert: firstCert,
+                inheritedCert: participationCert,
+                isBase: false,
+                onChange: (val: string) =>
+                  updateEventCertificates({ "certificatesByPosition.first": val }),
+              },
+              ...(numWinners >= 2
+                ? [
+                    {
+                      key: "second",
+                      coinDelay: 0.8,
+                      coin: {
+                        edgeColor: "bg-[#475569] border-[#334155]",
+                        frontColor: "border-slate-300 ring-white/90 bg-gradient-to-tr from-[#94a3b8] via-[#ffffff] to-[#64748b] shadow-[0_0_14px_rgba(203,213,225,0.65)]",
+                        backColor: "border-slate-300 ring-white/90 bg-gradient-to-bl from-[#94a3b8] via-[#ffffff] to-[#64748b] shadow-[0_0_14px_rgba(203,213,225,0.65)]",
+                        textColor: "text-slate-900",
+                        icon: <Award className="text-slate-900 w-4 h-4 relative z-10" />,
+                        label: numWinners === 2 ? "Runner-up" : "2nd Place",
+                      },
+                      title: numWinners === 2 ? "Runner Up" : "2nd Place Certificate",
+                      subtitle: "Awarded to 2nd position winner",
+                      value: secondCertId,
+                      selectedCert: secondCert,
+                      inheritedCert: participationCert,
+                      isBase: false,
+                      onChange: (val: string) =>
+                        updateEventCertificates({ "certificatesByPosition.second": val }),
+                    },
+                  ]
+                : []),
+              ...(numWinners >= 3
+                ? [
+                    {
+                      key: "third",
+                      coinDelay: 1.2,
+                      coin: {
+                        edgeColor: "bg-[#9a3412] border-[#7c2d12]",
+                        frontColor: "border-orange-500 ring-orange-200/90 bg-gradient-to-tr from-[#ea580c] via-[#fed7aa] to-[#c2410c] shadow-[0_0_14px_rgba(234,88,12,0.55)]",
+                        backColor: "border-orange-500 ring-orange-200/90 bg-gradient-to-bl from-[#ea580c] via-[#fed7aa] to-[#c2410c] shadow-[0_0_14px_rgba(234,88,12,0.55)]",
+                        textColor: "text-orange-950",
+                        icon: <Award className="text-orange-950 w-4 h-4 relative z-10" />,
+                        label: "3rd Place",
+                      },
+                      title: "3rd Place Certificate",
+                      subtitle: "Awarded to 3rd position winner",
+                      value: thirdCertId,
+                      selectedCert: thirdCert,
+                      inheritedCert: participationCert,
+                      isBase: false,
+                      onChange: (val: string) =>
+                        updateEventCertificates({ "certificatesByPosition.third": val }),
+                    },
+                  ]
+                : []),
+            ];
+
+            const gridClass =
+              tiers.length === 2
+                ? "grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto"
+                : tiers.length === 3
+                ? "grid-cols-1 md:grid-cols-3"
+                : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
+
+            return (
+              <div className="p-6 sm:p-8 space-y-6">
+                <style>{`
+                  @keyframes spinBadge {
+                    0% { transform: rotateY(0deg); }
+                    100% { transform: rotateY(360deg); }
+                  }
+                  @keyframes badgeShine {
+                    0% { transform: translateX(-150%) rotate(25deg); opacity: 0; }
+                    15% { opacity: 0.85; }
+                    35% { transform: translateX(150%) rotate(25deg); opacity: 0; }
+                    100% { transform: translateX(150%) rotate(25deg); opacity: 0; }
+                  }
+                  @keyframes sparkleStar {
+                    0%, 100% { transform: scale(0) rotate(0deg); opacity: 0; }
+                    20% { transform: scale(1.1) rotate(45deg); opacity: 1; filter: drop-shadow(0 0 3px rgba(255,255,255,0.9)); }
+                    40% { transform: scale(0.6) rotate(90deg); opacity: 0.8; }
+                    60% { transform: scale(0) rotate(135deg); opacity: 0; }
+                  }
+                `}</style>
+
+                {/* Dynamic Columns Grid with Coin Badges on Top */}
+                <div className={`grid ${gridClass} gap-6 items-start`}>
+                  {tiers.map((tier) => {
+                    const displayCert = tier.selectedCert || (!tier.isBase ? tier.inheritedCert : null);
+                    const isInherited = !tier.selectedCert && !tier.isBase && !!tier.inheritedCert;
+                    const isDropdownOpen = activeCertDropdownTier === tier.key;
+
+                    return (
+                      <div key={tier.key} className="flex flex-col items-center w-full">
+                        {/* 1. Rotating 3D Coin Badge on Top */}
+                        <div className="flex flex-col items-center justify-center [perspective:600px] mb-3 z-10">
+                          <div
+                            className="relative w-14 h-14 sm:w-16 sm:h-16 [transform-style:preserve-3d] animate-[spinBadge_4s_linear_infinite]"
+                            style={{ animationDelay: `${tier.coinDelay}s` }}
                           >
-                            <option value="">-- Inherit Base Template --</option>
-                            {availableCertificates.map(cert => (
-                              <option key={cert._id} value={cert._id}>{cert.name}</option>
+                            {/* Coin Thickness layers */}
+                            {[-2, -1.2, -0.4, 0.4, 1.2, 2].map((zOffset, i) => (
+                              <div
+                                key={i}
+                                className={`absolute inset-0 rounded-full border-2 ${tier.coin.edgeColor}`}
+                                style={{ transform: `translateZ(${zOffset}px)` }}
+                              />
                             ))}
-                          </select>
+
+                            {/* Front Face */}
+                            <div
+                              className={`absolute inset-0 rounded-full border-2 ring-1 ring-inset flex flex-col items-center justify-center p-1 shadow-lg [backface-visibility:hidden] overflow-hidden ${tier.coin.frontColor}`}
+                              style={{ transform: "translateZ(2.5px)" }}
+                            >
+                              {tier.coin.icon}
+                              <span
+                                className={`text-[6.5px] sm:text-[7.5px] font-black uppercase tracking-tight text-center leading-tight mt-0.5 relative z-10 ${tier.coin.textColor}`}
+                              >
+                                {tier.coin.label}
+                              </span>
+                              {!tier.isBase && (
+                                <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-full">
+                                  <div
+                                    className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/70 to-transparent blur-[1px] animate-[badgeShine_2.5s_ease-in-out_infinite]"
+                                    style={{ animationDelay: `${tier.coinDelay}s` }}
+                                  />
+                                  {/* Sparkle Stars */}
+                                  <div 
+                                    className="absolute top-1 right-1.5 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                                    style={{ animationDelay: `${tier.coinDelay + 0.15}s` }}
+                                  >
+                                    <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                                      <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                                    </svg>
+                                  </div>
+                                  <div 
+                                    className="absolute bottom-1 left-1.5 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                                    style={{ animationDelay: `${tier.coinDelay + 0.45}s` }}
+                                  >
+                                    <svg viewBox="0 0 24 24" className="w-2 h-2 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                                      <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Back Face */}
+                            <div
+                              className={`absolute inset-0 rounded-full border-2 ring-1 ring-inset flex flex-col items-center justify-center p-1 shadow-lg [backface-visibility:hidden] overflow-hidden ${tier.coin.backColor}`}
+                              style={{ transform: "translateZ(-2.5px) rotateY(180deg)" }}
+                            >
+                              <span
+                                className={`font-black uppercase text-[6.5px] sm:text-[7.5px] tracking-tight text-center line-clamp-2 leading-tight relative z-10 px-1 ${tier.coin.textColor}`}
+                              >
+                                {event.name || "Event"}
+                              </span>
+                              {!tier.isBase && (
+                                <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-full">
+                                  <div
+                                    className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/70 to-transparent blur-[1px] animate-[badgeShine_2.5s_ease-in-out_infinite]"
+                                    style={{ animationDelay: `${tier.coinDelay + 1.25}s` }}
+                                  />
+                                  {/* Sparkle Stars Back */}
+                                  <div 
+                                    className="absolute top-1.5 left-1.5 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                                    style={{ animationDelay: `${tier.coinDelay + 1.4}s` }}
+                                  >
+                                    <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                                      <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                                    </svg>
+                                  </div>
+                                  <div 
+                                    className="absolute bottom-1 right-1.5 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                                    style={{ animationDelay: `${tier.coinDelay + 1.7}s` }}
+                                  >
+                                    <svg viewBox="0 0 24 24" className="w-2 h-2 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                                      <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      )
-                    })}
-                  </div>
+
+                        {/* 2. Card Container below Coin */}
+                        <div className="w-full bg-white rounded-3xl border border-slate-200/80 shadow-sm p-5 flex flex-col justify-between space-y-3 hover:shadow-md transition-shadow relative">
+                          {/* Tier Title and Subtitle */}
+                          <div>
+                            <h4 className="text-sm font-bold text-slate-800">
+                              {tier.title}
+                            </h4>
+                            <p className="text-[11px] text-slate-400 font-medium leading-tight mt-0.5">
+                              {tier.subtitle}
+                            </p>
+                          </div>
+
+                          {/* Certificate Thumbnail Box with Hover Actions */}
+                          <div className="relative">
+                            <div className="aspect-[16/11] rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 relative flex items-center justify-center group shadow-2xs">
+                              {displayCert?.url ? (
+                                <>
+                                  <img
+                                    src={displayCert.url}
+                                    alt={displayCert.name || "Certificate Template"}
+                                    className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-102 ${
+                                      isInherited ? "opacity-75 grayscale-[15%]" : ""
+                                    }`}
+                                  />
+                                  
+                                  {/* Hover Overlay with Action Buttons on Top */}
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2.5">
+                                    {/* Top Bar with Name & Template Dropdown + Delete */}
+                                    <div className="flex items-center justify-between gap-1.5 w-full">
+                                      {/* Dropdown Button with Name */}
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setActiveCertDropdownTier(isDropdownOpen ? null : tier.key);
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/95 hover:bg-white text-slate-800 text-[11px] font-bold shadow-md transition-all hover:scale-102 cursor-pointer max-w-[80%] min-w-0"
+                                        title="Change Certificate Template"
+                                      >
+                                        <span className="truncate">{displayCert.name}</span>
+                                        <ChevronDown size={12} className="text-slate-500 shrink-0" />
+                                      </button>
+
+                                      {/* Delete Button */}
+                                      {Boolean(tier.value) && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            tier.onChange("");
+                                          }}
+                                          className="p-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white shadow-md transition-transform hover:scale-105 cursor-pointer shrink-0"
+                                          title="Remove Certificate"
+                                        >
+                                          <Trash2 size={12} />
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    {/* Bottom area intentionally left clean without extra badges */}
+                                    <div />
+                                  </div>
+                                </>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveCertDropdownTier(isDropdownOpen ? null : tier.key)}
+                                  className="w-full h-full flex flex-col items-center justify-center p-4 text-center text-slate-400 space-y-1.5 hover:bg-slate-100/70 transition-colors cursor-pointer"
+                                >
+                                  <Award size={24} className="text-slate-300" />
+                                  <span className="text-xs font-bold text-slate-600">
+                                    No Certificate Assigned
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-medium leading-tight">
+                                    Click to select a template
+                                  </span>
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Dropdown Menu Overlay inside the thumbnail container */}
+                            <AnimatePresence>
+                              {isDropdownOpen && (
+                                <>
+                                  <div
+                                    className="fixed inset-0 z-40"
+                                    onClick={() => setActiveCertDropdownTier(null)}
+                                  />
+                                  <motion.div
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    transition={{ duration: 0.15 }}
+                                    className="absolute inset-0 z-50 bg-white/98 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200 p-2.5 flex flex-col"
+                                  >
+                                    <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-slate-100 shrink-0">
+                                      <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                                        Select Template
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => setActiveCertDropdownTier(null)}
+                                        className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                                      >
+                                        <X size={13} />
+                                      </button>
+                                    </div>
+
+                                    <div className="flex-1 overflow-y-auto space-y-1 pr-0.5">
+                                      {/* Default Option (No Certificate / Inherit Participant Certificate) */}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          tier.onChange("");
+                                          setActiveCertDropdownTier(null);
+                                        }}
+                                        className={`w-full p-2 rounded-xl text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                                          !tier.value
+                                            ? "bg-[#f0f7e6] text-[#558B2F]"
+                                            : "hover:bg-slate-50 text-slate-700"
+                                        }`}
+                                      >
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <div className="w-8 h-5.5 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 text-slate-400">
+                                            <X size={11} />
+                                          </div>
+                                          <span className="text-xs font-bold truncate">
+                                            {tier.isBase ? "No Certificate" : "Inherit Participant Certificate"}
+                                          </span>
+                                        </div>
+                                        {!tier.value && (
+                                          <CheckCircle2 size={13} className="text-[#7CB342] shrink-0" />
+                                        )}
+                                      </button>
+
+                                      {/* Available Certificates */}
+                                      {availableCertificates.map((cert) => {
+                                        const isSelected = tier.value === cert._id;
+                                        return (
+                                          <button
+                                            key={cert._id}
+                                            type="button"
+                                            onClick={() => {
+                                              tier.onChange(cert._id);
+                                              setActiveCertDropdownTier(null);
+                                            }}
+                                            className={`w-full p-2 rounded-xl text-left flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                                              isSelected
+                                                ? "bg-[#f0f7e6] text-[#558B2F]"
+                                                : "hover:bg-slate-50 text-slate-700"
+                                            }`}
+                                          >
+                                            <div className="flex items-center gap-2 min-w-0">
+                                              <div className="w-9 h-6 rounded-md overflow-hidden bg-slate-100 border border-slate-200 shrink-0">
+                                                {cert.url ? (
+                                                  <img
+                                                    src={cert.url}
+                                                    alt=""
+                                                    className="w-full h-full object-cover"
+                                                  />
+                                                ) : (
+                                                  <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                                    <Award size={11} />
+                                                  </div>
+                                                )}
+                                              </div>
+                                              <span className="text-xs font-bold text-slate-800 truncate">
+                                                {cert.name}
+                                              </span>
+                                            </div>
+                                            {isSelected && (
+                                              <CheckCircle2 size={13} className="text-[#7CB342] shrink-0" />
+                                            )}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </motion.div>
+                                </>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       </div>
 

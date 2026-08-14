@@ -25,7 +25,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const feedback = await Feedback.find({ eventId: id }).populate("userId", "name email image").lean();
+    const feedback = await Feedback.find({ eventId: id })
+      .populate("userId", "name email image department")
+      .populate("feedbackFormId", "name questions")
+      .sort({ createdAt: -1 })
+      .lean();
 
     const totalCount = feedback.length;
     let totalRating = 0;

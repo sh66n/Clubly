@@ -40,29 +40,38 @@ export default function EventQRTicket({
   const qrValue = `clubly:att:${eventId}:${userId}`;
 
   const [attendanceStatus, setAttendanceStatus] = useState("registered");
-  const [isInitialCheck, setIsInitialCheck] = useState(true);
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
+    let isMounted = true;
     
     if (isOpen && attendanceStatus !== "attended") {
       const checkStatus = async () => {
         try {
-          const res = await fetch(`/api/events/${eventId}/attendance/status`);
-          const data = await res.json();
-          if (data.status === "attended") {
-            setAttendanceStatus("attended");
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 4000);
+          const res = await fetch(`/api/events/${eventId}/attendance/status`, {
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            const data = await res.json();
+            if (isMounted && data.status === "attended") {
+              setAttendanceStatus("attended");
+            }
           }
-        } catch (err) {}
-        setIsInitialCheck(false);
+        } catch (err) {
+          // Quietly ignore network failures so the QR code stays visible
+        }
       };
 
-      // Check immediately, then every 3 seconds
+      // Check immediately in background, then poll every 3 seconds
       checkStatus();
       intervalId = setInterval(checkStatus, 3000);
     }
     
     return () => {
+      isMounted = false;
       if (intervalId) clearInterval(intervalId);
     };
   }, [isOpen, eventId, attendanceStatus]);
@@ -71,7 +80,6 @@ export default function EventQRTicket({
   useEffect(() => {
     if (!isOpen) {
       setAttendanceStatus("registered");
-      setIsInitialCheck(true);
     }
   }, [isOpen]);
 
@@ -135,12 +143,7 @@ export default function EventQRTicket({
                 }
               `}</style>
               
-              {isInitialCheck ? (
-                <div className="flex flex-col items-center justify-center w-full min-h-[300px]">
-                  <div className="w-8 h-8 border-4 border-[#7CB342]/30 border-t-[#7CB342] rounded-full animate-spin mb-4"></div>
-                  <p className="text-sm text-gray-400 font-medium">Loading your ticket...</p>
-                </div>
-              ) : attendanceStatus === "attended" ? (
+              {attendanceStatus === "attended" ? (
                 <motion.div
                   initial={{ scale: 0.5, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
