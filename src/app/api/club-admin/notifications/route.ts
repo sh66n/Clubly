@@ -103,10 +103,24 @@ export async function GET(req: NextRequest) {
     feedbacks.forEach((fb: any) => {
       if (!fb.userId) return;
       const eventName = eventMap.get(fb.eventId.toString()) || "Event";
+
+      let ratingVal = fb.rating;
+      if (typeof ratingVal !== "number" && Array.isArray(fb.answers) && fb.answers.length > 0) {
+        const validAnswers = fb.answers.filter((a: any) => typeof a?.rating === "number" && a.rating > 0);
+        if (validAnswers.length > 0) {
+          const sum = validAnswers.reduce((acc: number, a: any) => acc + a.rating, 0);
+          ratingVal = Math.round((sum / validAnswers.length) * 10) / 10;
+        }
+      }
+
+      const messageText = typeof ratingVal === "number" 
+        ? `${fb.userId.name} rated ${eventName} with ${ratingVal}★`
+        : `${fb.userId.name} submitted feedback for ${eventName}`;
+
       notificationList.push({
         id: `fb-${fb._id}`,
         title: "New Review",
-        message: `${fb.userId.name} rated ${eventName} with ${fb.rating}★`,
+        message: messageText,
         time: fb.createdAt,
         type: "feedback",
       });

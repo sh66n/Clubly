@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { FolderPlus, Loader2, X, Award } from "lucide-react";
+import { FolderPlus, Folder, Loader2, X, Award } from "lucide-react";
 
 interface EventOption {
   _id: string;
@@ -69,9 +69,9 @@ export default function GenerateEventFolderModal({ events }: GenerateEventFolder
     <>
       <button
         onClick={handleOpen}
-        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-semibold transition-all shadow-sm text-sm active:scale-95 border border-slate-700"
+        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 rounded-xl font-semibold transition-all shadow-sm border border-slate-200 text-sm active:scale-95"
       >
-        <FolderPlus className="w-4 h-4 text-emerald-400" /> Create Event Folder
+        <Folder className="w-4 h-4 text-slate-500" /> Create Event Folder
       </button>
 
       {isOpen && (
