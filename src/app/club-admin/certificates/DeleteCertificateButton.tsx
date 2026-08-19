@@ -46,10 +46,10 @@ export default function DeleteCertificateButton({ id, isDraft }: DeleteCertifica
     <button
       onClick={handleDelete}
       disabled={loading}
-      className="p-2 bg-red-50 hover:bg-red-100 border border-red-100 text-red-600 rounded-lg disabled:opacity-50 transition-colors"
+      className="p-1.5 bg-white hover:bg-red-50 border border-slate-200 text-red-600 rounded-lg disabled:opacity-50 transition-all hover:scale-105 shadow-md flex items-center justify-center"
       title={isDraft ? "Delete draft & remove image" : "Delete certificate"}
     >
-      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash className="w-4 h-4" />}
+      {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash className="w-3.5 h-3.5" />}
     </button>
   );
 }

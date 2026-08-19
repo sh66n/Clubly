@@ -11,10 +11,12 @@ import {
   ArrowRight,
   RefreshCw,
   Trash2,
+  Link2,
 } from "lucide-react";
 import CertificateLayoutEditor from "@/components/Events/CertificateLayoutEditor";
 import { getDefaultCertificateLayout } from "@/lib/certificate";
 import Link from "next/link";
+import LinkEventsModal from "@/app/club-admin/certificates/LinkEventsModal";
 
 interface CertificateFormProps {
   initialData?: any;
@@ -349,6 +351,24 @@ export default function CertificateForm({ initialData }: CertificateFormProps) {
                   className="hidden"
                 />
               </div>
+
+              {certificateId && (
+                <div className="w-full max-w-md bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex flex-col gap-3">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                      <Link2 className="w-4 h-4 text-[#7CB342]" /> Tie to Club Events
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Associate this certificate template to winners or participants of your club events.
+                    </p>
+                  </div>
+                  <LinkEventsModal
+                    certificateId={certificateId}
+                    certificateName={name}
+                    isDraft={isDraft}
+                  />
+                </div>
+              )}
 
               {/* Bottom Action */}
               <div className="w-full flex justify-center mt-4">

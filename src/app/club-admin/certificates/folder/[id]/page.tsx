@@ -137,16 +137,16 @@ function CertificateCard({ cert, eventsByCertificate }: { cert: any; eventsByCer
 
   return (
     <div
-      className={`bg-white border rounded-2xl overflow-hidden hover:shadow-md transition-all flex flex-col group shadow-sm ${
-        isDraft ? "border-amber-200 hover:border-amber-300" : "border-slate-200/80 hover:border-slate-300"
+      className={`group relative bg-white border rounded-2xl overflow-hidden hover:shadow-md hover:border-slate-350 transition-all duration-200 flex flex-col shadow-sm ${
+        isDraft ? "border-amber-200" : "border-slate-200/80"
       }`}
     >
-      <div className="relative w-full aspect-[4/3] bg-slate-50 overflow-hidden border-b border-slate-100 p-4">
+      <div className="relative w-full aspect-[4/3] bg-slate-50 overflow-hidden border-b border-slate-100 flex items-center justify-center p-3">
         {cert.url ? (
           <img
             src={cert.url}
             alt={cert.name}
-            className="w-full h-full object-contain drop-shadow-sm"
+            className="w-full h-full object-contain drop-shadow-sm group-hover:scale-[1.02] transition-transform duration-300"
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
@@ -154,9 +154,9 @@ function CertificateCard({ cert, eventsByCertificate }: { cert: any; eventsByCer
             <span className="text-xs font-medium uppercase tracking-wider">Empty Slot</span>
           </div>
         )}
-        <div className="absolute top-3 right-3">
+        <div className="absolute top-3 left-3">
           <span
-            className={`px-2.5 py-0.5 text-[11px] font-bold rounded-full border shadow-sm ${
+            className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border shadow-sm ${
               isDraft
                 ? "bg-amber-100 text-amber-800 border-amber-300"
                 : "bg-emerald-100 text-emerald-800 border-emerald-300"
@@ -165,69 +165,51 @@ function CertificateCard({ cert, eventsByCertificate }: { cert: any; eventsByCer
             {isDraft ? "Draft" : "Published"}
           </span>
         </div>
-      </div>
 
-      <div className="p-4 flex items-center justify-between bg-white">
-        <div className="min-w-0 pr-2">
-          <h3
-            className="font-semibold text-slate-800 mb-0.5 truncate text-sm"
-            title={cert.name}
-          >
-            {cert.name}
-          </h3>
-          <p className="text-xs text-slate-505">
-            {isDraft ? "Draft saved" : "Added"} {new Date(cert.uploadedAt || cert.createdAt).toLocaleDateString()}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-1.5 shrink-0">
+        {/* Hover Action Overlay */}
+        <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2 backdrop-blur-[2px]">
           <Link
             href={`/club-admin/certificates/${cert._id}`}
-            className={`p-2 border rounded-lg transition-colors ${
-              isDraft
-                ? "bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-800"
-                : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-650"
-            }`}
-            title={isDraft ? "Resume editing draft" : "Edit certificate layout"}
+            className="p-2 bg-white text-slate-700 hover:text-[#7CB342] hover:scale-105 rounded-xl transition-all shadow-md font-semibold text-xs flex items-center gap-1.5"
+            title="Edit certificate details and layout"
           >
-            {isDraft ? <FileEdit className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+            <Pencil className="w-3.5 h-3.5" /> Edit
           </Link>
           <DeleteCertificateButton id={certIdStr} isDraft={isDraft} />
         </div>
       </div>
 
-      <div className="px-4 pb-4 pt-1 flex flex-col gap-2.5 border-t border-slate-100 bg-white">
-        {linkedEvents.length > 0 ? (
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] text-slate-400 font-medium shrink-0">Used in:</span>
+      <div className="p-3.5 flex flex-col justify-between flex-1 bg-white">
+        <div className="min-w-0">
+          <h3
+            className="font-bold text-slate-800 mb-0.5 truncate text-sm group-hover:text-[#7CB342] transition-colors"
+            title={cert.name}
+          >
+            {cert.name}
+          </h3>
+          <p className="text-[11px] text-slate-400 font-medium">
+            {isDraft ? "Draft saved" : "Added"} {new Date(cert.uploadedAt || cert.createdAt).toLocaleDateString()}
+          </p>
+        </div>
+        {linkedEvents.length > 0 && (
+          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider shrink-0">Used:</span>
             {linkedEvents.slice(0, 2).map((ev: any) => (
               <span
                 key={ev._id}
-                className="px-2 py-0.5 rounded-md bg-[#f0f7e6] text-[#689F38] text-[11px] font-semibold truncate max-w-[130px] border border-[#c5d6a8]"
+                className="px-1.5 py-0.5 rounded bg-[#f0f7e6] text-[#689F38] text-[10px] font-bold truncate max-w-[90px] border border-[#c5d6a8]"
                 title={ev.name}
               >
                 {ev.name}
               </span>
             ))}
             {linkedEvents.length > 2 && (
-              <span className="text-[10px] text-slate-400 font-bold">
-                +{linkedEvents.length - 2} more
+              <span className="text-[9px] text-slate-400 font-extrabold">
+                +{linkedEvents.length - 2}
               </span>
             )}
           </div>
-        ) : (
-          <div className="text-[11px] text-slate-400 italic">
-            Not tied to any event yet
-          </div>
         )}
-
-        <LinkEventsModal
-          certificateId={certIdStr}
-          certificateName={cert.name}
-          isDraft={isDraft}
-          initialLinkedCount={linkedEvents.length}
-          initialLinkedEvents={linkedEvents}
-        />
       </div>
     </div>
   );

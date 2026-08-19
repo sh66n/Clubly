@@ -102,7 +102,7 @@ export default auth(async (req) => {
      Club-admin dashboard routes
   ------------------------------ */
   if (pathname.startsWith("/club-admin")) {
-    if (role !== "club-admin") {
+    if (role !== "club-admin" || !user?.adminClub) {
       return NextResponse.redirect(new URL("/forbidden", req.url));
     }
   }

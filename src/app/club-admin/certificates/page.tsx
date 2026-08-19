@@ -15,7 +15,7 @@ export default async function CertificatesPage() {
   await connectToDb();
   const [certificates, clubEvents, folders] = await Promise.all([
     Certificate.find({ club: session.user.adminClub })
-      .select("_id folder isDraft createdAt name")
+      .select("_id folder isDraft createdAt name url uploadedAt")
       .lean(),
     Event.find({ organizingClub: session.user.adminClub })
       .select("_id name date certificate certificatesByPosition numberOfWinners providesCertificate")
@@ -34,6 +34,27 @@ export default async function CertificatesPage() {
     numberOfWinners: ev.numberOfWinners || 1,
     providesCertificate: ev.providesCertificate,
   }));
+
+  const eventsByCertificate: Record<string, { _id: string; name: string; date: string }[]> = {};
+  clubEvents.forEach((ev: any) => {
+    const certIds = new Set<string>();
+    if (ev.certificate) certIds.add(ev.certificate.toString());
+    if (ev.certificatesByPosition?.participation) certIds.add(ev.certificatesByPosition.participation.toString());
+    if (ev.certificatesByPosition?.first) certIds.add(ev.certificatesByPosition.first.toString());
+    if (ev.certificatesByPosition?.second) certIds.add(ev.certificatesByPosition.second.toString());
+    if (ev.certificatesByPosition?.third) certIds.add(ev.certificatesByPosition.third.toString());
+
+    certIds.forEach((certIdStr) => {
+      if (!eventsByCertificate[certIdStr]) {
+        eventsByCertificate[certIdStr] = [];
+      }
+      eventsByCertificate[certIdStr].push({
+        _id: ev._id.toString(),
+        name: ev.name,
+        date: ev.date ? new Date(ev.date).toISOString() : "",
+      });
+    });
+  });
 
   // Group certificates statistics per folder
   const folderStats: Record<
@@ -59,7 +80,7 @@ export default async function CertificatesPage() {
     }
   });
 
-  const totalFoldersCount = folders.length + (folderStats.unassigned.total > 0 ? 1 : 0);
+  const totalFoldersCount = folders.length; // Don't count unassigned folder anymore
   const totalCertificatesCount = certificates.length;
   const totalPublishedCount = certificates.filter((c: any) => !c.isDraft).length;
   const totalDraftCount = certificates.filter((c: any) => c.isDraft).length;
@@ -74,6 +95,7 @@ export default async function CertificatesPage() {
       totalCertificatesCount={totalCertificatesCount}
       totalPublishedCount={totalPublishedCount}
       totalDraftCount={totalDraftCount}
+      eventsByCertificate={eventsByCertificate}
     />
   );
 }

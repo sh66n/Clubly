@@ -20,7 +20,7 @@ export async function GET(req: Request) {
 
     const adminClubId = session.user.adminClub;
     if (!adminClubId) {
-      return NextResponse.json({ error: "No club associated with admin" }, { status: 400 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -38,13 +38,24 @@ export async function GET(req: Request) {
     const allClubEvents = await Event.find({ organizingClub: clubObjectId }).select("date").lean();
     
     // Determine available academic years
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    const currentAcadYear = currentMonth >= 6 
+      ? `${currentYear}-${currentYear + 1}` 
+      : `${currentYear - 1}-${currentYear}`;
+
     const availableYearsSet = new Set<string>();
+    availableYearsSet.add(currentAcadYear);
+
     allClubEvents.forEach((ev: any) => {
-      const d = new Date(ev.date);
-      const year = d.getFullYear();
-      const month = d.getMonth();
-      const acadYear = month >= 6 ? year : year - 1;
-      availableYearsSet.add(`${acadYear}-${acadYear + 1}`);
+      if (ev.date) {
+        const d = new Date(ev.date);
+        const year = d.getFullYear();
+        const month = d.getMonth();
+        const acadYear = month >= 6 ? year : year - 1;
+        availableYearsSet.add(`${acadYear}-${acadYear + 1}`);
+      }
     });
     const availableAcademicYears = Array.from(availableYearsSet).sort().reverse();
 
