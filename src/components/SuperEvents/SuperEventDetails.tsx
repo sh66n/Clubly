@@ -211,7 +211,7 @@ export default function SuperEventDetails({
       </div>
 
       {/* Rewards */}
-      {eventsInSuperEvent.length > 0 && (
+      {eventsInSuperEvent.some(event => event.prize > 0) && (
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-6">
             {/* Minimalist Icon Container */}

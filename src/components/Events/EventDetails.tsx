@@ -150,7 +150,7 @@ export default function EventDetails({
   const isAlreadyRegistered = Boolean((event as any).alreadyRegistered);
 
   //  Check if event has passed
-  const hasEventPassed = differenceInCalendarDays(today, eventDate) > 0;
+  const hasEventPassed = today > eventDate;
 
   const registrationsFull =
     Number((event as any).registrationCount ?? 0) >= event.maxRegistrations;
@@ -226,8 +226,7 @@ export default function EventDetails({
 
   const ctaText = getCTA();
 
-  const hasRewards = event.prize || event.providesCertificate;
-  const hasCertificateTemplate = Boolean(event.certificateTemplate?.url);
+  const hasRewards = (event.prize && event.prize > 0) || event.providesCertificate;
   const hasCustomQuestions = Boolean(event.customQuestions?.length);
   const openRegistrationFlow = () => {
     if (hasCustomQuestions) {
@@ -311,7 +310,7 @@ export default function EventDetails({
                   </div>
                 )}
 
-                {event.providesCertificate && hasCertificateTemplate && (
+                {event.providesCertificate && (
                   <div className="flex items-center gap-2">
                     <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
                       <FileBadge />
@@ -711,7 +710,7 @@ export default function EventDetails({
       )}
 
       {/* Floating Feedback & Certificate Widget */}
-      {(isAlreadyRegistered || (user?.role === "club-admin" && event?.organizingClub?._id?.toString() === user?.adminClub?.toString())) && (
+      {hasEventPassed && (isAlreadyRegistered || (user?.role === "club-admin" && event?.organizingClub?._id?.toString() === user?.adminClub?.toString())) && (
         <EventFeedbackWidget eventId={String(event._id)} eventName={event.name} />
       )}
     </>

@@ -612,7 +612,8 @@ export default function EventFeedbackWidget({
   };
 
   if (loading) return null;
-  if (!feedbackRequired && !feedbackSubmitted && !certificate) return null;
+  if (!certificate?.url) return null;
+  if (!feedbackRequired && !feedbackSubmitted) return null;
 
   const renderCertificatePreview = () => {
     if (certificate?.url) {
