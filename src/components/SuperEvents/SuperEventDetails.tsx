@@ -59,10 +59,31 @@ export default function SuperEventDetails({
                 className="w-6 h-6 rounded-full"
                 alt=""
               />
-              <span className="font-medium">
+              <span className="font-semibold text-gray-200">
                 {superEvent.organizingClub.name}
               </span>
             </div>
+
+            {superEvent.collaboratingClubs?.map((collabClub: any) => (
+              <div
+                key={collabClub._id || collabClub}
+                className="flex items-center gap-2 px-4 py-2 bg-black/80 backdrop-blur rounded-full border border-[#515151] text-sm"
+              >
+                {collabClub.logo && (
+                  <img
+                    src={collabClub.logo}
+                    className="w-6 h-6 rounded-full"
+                    alt=""
+                  />
+                )}
+                <span className="font-semibold text-emerald-400">
+                  {collabClub.name}
+                </span>
+                <span className="text-[10px] uppercase font-bold text-gray-400 bg-white/10 px-1.5 py-0.5 rounded">
+                  Co-Host
+                </span>
+              </div>
+            ))}
 
             <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-black/80 border border-[#515151] rounded-full text-sm font-semibold">
               <Calendar size={14} />

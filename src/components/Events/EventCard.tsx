@@ -93,16 +93,23 @@ export default function EventCard({ event, userId }: EventCardProps) {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-transparent opacity-60" />
 
-        {/* Floating Club Tag */}
-        {event.organizingClub.name && (
-          <div className="absolute top-3 left-3">
-            <span
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-white/10 backdrop-blur-md bg-black/40 text-white`}
-            >
+        {/* Floating Club Tags (Organizing + Collaborating) */}
+        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10 max-w-[80%]">
+          {event.organizingClub?.name && (
+            <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-white/10 backdrop-blur-md bg-black/40 text-white">
               {event.organizingClub.name}
             </span>
-          </div>
-        )}
+          )}
+
+          {event.collaboratingClubs?.map((collabClub: any) => (
+            <span
+              key={collabClub._id || collabClub.name}
+              className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-white/10 backdrop-blur-md bg-black/40 text-white"
+            >
+              {collabClub.name}
+            </span>
+          ))}
+        </div>
 
         {/* Full Tag */}
         {isFull && (

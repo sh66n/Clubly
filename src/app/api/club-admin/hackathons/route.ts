@@ -16,7 +16,13 @@ export async function GET(req: Request) {
     await connectToDb();
     const clubId = session.user.adminClub;
 
-    const hackathons = await Hackathon.find({ organizingClub: clubId }).sort({ createdAt: -1 }).lean();
+    const hackathons = await Hackathon.find({
+      $or: [{ organizingClub: clubId }, { collaboratingClubs: clubId }],
+    })
+      .populate("organizingClub", "name logo")
+      .populate("collaboratingClubs", "name logo")
+      .sort({ createdAt: -1 })
+      .lean();
 
     let live = 0, draft = 0, completed = 0;
     let totalRegistrations = 0, totalTeams = 0, totalSubmissions = 0, totalRevenue = 0;

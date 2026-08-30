@@ -96,6 +96,7 @@ export const GET = async (req: NextRequest) => {
     const events = await Event.find(query)
       .sort({ date: -1 })
       .populate("organizingClub")
+      .populate("collaboratingClubs")
       .lean();
 
     const eventIds = events.map((event) => event._id);

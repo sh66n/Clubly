@@ -94,6 +94,7 @@ export const GET = async (
     const event = await Event.findById(id)
       .populate("contact")
       .populate("organizingClub")
+      .populate("collaboratingClubs")
       .populate("certificate")
       .populate("winner")
       .populate({

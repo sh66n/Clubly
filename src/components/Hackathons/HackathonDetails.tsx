@@ -33,6 +33,7 @@ interface HackathonDetailsProps {
   rounds: any[];
   userTeam?: any;
   userRegistration?: any;
+  userSubmissions?: any[];
   userId?: string;
 }
 
@@ -41,6 +42,7 @@ export default function HackathonDetails({
   rounds = [],
   userTeam,
   userRegistration,
+  userSubmissions = [],
   userId,
 }: HackathonDetailsProps) {
   const [copied, setCopied] = useState(false);
@@ -92,11 +94,18 @@ export default function HackathonDetails({
     <div className="min-h-screen text-slate-100 py-4 sm:py-6 max-w-6xl mx-auto px-1 sm:px-6">
       {/* Top Breadcrumb / Category Tag */}
       <div className="flex items-center justify-between mb-8">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white text-xs font-medium backdrop-blur-md border border-white/10">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white text-xs font-medium backdrop-blur-md border border-white/10 flex-wrap">
           <Sparkles size={14} className="text-amber-400" />
           <span>Hackathon Series</span>
           <span className="text-gray-400">•</span>
-          <span className="text-gray-300">{hackathon.organizingClub?.name || "College Club"}</span>
+          <span className="text-gray-300">
+            {[
+              hackathon.organizingClub?.name,
+              ...(hackathon.collaboratingClubs?.map((c: any) => c.name) || []),
+            ]
+              .filter(Boolean)
+              .join(" × ")}
+          </span>
         </div>
 
         <button
@@ -121,41 +130,90 @@ export default function HackathonDetails({
             />
           </div>
 
-          {/* Presented by / Club Host Card */}
-          <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-sm flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-full overflow-hidden bg-slate-800 border border-white/10 relative">
-                <img
-                  src={hackathon.organizingClub?.logo || "/images/logo.png"}
-                  alt={hackathon.organizingClub?.name || "Club"}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div>
-                <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider">
-                  Organized by
-                </p>
-                <p className="text-sm font-bold text-white">
-                  {hackathon.organizingClub?.name || "College Club"}
-                </p>
-              </div>
-            </div>
+          {/* Hosted By Clubs (Single Clean Grouping) */}
+          <div className="space-y-3 pt-2">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              Hosted By
+            </p>
+            <div className="space-y-2">
+              {/* Primary Organizing Club */}
+              {hackathon.organizingClub && (
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-800 border border-white/10 relative shrink-0">
+                      <img
+                        src={hackathon.organizingClub?.logo || "/images/logo.png"}
+                        alt={hackathon.organizingClub?.name || "Club"}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white leading-tight">
+                        {hackathon.organizingClub?.name || "College Club"}
+                      </p>
+                      {(hackathon.organizingClub?.fullName || hackathon.organizingClub?.department) && (
+                        <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-1">
+                          {hackathon.organizingClub.fullName || hackathon.organizingClub.department}
+                        </p>
+                      )}
+                    </div>
+                  </div>
 
-            {hackathon.organizingClub?._id && (
-              <Link
-                href={`/clubs/${hackathon.organizingClub._id}`}
-                className="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition border border-white/10"
-              >
-                View Club
-              </Link>
-            )}
+                  {hackathon.organizingClub?._id && (
+                    <Link
+                      href={`/clubs/${hackathon.organizingClub._id}`}
+                      className="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition border border-white/10 shrink-0"
+                    >
+                      View Club
+                    </Link>
+                  )}
+                </div>
+              )}
+
+              {/* Collaborating Clubs */}
+              {hackathon.collaboratingClubs?.map((collabClub: any) => (
+                <div
+                  key={collabClub._id || collabClub}
+                  className="flex items-center justify-between p-3 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-800 border border-white/10 relative shrink-0">
+                      <img
+                        src={collabClub.logo || "/images/logo.png"}
+                        alt={collabClub.name || "Co-Host"}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white leading-tight">
+                        {collabClub.name}
+                      </p>
+                      {(collabClub.fullName || collabClub.department) && (
+                        <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-1">
+                          {collabClub.fullName || collabClub.department}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {collabClub._id && (
+                    <Link
+                      href={`/clubs/${collabClub._id}`}
+                      className="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition border border-white/10 shrink-0"
+                    >
+                      View Club
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Coordinators / Hosted by Section */}
+          {/* Event Coordinators */}
           {hackathon.contact && hackathon.contact.length > 0 && (
             <div className="space-y-3 pt-2">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Hosted By
+                Event Coordinators
               </p>
               <div className="space-y-2">
                 {hackathon.contact.map((c: any, i: number) => (
@@ -308,6 +366,11 @@ export default function HackathonDetails({
                       templateUrl={hackathon.submissionConfig?.templateUrl}
                       allowedFormats={hackathon.submissionConfig?.allowedFormats}
                       maxFileSizeMB={hackathon.submissionConfig?.maxFileSizeMB}
+                      existingSubmission={userSubmissions?.find(
+                        (s: any) =>
+                          (s.round?._id || s.round)?.toString() ===
+                          activeSubmissionRound._id?.toString()
+                      )}
                     />
                   </div>
                 )}

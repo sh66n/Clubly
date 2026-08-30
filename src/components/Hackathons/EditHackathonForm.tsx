@@ -18,6 +18,7 @@ import CustomQuestionsEditor, {
   CustomQuestion,
   normalizeCustomQuestions,
 } from "@/components/Events/CustomQuestionsEditor";
+import CollabSection from "@/components/ClubAdmin/CollabSection";
 
 interface EditHackathonFormProps {
   hackathon: any;
@@ -316,7 +317,16 @@ export default function EditHackathonForm({
         </div>
       </div>
 
-      {/* 2. Team Size & Prize Pool */}
+      {/* 2. Club Collaborations Section */}
+      <CollabSection
+        entityType="hackathon"
+        entityId={hackathon._id}
+        organizingClubId={hackathon.organizingClub?._id || hackathon.organizingClub}
+        collaboratingClubs={hackathon.collaboratingClubs}
+        onUpdate={onSuccess}
+      />
+
+      {/* 3. Team Size & Prize Pool */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
         <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
           <Users size={18} className="text-[#7CB342]" /> Team & Prize Configuration

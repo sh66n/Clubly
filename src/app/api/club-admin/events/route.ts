@@ -27,8 +27,10 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const selectedAcademicYear = searchParams.get("academicYear"); // e.g. "2026" for 2026-2027
 
-    // Fetch all events first to compute available academic years dynamically
-    const allClubEvents = await Event.find({ organizingClub: adminClubId }).select("date").lean();
+    // Fetch all events (organized or collaborated) to compute available academic years dynamically
+    const allClubEvents = await Event.find({
+      $or: [{ organizingClub: adminClubId }, { collaboratingClubs: adminClubId }],
+    }).select("date").lean();
     
     // Determine available academic years
     const availableYearsSet = new Set<string>();
@@ -43,7 +45,9 @@ export async function GET(req: NextRequest) {
     const availableAcademicYears = Array.from(availableYearsSet).sort().reverse();
 
     // Construct query with academic cycle bounds if specified
-    const query: any = { organizingClub: adminClubId };
+    const query: any = {
+      $or: [{ organizingClub: adminClubId }, { collaboratingClubs: adminClubId }],
+    };
     if (selectedAcademicYear && selectedAcademicYear.includes("-")) {
       const [startYearStr] = selectedAcademicYear.split("-");
       const startYear = Number(startYearStr);
@@ -54,9 +58,12 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const events = await Event.find(query).sort({
-      createdAt: -1,
-    }).lean();
+    const events = await Event.find(query)
+      .populate("organizingClub", "name logo")
+      .populate("collaboratingClubs", "name logo")
+      .sort({
+        createdAt: -1,
+      }).lean();
 
     const stats = {
       totalEvents: events.length,

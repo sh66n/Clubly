@@ -1,9 +1,10 @@
 "use client";
 import React, { useState } from "react";
-import { LayoutDashboard, List, FileText, CheckSquare, Settings } from "lucide-react";
+import { LayoutDashboard, List, FileText, CheckSquare, Settings, Users } from "lucide-react";
 import RoundManager from "./RoundManager";
 import SubmissionsTable from "./SubmissionsTable";
 import ShortlistingPanel from "./ShortlistingPanel";
+import RegistrationsTable from "./RegistrationsTable";
 import EditHackathonForm from "../EditHackathonForm";
 
 export default function HackathonAdminPanel({ hackathon, rounds, fetchDetails }: { hackathon: any, rounds: any[], fetchDetails: () => void }) {
@@ -11,6 +12,7 @@ export default function HackathonAdminPanel({ hackathon, rounds, fetchDetails }:
 
   const tabs = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
+    { id: "registrations", label: "Registrations", icon: Users },
     { id: "rounds", label: "Rounds", icon: List },
     { id: "submissions", label: "Submissions", icon: FileText },
     { id: "shortlist", label: "Shortlisting", icon: CheckSquare },
@@ -55,6 +57,10 @@ export default function HackathonAdminPanel({ hackathon, rounds, fetchDetails }:
               <p className="text-3xl font-bold text-slate-800 mt-2 capitalize">{hackathon.status}</p>
             </div>
           </div>
+        )}
+
+        {activeTab === "registrations" && (
+          <RegistrationsTable hackathonId={hackathon._id} hackathonName={hackathon.name} />
         )}
 
         {activeTab === "rounds" && (

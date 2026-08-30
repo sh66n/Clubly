@@ -44,14 +44,23 @@ export default function SuperEventCard({ superEvent }: SuperEventCardProps) {
           className="w-full h-full object-cover"
         />
 
-        {/* Simple Square Tag */}
-        {superEvent.organizingClub?.name && (
-          <div className="absolute top-2 left-2">
-            <span className="px-2 py-1 bg-black text-white text-[10px] font-bold uppercase tracking-widest border border-[#2A2A2A]">
+        {/* Floating Club Pills (Organizing + Collaborating) */}
+        <div className="absolute top-2 left-2 flex flex-wrap gap-1.5 z-10 max-w-[85%]">
+          {superEvent.organizingClub?.name && (
+            <span className="px-2 py-1 bg-black text-white text-[10px] font-bold uppercase tracking-widest border border-[#2A2A2A] rounded">
               {superEvent.organizingClub.name}
             </span>
-          </div>
-        )}
+          )}
+
+          {superEvent.collaboratingClubs?.map((collabClub: any) => (
+            <span
+              key={collabClub._id || collabClub.name}
+              className="px-2 py-1 bg-black text-white text-[10px] font-bold uppercase tracking-widest border border-[#2A2A2A] rounded"
+            >
+              {collabClub.name}
+            </span>
+          ))}
+        </div>
         {/* Hover Arrow Indicator */}
         <div className="absolute top-3 right-3 p-2 rounded-full bg-white text-black opacity-0 -translate-y-2 translate-x-2 group-hover:opacity-100 group-hover:translate-y-0 group-hover:translate-x-0 transition-all duration-300">
           <ArrowUpRight size={16} strokeWidth={3} />

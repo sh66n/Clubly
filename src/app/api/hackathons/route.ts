@@ -26,6 +26,7 @@ export const GET = async (req: NextRequest) => {
     const hackathons = await Hackathon.find(query)
       .sort({ createdAt: -1 })
       .populate("organizingClub")
+      .populate("collaboratingClubs")
       .lean();
 
     const hackathonIds = hackathons.map((h) => h._id);

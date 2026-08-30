@@ -2,6 +2,7 @@ import { Schema, model, models } from "mongoose";
 
 export interface ISuperEvent {
   organizingClub: Schema.Types.ObjectId;
+  collaboratingClubs?: Schema.Types.ObjectId[];
   name: string;
   description?: string;
   startDate?: Date;
@@ -16,6 +17,12 @@ const superEventSchema = new Schema<ISuperEvent>(
       ref: "Club",
       required: true,
     },
+    collaboratingClubs: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Club",
+      },
+    ],
     name: {
       type: String,
       required: true,

@@ -23,6 +23,7 @@ import { HackathonRound } from "./hackathonRound.model";
 import { HackathonRegistration } from "./hackathonRegistration.model";
 import { Submission } from "./submission.model";
 import { RoundQualification } from "./roundQualification.model";
+import { Collaboration } from "./collaboration.model";
 
 // 2. Export them as a single block.
 // When you import { Event } from "@/models" in your API,
@@ -50,4 +51,5 @@ export {
   HackathonRegistration,
   Submission,
   RoundQualification,
+  Collaboration,
 };

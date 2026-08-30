@@ -125,6 +125,56 @@ export default function TeamFormation({
     }
   };
 
+  const handleJoinDirect = async (teamId: string, code?: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/hackathons/${hackathonId}/teams/${teamId}/join`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ joinCode: code }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to join team");
+      }
+
+      const updatedTeam = await res.json();
+      setUserTeam(updatedTeam);
+      toast.success("Joined team successfully!");
+      fetchTeamsAndStatus();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to join team");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string, memberName: string) => {
+    if (!confirm(`Are you sure you want to remove ${memberName || "this member"} from the team?`)) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/hackathons/${hackathonId}/teams/${userTeam._id}/remove`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to remove member");
+      }
+
+      toast.success(`${memberName || "Member"} removed from team`);
+      fetchTeamsAndStatus();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to remove member");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLeaveTeam = async () => {
     if (!userTeam) return;
     if (!confirm("Are you sure you want to leave this team?")) return;
@@ -264,8 +314,16 @@ export default function TeamFormation({
                   key={memberId || i}
                   className="flex items-center gap-3 p-3.5 bg-black/40 border border-[#2a2a2a] rounded-xl"
                 >
-                  <div className="w-10 h-10 rounded-full bg-[#1e1e1e] border border-gray-700 flex items-center justify-center font-bold text-gray-300 uppercase">
-                    {member.name?.[0] || "U"}
+                  <div className="w-10 h-10 rounded-full bg-[#1e1e1e] border border-gray-700 overflow-hidden flex items-center justify-center font-bold text-gray-300 uppercase shrink-0">
+                    {member.image ? (
+                      <img
+                        src={member.image}
+                        alt={member.name || "Member"}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      member.name?.[0] || "U"
+                    )}
                   </div>
                   <div className="flex-1 truncate">
                     <p className="font-bold text-white text-xs truncate">
@@ -275,11 +333,20 @@ export default function TeamFormation({
                       {member.department || member.email}
                     </p>
                   </div>
-                  {isMemberLeader && (
+                  {isMemberLeader ? (
                     <span className="text-[10px] font-bold bg-[#7CB342]/10 text-[#7CB342] border border-[#7CB342]/20 px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
                       <Shield size={10} /> Leader
                     </span>
-                  )}
+                  ) : isLeader ? (
+                    <button
+                      onClick={() => handleRemoveMember(memberId, member.name)}
+                      disabled={loading}
+                      className="text-[11px] text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2.5 py-1 rounded-lg border border-red-500/20 font-semibold transition flex items-center gap-1"
+                      title="Kick member from team"
+                    >
+                      <LogOut size={11} /> Kick
+                    </button>
+                  ) : null}
                 </div>
               );
             })}
@@ -345,30 +412,38 @@ export default function TeamFormation({
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {teams.map((team) => (
-                  <div
-                    key={team._id}
-                    className="p-4 rounded-xl bg-black/40 border border-[#2a2a2a] flex items-center justify-between gap-4"
-                  >
-                    <div>
-                      <h4 className="text-sm font-bold text-white">{team.name}</h4>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        Leader: {team.leader?.name || "User"} • {team.members?.length || 1}/{maxSize} Members
-                      </p>
+                {teams.map((team) => {
+                  const currentCount = team.members?.length || 1;
+                  const teamMaxSize = team.maxSize || maxSize;
+                  const isTeamFull = currentCount >= teamMaxSize;
+
+                  return (
+                    <div
+                      key={team._id}
+                      className="p-4 rounded-xl bg-black/40 border border-[#2a2a2a] flex items-center justify-between gap-4"
+                    >
+                      <div>
+                        <h4 className="text-sm font-bold text-white">{team.name}</h4>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Leader: {team.leader?.name || "User"} • {currentCount}/{teamMaxSize} Members
+                        </p>
+                      </div>
+                      {!isTeamFull ? (
+                        <button
+                          onClick={() => handleJoinDirect(team._id, team.joinCode)}
+                          disabled={loading}
+                          className="px-4 py-1.5 bg-[#7CB342] text-white text-xs font-bold rounded-lg hover:bg-[#689f38] transition disabled:opacity-50"
+                        >
+                          Join Team
+                        </button>
+                      ) : (
+                        <span className="text-xs text-gray-500 font-semibold px-3 py-1 bg-white/5 rounded-lg border border-white/5">
+                          Full
+                        </span>
+                      )}
                     </div>
-                    {team.joinCode ? (
-                      <button
-                        onClick={() => handleJoinTeam(team.joinCode)}
-                        disabled={loading}
-                        className="px-4 py-1.5 bg-[#7CB342] text-white text-xs font-bold rounded-lg hover:bg-[#689f38] transition"
-                      >
-                        Join Team
-                      </button>
-                    ) : (
-                      <span className="text-xs text-gray-500">Full</span>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

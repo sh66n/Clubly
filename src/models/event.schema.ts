@@ -60,6 +60,7 @@ export interface ICustomQuestion {
 export interface IEvent {
   _id: Types.ObjectId;
   organizingClub: Types.ObjectId;
+  collaboratingClubs?: Types.ObjectId[];
   name: string;
   description?: string;
   date: Date;

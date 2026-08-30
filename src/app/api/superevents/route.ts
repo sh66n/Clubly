@@ -11,7 +11,10 @@ export async function GET(req: Request) {
   const club = searchParams.get("club");
 
   if (!club) {
-    const allSuperEvents = await SuperEvent.find({}).sort({ startDate: -1 }).populate("organizingClub");
+    const allSuperEvents = await SuperEvent.find({})
+      .sort({ startDate: -1 })
+      .populate("organizingClub")
+      .populate("collaboratingClubs");
     return NextResponse.json(allSuperEvents, { status: 200 });
   }
 
@@ -20,6 +23,7 @@ export async function GET(req: Request) {
     { name: 1 },
   )
     .sort({ startDate: -1 })
+    .populate("collaboratingClubs")
     .lean();
 
   return NextResponse.json(superEvents);

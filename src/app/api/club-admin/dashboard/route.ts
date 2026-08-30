@@ -34,8 +34,10 @@ export async function GET(req: Request) {
     const club = await Club.findById(clubObjectId).select("followers name").lean();
     const totalFollowers = club?.followers?.length || 0;
 
-    // Fetch all events first to compute available academic years dynamically
-    const allClubEvents = await Event.find({ organizingClub: clubObjectId }).select("date").lean();
+    // Fetch all events (organized or collaborated) first to compute available academic years dynamically
+    const allClubEvents = await Event.find({
+      $or: [{ organizingClub: clubObjectId }, { collaboratingClubs: clubObjectId }],
+    }).select("date").lean();
     
     // Determine available academic years
     const today = new Date();
@@ -59,20 +61,22 @@ export async function GET(req: Request) {
     });
     const availableAcademicYears = Array.from(availableYearsSet).sort().reverse();
 
-    // Construct query with academic cycle bounds if specified
-    const query: any = { organizingClub: clubObjectId };
+    // 2. Query Events
+    const eventsQuery: any = {
+      $or: [{ organizingClub: clubObjectId }, { collaboratingClubs: clubObjectId }],
+    };
     if (selectedAcademicYear && selectedAcademicYear.includes("-")) {
       const [startYearStr] = selectedAcademicYear.split("-");
       const startYear = Number(startYearStr);
       if (!isNaN(startYear)) {
         const cycleStart = new Date(startYear, 6, 1, 0, 0, 0, 0);
         const cycleEnd = new Date(startYear + 1, 5, 30, 23, 59, 59, 999);
-        query.date = { $gte: cycleStart, $lte: cycleEnd };
+        eventsQuery.date = { $gte: cycleStart, $lte: cycleEnd };
       }
     }
 
     // 2. Fetch events organized by this club filtered by cycle
-    const clubEvents = await Event.find(query).sort({ date: -1 }).lean();
+    const clubEvents = await Event.find(eventsQuery).sort({ date: -1 }).lean();
     const eventIds = clubEvents.map((e: any) => e._id);
 
     // 3. Count status breakdown for events

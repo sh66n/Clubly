@@ -20,17 +20,31 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const existingTeam = await HackathonTeam.findOne({ hackathon: id, members: userId });
     if (existingTeam) return NextResponse.json({ error: 'Already in a team for this hackathon' }, { status: 400 });
     
-    const team = await HackathonTeam.findById(teamId);
+    let team = null;
+    if (teamId !== "by-code") {
+      team = await HackathonTeam.findById(teamId);
+    }
+    if (!team && joinCode) {
+      team = await HackathonTeam.findOne({ hackathon: id, joinCode: joinCode.trim().toUpperCase() });
+    }
+
     if (!team) return NextResponse.json({ error: 'Team not found' }, { status: 404 });
     
-    if (team.members.length >= team.maxSize) return NextResponse.json({ error: 'Team is full' }, { status: 400 });
-    if (!team.isPublic && team.joinCode !== joinCode) return NextResponse.json({ error: 'Invalid join code' }, { status: 400 });
+    const teamLimit = team.maxSize || 5;
+    if (team.members.length >= teamLimit) {
+      return NextResponse.json({ error: 'Team is full' }, { status: 400 });
+    }
+    if (!team.isPublic && team.joinCode && team.joinCode.toUpperCase() !== (joinCode || "").toUpperCase()) {
+      return NextResponse.json({ error: 'Invalid join code' }, { status: 400 });
+    }
     
-    const registration = await HackathonRegistration.findOne({ team: teamId });
-    if (registration) return NextResponse.json({ error: 'Team already registered for the hackathon' }, { status: 400 });
+    const registration = await HackathonRegistration.findOne({ team: team._id });
+    if (registration) return NextResponse.json({ error: 'Team is already registered for the hackathon' }, { status: 400 });
     
     team.members.push(userId);
     await team.save();
+
+    await team.populate('members leader', 'name email image department year');
     
     return NextResponse.json(team, { status: 200 });
   } catch (error) {

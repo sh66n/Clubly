@@ -8,6 +8,12 @@ const eventSchema = new Schema<IEvent>(
       ref: "Club",
       required: true,
     },
+    collaboratingClubs: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Club",
+      },
+    ],
     name: {
       type: String,
       required: true,

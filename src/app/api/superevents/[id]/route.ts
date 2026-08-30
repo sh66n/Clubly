@@ -11,7 +11,9 @@ export async function GET(
 
   const { id } = await params;
 
-  const superEvent = await SuperEvent.findById(id).populate("organizingClub");
+  const superEvent = await SuperEvent.findById(id)
+    .populate("organizingClub")
+    .populate("collaboratingClubs");
 
   if (!superEvent) {
     return NextResponse.json(

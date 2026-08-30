@@ -25,7 +25,12 @@ export const PATCH = async (
 
     const hackathon = round.hackathon as any;
     const organizingClubId = (hackathon.organizingClub?._id || hackathon.organizingClub)?.toString();
-    if (session.user.role !== "admin" && organizingClubId !== session?.user?.adminClub?.toString()) {
+    const adminClubId = session?.user?.adminClub?.toString();
+    const isCollab = hackathon.collaboratingClubs?.some(
+      (c: any) => (c._id || c)?.toString() === adminClubId
+    );
+
+    if (session.user.role !== "admin" && organizingClubId !== adminClubId && !isCollab) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

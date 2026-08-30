@@ -31,14 +31,27 @@ export default function RoundManager({ hackathonId, rounds, fetchDetails }: { ha
     setEditingId(null);
   };
 
+  const formatForInput = (dateStr?: string | Date) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "";
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    const year = d.getFullYear();
+    const month = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    const hours = pad(d.getHours());
+    const minutes = pad(d.getMinutes());
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   const handleEdit = (round: any) => {
     setEditingId(round._id);
     setName(round.name);
     setDescription(round.description || "");
     setStatus(round.status);
     setRegistrationFee(round.registrationFee || 0);
-    setSubmissionDeadline(round.submissionDeadline ? new Date(round.submissionDeadline).toISOString().slice(0, 16) : "");
-    setResultDate(round.resultDate ? new Date(round.resultDate).toISOString().slice(0, 16) : "");
+    setSubmissionDeadline(formatForInput(round.submissionDeadline));
+    setResultDate(formatForInput(round.resultDate));
     setRequiresSubmission(round.requiresSubmission);
     setSubmissionInstructions(round.submissionInstructions || "");
   };
@@ -57,8 +70,8 @@ export default function RoundManager({ hackathonId, rounds, fetchDetails }: { ha
       };
 
       const url = editingId 
-        ? `/api/club-admin/hackathons/${hackathonId}/rounds/${editingId}`
-        : `/api/club-admin/hackathons/${hackathonId}/rounds`;
+        ? `/api/hackathons/${hackathonId}/rounds/${editingId}`
+        : `/api/hackathons/${hackathonId}/rounds`;
       
       const method = editingId ? "PATCH" : "POST";
 
@@ -68,7 +81,10 @@ export default function RoundManager({ hackathonId, rounds, fetchDetails }: { ha
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Failed to save round");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to save round");
+      }
 
       toast.success(editingId ? "Round updated" : "Round created");
       resetForm();
@@ -156,11 +172,11 @@ export default function RoundManager({ hackathonId, rounds, fetchDetails }: { ha
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Round Name</label>
-                  <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-[#7CB342]" />
+                  <input type="text" value={name} onChange={e => setName(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-[#7CB342] text-slate-900 bg-white" />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Status</label>
-                  <select value={status} onChange={e => setStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-[#7CB342]">
+                  <select value={status} onChange={e => setStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-[#7CB342] text-slate-900 bg-white">
                     <option value="upcoming">Upcoming</option>
                     <option value="active">Active</option>
                     <option value="evaluating">Evaluating</option>
@@ -171,17 +187,17 @@ export default function RoundManager({ hackathonId, rounds, fetchDetails }: { ha
 
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Description</label>
-                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-[#7CB342]" />
+                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-[#7CB342] text-slate-900 bg-white" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Submission Deadline</label>
-                  <input type="datetime-local" value={submissionDeadline} onChange={e => setSubmissionDeadline(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-[#7CB342]" />
+                  <input type="datetime-local" value={submissionDeadline} onChange={e => setSubmissionDeadline(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-[#7CB342] text-slate-900 bg-white" />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Result Date</label>
-                  <input type="datetime-local" value={resultDate} onChange={e => setResultDate(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-[#7CB342]" />
+                  <input type="datetime-local" value={resultDate} onChange={e => setResultDate(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-[#7CB342] text-slate-900 bg-white" />
                 </div>
               </div>
 
@@ -193,7 +209,7 @@ export default function RoundManager({ hackathonId, rounds, fetchDetails }: { ha
               {requiresSubmission && (
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Submission Instructions</label>
-                  <textarea value={submissionInstructions} onChange={e => setSubmissionInstructions(e.target.value)} rows={3} placeholder="Format guidelines, presentation limits..." className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-[#7CB342]" />
+                  <textarea value={submissionInstructions} onChange={e => setSubmissionInstructions(e.target.value)} rows={3} placeholder="Format guidelines, presentation limits..." className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-[#7CB342] text-slate-900 bg-white" />
                 </div>
               )}
 

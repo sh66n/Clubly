@@ -4,6 +4,7 @@ import { IHackathon } from "./hackathon.schema";
 const hackathonSchema = new Schema<IHackathon>(
   {
     organizingClub: { type: Schema.Types.ObjectId, ref: "Club", required: true },
+    collaboratingClubs: [{ type: Schema.Types.ObjectId, ref: "Club" }],
     name: { type: String, required: true },
     description: { type: String },
     image: { type: String },

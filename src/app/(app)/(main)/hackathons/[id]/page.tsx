@@ -1,5 +1,11 @@
 import { connectToDb } from "@/lib/connectToDb";
-import { Hackathon, HackathonTeam, HackathonRound, HackathonRegistration } from "@/models";
+import {
+  Hackathon,
+  HackathonTeam,
+  HackathonRound,
+  HackathonRegistration,
+  Submission,
+} from "@/models";
 import { auth } from "@/auth";
 import HackathonDetails from "@/components/Hackathons/HackathonDetails";
 import BackButton from "@/components/BackButton";
@@ -16,6 +22,7 @@ export default async function HackathonPage({
 
   const hackathon = await Hackathon.findById(id)
     .populate("organizingClub")
+    .populate("collaboratingClubs")
     .populate("contact", "name email image department year phoneNumber")
     .lean();
 
@@ -29,6 +36,7 @@ export default async function HackathonPage({
 
   let userTeam = null;
   let userRegistration = null;
+  let userSubmissions: any[] = [];
 
   if (session?.user?.id) {
     userTeam = await HackathonTeam.findOne({
@@ -44,6 +52,11 @@ export default async function HackathonPage({
         hackathon: id,
         team: userTeam._id,
       }).lean();
+
+      userSubmissions = await Submission.find({
+        hackathon: id,
+        team: userTeam._id,
+      }).lean();
     }
   }
 
@@ -55,6 +68,7 @@ export default async function HackathonPage({
         rounds={JSON.parse(JSON.stringify(rounds))}
         userTeam={userTeam ? JSON.parse(JSON.stringify(userTeam)) : null}
         userRegistration={userRegistration ? JSON.parse(JSON.stringify(userRegistration)) : null}
+        userSubmissions={JSON.parse(JSON.stringify(userSubmissions))}
         userId={session?.user?.id}
       />
     </div>

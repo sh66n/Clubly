@@ -40,6 +40,7 @@ export const zHackathon = z.object({
 export interface IHackathon {
   _id: Types.ObjectId;
   organizingClub: Types.ObjectId;
+  collaboratingClubs?: Types.ObjectId[];
   name: string;
   description?: string;
   image?: string;

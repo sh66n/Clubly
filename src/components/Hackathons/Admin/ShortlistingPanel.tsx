@@ -71,11 +71,11 @@ export default function ShortlistingPanel({ hackathonId, rounds, fetchDetails }:
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-2">
-          <label className="text-sm font-semibold text-slate-600">Evaluating Round:</label>
+          <label className="text-sm font-semibold text-slate-700">Evaluating Round:</label>
           <select 
             value={selectedRound} 
             onChange={e => setSelectedRound(e.target.value)}
-            className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-[#7CB342] font-medium"
+            className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-[#7CB342] font-medium text-slate-900 bg-white"
           >
             {rounds.map(r => (
               <option key={r._id} value={r._id}>{r.name} (Round {r.roundNumber})</option>

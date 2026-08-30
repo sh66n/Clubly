@@ -282,16 +282,34 @@ export default function EventDetails({
                 {event.name}
               </h1>
 
-              {/* Club row */}
-              <div className="flex items-center gap-3">
-                <img
-                  src={event.organizingClub.logo}
-                  className="w-7 h-7 rounded object-cover border border-white/10 grayscale-[0.3] hover:grayscale-0 transition-all"
-                  alt={event.organizingClub.name}
-                />
-                <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/40">
-                  {event.organizingClub.name}
-                </span>
+              {/* Club row (Organizing + Collaborating Co-Hosts) */}
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <img
+                    src={event.organizingClub.logo}
+                    className="w-7 h-7 rounded object-cover border border-white/10 grayscale-[0.3] hover:grayscale-0 transition-all"
+                    alt={event.organizingClub.name}
+                  />
+                  <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/70">
+                    {event.organizingClub.name}
+                  </span>
+                </div>
+
+                {event.collaboratingClubs?.map((collabClub: any) => (
+                  <div key={collabClub._id || collabClub} className="flex items-center gap-2">
+                    <span className="text-white/30 text-xs">×</span>
+                    {collabClub.logo && (
+                      <img
+                        src={collabClub.logo}
+                        className="w-7 h-7 rounded object-cover border border-white/10 grayscale-[0.3] hover:grayscale-0 transition-all"
+                        alt={collabClub.name}
+                      />
+                    )}
+                    <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-white/70">
+                      {collabClub.name}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

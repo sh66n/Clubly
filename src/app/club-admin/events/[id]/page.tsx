@@ -69,7 +69,9 @@ import {
   Lock,
   ExternalLink,
   Trash2,
+  Handshake,
 } from "lucide-react";
+import CollabSection from "@/components/ClubAdmin/CollabSection";
 import { toast } from "sonner";
 import ClublyLoader from "@/components/ClubAdmin/ClublyLoader";
 import jsPDF from "jspdf";
@@ -1461,6 +1463,17 @@ export default function EventDetailsPage() {
               }`}
             >
               Certificates ({1 + (event?.numberOfWinners || 1)})
+            </button>
+            <button
+              onClick={() => setActiveTab("collab")}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all outline-none shrink-0 flex items-center gap-2 cursor-pointer ${
+                activeTab === "collab"
+                  ? "text-[#689F38] bg-white shadow-sm border border-[#c5d6a8]"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-white/50 border border-transparent"
+              }`}
+            >
+              <Handshake size={14} />
+              Collab ({event?.collaboratingClubs?.length || 0})
             </button>
           </div>
 
@@ -3214,6 +3227,18 @@ export default function EventDetailsPage() {
               </div>
             );
           })()}
+
+          {activeTab === "collab" && (
+            <div className="p-6">
+              <CollabSection
+                entityType="event"
+                entityId={event._id}
+                organizingClubId={typeof event.organizingClub === "object" ? event.organizingClub?._id : event.organizingClub}
+                collaboratingClubs={event.collaboratingClubs}
+                onUpdate={fetchData}
+              />
+            </div>
+          )}
         </div>
       </div>
 

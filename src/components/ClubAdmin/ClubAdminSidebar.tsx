@@ -13,6 +13,7 @@ import {
   ChevronRight,
   X,
   MessageSquare,
+  Handshake,
 } from "lucide-react";
 
 interface ClubAdminSidebarProps {
@@ -41,7 +42,7 @@ export default function ClubAdminSidebar({
     );
   }, [isCollapsed]);
 
-  const navItems = [
+  const primaryNavItems = [
     {
       name: "Dashboard",
       icon: <LayoutGrid size={20} />,
@@ -71,6 +72,14 @@ export default function ClubAdminSidebar({
       name: "Feedback Forms",
       icon: <MessageSquare size={20} />,
       href: "/club-admin/feedback-forms",
+    },
+  ];
+
+  const generalNavItems = [
+    {
+      name: "Collab Requests",
+      icon: <Handshake size={20} />,
+      href: "/club-admin/collaborations",
     },
   ];
 
@@ -192,7 +201,7 @@ export default function ClubAdminSidebar({
           </div>
 
           <ul className="space-y-1.5">
-            {navItems.map((item) => {
+            {primaryNavItems.map((item) => {
               const active = isItemActive(item.href);
               return (
                 <li key={item.name}>
@@ -231,15 +240,54 @@ export default function ClubAdminSidebar({
           </ul>
 
           {/* ── GENERAL section ── */}
-          <div className="mt-10">
+          <div className="mt-8">
             <div
-              className={`text-[#8a9a6c] text-[11px] font-bold tracking-[0.15em] uppercase ${
+              className={`text-[#8a9a6c] text-[11px] font-bold tracking-[0.15em] uppercase mb-3 ${
                 isCollapsed ? "hidden md:hidden" : "block"
               }`}
             >
               General
             </div>
-            {isCollapsed && <div className="hidden md:block border-t border-[#2a3a10]" />}
+            {isCollapsed && <div className="hidden md:block border-t border-[#2a3a10] mb-3" />}
+
+            <ul className="space-y-1.5">
+              {generalNavItems.map((item) => {
+                const active = isItemActive(item.href);
+                return (
+                  <li key={item.name}>
+                    <Link
+                      href={item.href}
+                      onClick={() => onMobileClose && onMobileClose()}
+                    >
+                      <div
+                        className={`flex items-center gap-3 rounded-xl transition-all duration-200 ${
+                          isCollapsed
+                            ? "md:justify-center md:py-3 md:px-2 py-3 px-4"
+                            : "py-3 px-4"
+                        } ${
+                          active
+                            ? "text-[#1a2e00] font-semibold"
+                            : "text-[#c5d6a8] hover:text-white hover:bg-white/5"
+                        }`}
+                        style={
+                          active
+                            ? {
+                                background:
+                                  "linear-gradient(90deg, #7CB342 0%, #9CCC65 100%)",
+                              }
+                            : undefined
+                        }
+                      >
+                        {item.icon}
+                        <span className={isCollapsed ? "md:hidden text-sm" : "text-sm"}>
+                          {item.name}
+                        </span>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         </div>
       </aside>

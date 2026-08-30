@@ -24,6 +24,7 @@ export const GET = async (
 
     const hackathon = await Hackathon.findById(id)
       .populate("organizingClub")
+      .populate("collaboratingClubs")
       .populate("contact", "name email image");
 
     if (!hackathon) {

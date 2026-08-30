@@ -39,14 +39,27 @@ export default function HackathonCard({ hackathon }: HackathonCardProps) {
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
 
-        {/* Club Tag */}
-        {hackathon.organizingClub?.name && (
-          <div className="absolute top-2 left-2">
-            <span className="px-2 py-1 bg-black text-white text-[10px] font-bold uppercase tracking-widest border border-[#2A2A2A]">
+        {/* Floating Club Pills (Organizing + Collaborating) */}
+        <div className="absolute top-2 left-2 flex flex-wrap gap-1.5 z-10 max-w-[85%]">
+          {hackathon.organizingClub?.name && (
+            <span className="px-2 py-1 bg-black text-white text-[10px] font-bold uppercase tracking-widest border border-[#2A2A2A] rounded">
               {hackathon.organizingClub.name}
             </span>
-          </div>
-        )}
+          )}
+
+          {hackathon.collaboratingClubs?.map((collabClub: any) => {
+            const clubName = typeof collabClub === "object" ? collabClub?.name : null;
+            if (!clubName) return null;
+            return (
+              <span
+                key={collabClub._id || clubName}
+                className="px-2 py-1 bg-black text-white text-[10px] font-bold uppercase tracking-widest border border-[#2A2A2A] rounded"
+              >
+                {clubName}
+              </span>
+            );
+          })}
+        </div>
 
         {/* Hover Arrow Indicator */}
         <div className="absolute top-3 right-3 p-2 rounded-full bg-white text-black opacity-0 -translate-y-2 translate-x-2 group-hover:opacity-100 group-hover:translate-y-0 group-hover:translate-x-0 transition-all duration-300">

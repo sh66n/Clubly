@@ -39,17 +39,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const hackathon = await Hackathon.findById(id);
     if (!hackathon) return NextResponse.json({ error: 'Hackathon not found' }, { status: 404 });
     
-    const maxSize = hackathon.teamSize || hackathon.teamSizeRange?.max || 4;
-    const joinCode = !isPublic ? crypto.randomBytes(3).toString('hex').toUpperCase() : undefined;
+    const maxSize = hackathon.teamSizeRange?.max || hackathon.teamSize || 5;
+    const joinCode = crypto.randomBytes(3).toString('hex').toUpperCase();
     
     const team = await HackathonTeam.create({
-      name,
       hackathon: id,
+      name,
       leader: userId,
       members: [userId],
       isPublic,
-      joinCode,
       maxSize,
+      joinCode,
     });
     
     return NextResponse.json(team, { status: 201 });
