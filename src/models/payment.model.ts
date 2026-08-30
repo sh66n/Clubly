@@ -4,8 +4,10 @@ export interface IPayment {
   razorpayOrderId: string;
   razorpayPaymentId?: string;
   userId: mongoose.Types.ObjectId;
-  eventId: mongoose.Types.ObjectId;
+  eventId?: mongoose.Types.ObjectId;
   groupId?: mongoose.Types.ObjectId;
+  hackathonId?: mongoose.Types.ObjectId;
+  roundId?: mongoose.Types.ObjectId;
   amount: number; // in paise
   currency: string;
   status: "created" | "paid" | "failed";
@@ -35,11 +37,18 @@ const paymentSchema = new Schema<IPayment>(
     eventId: {
       type: Schema.Types.ObjectId,
       ref: "Event",
-      required: true,
     },
     groupId: {
       type: Schema.Types.ObjectId,
       ref: "Group",
+    },
+    hackathonId: {
+      type: Schema.Types.ObjectId,
+      ref: "Hackathon",
+    },
+    roundId: {
+      type: Schema.Types.ObjectId,
+      ref: "HackathonRound",
     },
     amount: {
       type: Number,

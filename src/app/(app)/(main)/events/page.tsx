@@ -37,6 +37,20 @@ const getAllSuperEvents = async () => {
   return data;
 };
 
+const getAllHackathons = async (query: string | string[], club: string | string[]) => {
+  const queryString = new URLSearchParams({
+    q: String(query ?? ""),
+    club: String(club ?? ""),
+  });
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/hackathons?${queryString.toString()}`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data;
+};
+
 const getAllClubs = async () => {
   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/clubs`);
   if (!res.ok) return null;
@@ -52,10 +66,11 @@ export default async function Events({
   const params = await searchParams;
   const query = params.q || "";
   const club = params.club || "";
-  const [allEvents, allClubs, allSuperEvents] = await Promise.all([
+  const [allEvents, allClubs, allSuperEvents, allHackathons] = await Promise.all([
     getAllEvents(query, club),
     getAllClubs(),
     getAllSuperEvents(),
+    getAllHackathons(query, club),
   ]);
   const dbUser = session?.user?.id ? await getUser(session.user.id) : null;
 
@@ -90,7 +105,12 @@ export default async function Events({
             <ScheduleDropdown />
           </div>
         )}
-        <EventGrid events={allEvents} superEvents={allSuperEvents} userId={session?.user?.id} />
+        <EventGrid
+          events={allEvents}
+          superEvents={allSuperEvents}
+          hackathons={allHackathons}
+          userId={session?.user?.id}
+        />
       </div>
     </div>
   );

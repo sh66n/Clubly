@@ -1,10 +1,8 @@
-// app/api/razorpay/verify-payment/route.ts
-
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import { auth } from "@/auth";
-import { Event, Payment, Registration } from "@/models";
+import { Event, Payment, Registration, RoundQualification } from "@/models";
 import { connectToDb } from "@/lib/connectToDb";
 
 const razorpay = new Razorpay({
@@ -34,7 +32,6 @@ export async function POST(request: Request) {
 
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
 
-    // Verify Razorpay signature
     const generated_signature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
@@ -47,10 +44,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Signature valid — process the payment
     await connectToDb();
 
-    // Find the payment record created during order creation
     const payment = await Payment.findOne({
       razorpayOrderId: razorpay_order_id,
     });
@@ -62,7 +57,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Idempotency: if already paid, return success without re-processing
     if (payment.status === "paid") {
       return NextResponse.json({
         success: true,
@@ -72,16 +66,13 @@ export async function POST(request: Request) {
       });
     }
 
-    // Fetch payment details from Razorpay (for phone number)
     const paymentDetails = await razorpay.payments.fetch(razorpay_payment_id);
     const phoneNumber = paymentDetails.contact;
 
-    // Update the Payment record to "paid"
     payment.razorpayPaymentId = razorpay_payment_id;
     payment.status = "paid";
     await payment.save();
 
-    // Update user's phone number if available
     if (phoneNumber) {
       const { User } = await import("@/models");
       await User.findByIdAndUpdate(session.user.id, {
@@ -89,34 +80,40 @@ export async function POST(request: Request) {
       });
     }
 
-    // Auto-register the user for the event
-    const event = await Event.findById(payment.eventId);
-    if (event) {
-      if (event.eventType === "individual") {
-        await Registration.updateOne(
-          { eventId: payment.eventId, userId: payment.userId },
-          {
-            $setOnInsert: {
-              status: "registered",
-              registeredAt: new Date(),
-              customQuestionAnswers: payment.customQuestionAnswers ?? [],
+    if (payment.eventId) {
+      const event = await Event.findById(payment.eventId);
+      if (event) {
+        if (event.eventType === "individual") {
+          await Registration.updateOne(
+            { eventId: payment.eventId, userId: payment.userId },
+            {
+              $setOnInsert: {
+                status: "registered",
+                registeredAt: new Date(),
+                customQuestionAnswers: payment.customQuestionAnswers ?? [],
+              },
             },
-          },
-          { upsert: true },
-        );
-      } else if (event.eventType === "team" && payment.groupId) {
-        await Registration.updateOne(
-          { eventId: payment.eventId, groupId: payment.groupId },
-          {
-            $setOnInsert: {
-              status: "registered",
-              registeredAt: new Date(),
-              customQuestionAnswers: payment.customQuestionAnswers ?? [],
+            { upsert: true },
+          );
+        } else if (event.eventType === "team" && payment.groupId) {
+          await Registration.updateOne(
+            { eventId: payment.eventId, groupId: payment.groupId },
+            {
+              $setOnInsert: {
+                status: "registered",
+                registeredAt: new Date(),
+                customQuestionAnswers: payment.customQuestionAnswers ?? [],
+              },
             },
-          },
-          { upsert: true },
-        );
+            { upsert: true },
+          );
+        }
       }
+    } else if (payment.hackathonId && payment.roundId && payment.teamId) {
+      await RoundQualification.updateOne(
+        { round: payment.roundId, team: payment.teamId },
+        { $set: { paymentStatus: "paid" } }
+      );
     }
 
     return NextResponse.json({

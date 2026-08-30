@@ -47,7 +47,7 @@ const generateQuestionId = () => {
 };
 
 export default function CustomQuestionsEditor({
-  value,
+  value = [],
   onChange,
   className,
 }: CustomQuestionsEditorProps) {

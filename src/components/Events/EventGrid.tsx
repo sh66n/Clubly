@@ -3,10 +3,12 @@ import React from "react";
 import EventCard from "./EventCard";
 import { ISuperEvent, SuperEvent } from "@/models/superevent.model";
 import SuperEventCard from "../SuperEvents/SuperEventCard";
+import HackathonCard from "../Hackathons/HackathonCard";
 
 interface EventGridProps {
   events: IEvent[];
   superEvents?: ISuperEvent[];
+  hackathons?: any[];
   detailed?: boolean;
   userId?: string;
 }
@@ -14,6 +16,7 @@ interface EventGridProps {
 export default function EventGrid({
   events,
   superEvents,
+  hackathons,
   detailed = true,
   userId,
 }: EventGridProps) {
@@ -50,6 +53,20 @@ export default function EventGrid({
           <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
             {superEvents.map((superEvent) => (
               <SuperEventCard key={superEvent._id} superEvent={superEvent} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Hackathons */}
+      {hackathons && hackathons.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mt-4 mb-8">
+            <h2 className="text-2xl font-semibold">Hackathons</h2>
+          </div>
+          <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+            {hackathons.map((hackathon) => (
+              <HackathonCard key={hackathon._id} hackathon={hackathon} />
             ))}
           </div>
         </section>

@@ -17,6 +17,12 @@ import { ClubFeature } from "./clubfeature.model";
 import { FeedbackForm } from "./feedbackform.model";
 import { Certificate } from "./certificate.model";
 import { CertificateFolder } from "./certificateFolder.model";
+import { Hackathon } from "./hackathon.model";
+import { HackathonTeam } from "./hackathonTeam.model";
+import { HackathonRound } from "./hackathonRound.model";
+import { HackathonRegistration } from "./hackathonRegistration.model";
+import { Submission } from "./submission.model";
+import { RoundQualification } from "./roundQualification.model";
 
 // 2. Export them as a single block.
 // When you import { Event } from "@/models" in your API,
@@ -37,5 +43,11 @@ export {
   ClubFeature,
   FeedbackForm,
   Certificate,
-  CertificateFolder
+  CertificateFolder,
+  Hackathon,
+  HackathonTeam,
+  HackathonRound,
+  HackathonRegistration,
+  Submission,
+  RoundQualification,
 };

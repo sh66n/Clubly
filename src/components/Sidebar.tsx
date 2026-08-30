@@ -14,6 +14,7 @@ import {
   LogIn,
   Power,
   Users,
+  Trophy,
   X,
   Menu,
   PanelLeft,
