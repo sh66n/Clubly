@@ -48,7 +48,7 @@ export default async function HackathonPage({
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6">
+    <div className="max-w-6xl mx-auto px-1 sm:px-6">
       <BackButton link={"/events"} />
       <HackathonDetails
         hackathon={JSON.parse(JSON.stringify(hackathon))}

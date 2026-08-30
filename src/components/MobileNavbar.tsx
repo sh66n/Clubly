@@ -31,11 +31,11 @@ export default function MobileNavbar({ user }: MobileNavbarProps) {
   ];
 
   return (
-    <nav className="bg-black border-t border-[#515151] rounded-t-2xl fixed bottom-0 h-20 w-full md:hidden flex justify-evenly items-center z-50">
+    <nav className="bg-black/95 backdrop-blur-md border-t border-x border-[#333] rounded-t-3xl shadow-2xl fixed bottom-0 h-16 w-full md:hidden flex justify-around items-center z-50 px-3">
       {navItems.map((item) => {
         const isActive =
           pathname === item.href.split("/")[1] ||
-          (item.name === "Events" && pathname === "superevents");
+          (item.name === "Events" && (pathname === "superevents" || pathname === "hackathons"));
 
         const Icon = item.icon;
 
@@ -43,26 +43,34 @@ export default function MobileNavbar({ user }: MobileNavbarProps) {
           <Link
             key={item.name}
             href={item.href}
-            className="p-3 flex items-center justify-center"
+            className={`flex flex-col items-center justify-center gap-1 flex-1 py-1 transition-all duration-200 ${
+              isActive ? "text-white" : "text-[#777] hover:text-[#aaa]"
+            }`}
             aria-current={isActive ? "page" : undefined}
           >
             {item.name === "Profile" && user?.image ? (
-              // for user image
               <img
                 src={user.image}
-                alt={user.name}
-                className={`h-8 w-8 rounded-full transition-transform duration-200 border-2 ${
-                  isActive ? "scale-125" : "scale-100 opacity-60"
+                alt={user.name || "Profile"}
+                className={`h-6 w-6 rounded-full transition-transform duration-200 border ${
+                  isActive ? "border-white scale-110" : "border-transparent opacity-70"
                 }`}
               />
             ) : (
               <Icon
-                size={28}
+                size={20}
                 className={`transition-transform duration-200 ${
-                  isActive ? "text-white scale-125" : "text-[#515151] scale-100"
+                  isActive ? "text-white scale-110" : "text-[#777]"
                 }`}
               />
             )}
+            <span
+              className={`text-[10px] tracking-tight leading-none ${
+                isActive ? "font-bold text-white" : "font-medium text-[#777]"
+              }`}
+            >
+              {item.name}
+            </span>
           </Link>
         );
       })}

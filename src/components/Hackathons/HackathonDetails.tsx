@@ -89,7 +89,7 @@ export default function HackathonDetails({
   };
 
   return (
-    <div className="min-h-screen text-slate-100 py-6 max-w-6xl mx-auto px-4 sm:px-6">
+    <div className="min-h-screen text-slate-100 py-4 sm:py-6 max-w-6xl mx-auto px-1 sm:px-6">
       {/* Top Breadcrumb / Category Tag */}
       <div className="flex items-center justify-between mb-8">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white text-xs font-medium backdrop-blur-md border border-white/10">
