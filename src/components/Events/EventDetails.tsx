@@ -155,6 +155,13 @@ export default function EventDetails({
   const registrationsFull =
     Number((event as any).registrationCount ?? 0) >= event.maxRegistrations;
 
+  const userIdStr = String(user?._id || user?.id || "");
+  const groupLeaderIdStr = String(
+    group?.leader?._id || group?.leader?.id || group?.leader || "",
+  );
+  const isTeamLeader =
+    event.eventType !== "team" || (group && userIdStr === groupLeaderIdStr);
+
   //  Disable register logic
   const isRegisterDisabled =
     registrationStatus !== "idle" ||
@@ -165,7 +172,7 @@ export default function EventDetails({
     event.isRegistrationOpen === false ||
     (event.eventType === "team" &&
       (!group || // No group
-        user.id !== group.leader._id || // Not leader
+        !isTeamLeader || // Not leader
         group.members.length <
           (event.teamSize ? event.teamSize : (event.teamSizeRange?.min ?? 1)))); // Team too small
 
@@ -197,6 +204,11 @@ export default function EventDetails({
     if (event.eventType !== "team") {
       if (registrationStatus === "registered") return "Registered";
 
+      //handle incomplete profile
+      if (!isProfileComplete) {
+        return "Complete profile to register";
+      }
+
       if (event.registrationFee) return "Pay now";
       else return "Register";
     }
@@ -215,8 +227,17 @@ export default function EventDetails({
       return "Complete group to proceeed";
     }
 
-    if (user.id !== group.leader._id) {
+    if (!isTeamLeader) {
       return "Only group leader can register";
+    }
+
+    //handle incomplete profile
+    if (!isProfileComplete) {
+      const isUserIncomplete = !getProfileStatus(user).isComplete;
+      if (isUserIncomplete) {
+        return "Complete profile to register";
+      }
+      return "Complete team profiles";
     }
 
     //finally if everything is good let the user register
@@ -229,6 +250,10 @@ export default function EventDetails({
   const hasRewards = (event.prize && event.prize > 0) || event.providesCertificate;
   const hasCustomQuestions = Boolean(event.customQuestions?.length);
   const openRegistrationFlow = () => {
+    if (!isProfileComplete) {
+      setIsIncompleteModalOpen(true);
+      return;
+    }
     if (hasCustomQuestions) {
       setIsQuestionsModalOpen(true);
       return;
@@ -432,6 +457,40 @@ export default function EventDetails({
                           ? "Registering..."
                           : "Register"}
                   </button>
+                ) : !isProfileComplete ? (
+                  <button
+                    onClick={() => setIsIncompleteModalOpen(true)}
+                    disabled={
+                      isAlreadyRegistered ||
+                      hasEventPassed ||
+                      registrationsFull ||
+                      event.isRegistrationOpen === false ||
+                      (event.eventType === "team" &&
+                        (!group ||
+                          !isTeamLeader ||
+                          group.members.length <
+                            (event.teamSize
+                              ? event.teamSize
+                              : (event.teamSizeRange?.min ?? 1))))
+                    }
+                    className={`w-full py-2 rounded-lg font-semibold mb-2 ${
+                      isAlreadyRegistered ||
+                      hasEventPassed ||
+                      registrationsFull ||
+                      event.isRegistrationOpen === false ||
+                      (event.eventType === "team" &&
+                        (!group ||
+                          !isTeamLeader ||
+                          group.members.length <
+                            (event.teamSize
+                              ? event.teamSize
+                              : (event.teamSizeRange?.min ?? 1))))
+                        ? "bg-[#000F57] opacity-50 cursor-not-allowed"
+                        : "bg-[#000F57] text-white"
+                    }`}
+                  >
+                    {ctaText}
+                  </button>
                 ) : hasCustomQuestions && !hasSubmittedQuestions ? (
                   <button
                     onClick={() => {
@@ -611,7 +670,12 @@ export default function EventDetails({
                   )}
                 </>
               )}
-              {user?.role === "club-admin" && (
+              {(user?.role === "admin" ||
+                (user?.role === "club-admin" &&
+                  String(user?.adminClub) ===
+                    String(
+                      event.organizingClub?._id || event.organizingClub,
+                    ))) && (
                 <Link href={`${event._id}/edit`} className="group block">
                   <div className="flex items-center gap-3 p-4 rounded-lg border border-dashed border-gray-500  transition-all duration-300">
                     <Pencil
@@ -680,8 +744,8 @@ export default function EventDetails({
               <h3 className="text-xl font-bold mb-2">Incomplete Profiles</h3>
               <p className="text-sm text-gray-400 mb-6">
                 {event.eventType === "team" 
-                  ? "All group members must have a 100% complete profile to view the QR ticket." 
-                  : "You must have a 100% complete profile to view the QR ticket."}
+                  ? "All group members must have a 100% complete profile to register for events and view tickets." 
+                  : "You must have a 100% complete profile to register for events and view tickets."}
               </p>
               
               <div className="w-full flex flex-col gap-3 text-left bg-white/5 rounded-xl p-4 mb-6 max-h-48 overflow-y-auto">
@@ -699,14 +763,14 @@ export default function EventDetails({
                     )}
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-gray-200">
-                        {m.name} {((m._id === user.id) || (m.id === user.id)) ? <span className="text-gray-500 text-xs ml-1">(You)</span> : ""}
+                        {m.name} {String(m._id || m.id) === userIdStr ? <span className="text-gray-500 text-xs ml-1">(You)</span> : ""}
                       </span>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {incompleteMembers.some(m => m._id === user.id || m.id === user.id) ? (
+              {incompleteMembers.some(m => String(m._id || m.id) === userIdStr) ? (
                 <Link
                   href="/me/edit"
                   className="w-full bg-[#5E77F5] hover:bg-[#4A61E3] text-white py-2.5 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"

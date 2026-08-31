@@ -78,6 +78,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             token.role = dbUser.role;
             token.adminClub = dbUser.adminClub?.toString();
             token.image = dbUser.image;
+            token.phoneNumber = dbUser.phoneNumber;
+            token.department = dbUser.department;
+            token.year = dbUser.year;
 
             // Fetch total points from UserPoints collection
             const userPoints = await UserPoints.find({ userId: dbUser._id });
@@ -100,9 +103,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.role = token.role as string;
         session.user.points = token.points as number;
         session.user.image = token.image as string;
+        session.user.phoneNumber = token.phoneNumber as string;
+        session.user.department = token.department as string;
+        session.user.year = token.year as any;
 
         // Expose adminClub in session
-
         if (token.adminClub) {
           session.user.adminClub = token.adminClub as string;
         }

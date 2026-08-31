@@ -4,17 +4,42 @@ import { getParticipants } from "@/services/getParticipants";
 import { getEvent } from "@/services/getEvent";
 import React from "react";
 import BackButton from "@/components/BackButton";
+import { auth } from "@/auth";
+import { notFound, redirect } from "next/navigation";
 
 export default async function AssignWinner({
   params,
 }: {
   params: Promise<{ eventId: string }>;
 }) {
+  const session = await auth();
   const { eventId } = await params;
+
+  if (!session?.user) {
+    redirect(`/login?callbackUrl=/events/${eventId}/assign-winner`);
+  }
+
+  const event = await getEvent(eventId);
+  if (!event) {
+    notFound();
+  }
+
+  const organizingClubId = String(
+    event.organizingClub?._id || event.organizingClub || "",
+  );
+  const userAdminClubId = String(session.user.adminClub || "");
+  const isSuperAdmin = session.user.role === "admin";
+  const isClubAdmin =
+    session.user.role === "club-admin" &&
+    organizingClubId.length > 0 &&
+    userAdminClubId === organizingClubId;
+
+  if (!isSuperAdmin && !isClubAdmin) {
+    redirect("/forbidden");
+  }
 
   const eventType = await getEventType(eventId);
   const rawParticipants = await getParticipants(eventId, eventType);
-  const event = await getEvent(eventId);
 
   // Convert current winner to plain object
   let currentWinner = null;

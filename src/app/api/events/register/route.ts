@@ -290,6 +290,21 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Group not found" }, { status: 404 });
       }
 
+      // Profile completeness check for all group members
+      const incompleteMember = group.members.find(
+        (member: any) => !getProfileStatus(member).isComplete,
+      );
+      if (incompleteMember) {
+        const { missingFields: memberMissing } =
+          getProfileStatus(incompleteMember);
+        return NextResponse.json(
+          {
+            error: `All team members must have a complete profile. ${incompleteMember.name || "A member"} is missing: ${memberMissing.join(", ")}`,
+          },
+          { status: 400 },
+        );
+      }
+
       // Group must belong to event
       if (group.event.toString() !== event._id.toString()) {
         return NextResponse.json(

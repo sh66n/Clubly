@@ -6,6 +6,8 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import React from "react";
+import { connectToDb } from "@/lib/connectToDb";
+import { User } from "@/models";
 
 const getEventDetails = async (eventId) => {
   const nextHeaders = await headers();
@@ -46,10 +48,26 @@ export default async function EventDetailsPage({
 
   const { event, myGroup } = data;
 
+  let dbUser = null;
+  if (session?.user?.id) {
+    try {
+      await connectToDb();
+      const userDoc = await User.findById(session.user.id).select("-password").lean();
+      if (userDoc) {
+        dbUser = JSON.parse(JSON.stringify(userDoc));
+        dbUser.id = dbUser._id;
+      }
+    } catch (e) {
+      console.error("Failed to fetch user in event details page", e);
+    }
+  }
+
+  const user = dbUser || session?.user;
+
   return (
     <>
       <div className="h-full">
-        <EventDetails event={event} group={myGroup} user={session?.user} />
+        <EventDetails event={event} group={myGroup} user={user} />
         {session?.user.role === "club-admin" &&
           session?.user.adminClub?.toString() ===
             event.organizingClub._id.toString() && (

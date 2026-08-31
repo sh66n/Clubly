@@ -104,9 +104,22 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const hackathon = await Hackathon.findById(id);
     if (!hackathon) return NextResponse.json({ error: 'Hackathon not found' }, { status: 404 });
     
-    const team = await HackathonTeam.findById(teamId);
+    const team = await HackathonTeam.findById(teamId).populate('members');
     if (!team || team.hackathon.toString() !== id) return NextResponse.json({ error: 'Team not found' }, { status: 404 });
     if (team.leader.toString() !== session.user.id) return NextResponse.json({ error: 'Only team leader can register' }, { status: 403 });
+
+    const incompleteMember = team.members.find(
+      (member: any) => !getProfileStatus(member).isComplete,
+    );
+    if (incompleteMember) {
+      const { missingFields: memberMissing } = getProfileStatus(incompleteMember);
+      return NextResponse.json(
+        {
+          error: `All team members must have a complete profile. ${incompleteMember.name || 'A member'} is missing: ${memberMissing.join(', ')}`,
+        },
+        { status: 400 },
+      );
+    }
     
     const memberCount = team.members.length;
     if (hackathon.teamSizeRange?.min && hackathon.teamSizeRange?.max) {

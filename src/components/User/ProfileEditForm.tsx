@@ -37,9 +37,19 @@ export default function ProfileEditForm({ user }: ProfileEditFormProps) {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
     const formData = new FormData(e.currentTarget);
+    const phone = (formData.get("phoneNumber") as string)?.trim() || "";
 
+    if (phone) {
+      const cleanPhone = phone.replace(/[\s\-()]/g, "");
+      const isValid = /^(?:\+91|91)?[6-9]\d{9}$/.test(cleanPhone);
+      if (!isValid) {
+        toast.error("Please enter a valid 10-digit mobile number (e.g., 9876543210 or +91 9876543210)");
+        return;
+      }
+    }
+
+    setLoading(true);
     try {
       const res = await fetch(`/api/users/${user._id}`, {
         method: "PATCH",
@@ -208,9 +218,10 @@ export default function ProfileEditForm({ user }: ProfileEditFormProps) {
                 </label>
                 <input
                   name="phoneNumber"
+                  type="tel"
                   defaultValue={user?.phoneNumber || ""}
-                  placeholder="+1 (000) 000-0000"
-                  className="w-full bg-zinc-900/40 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-200 focus:ring-1 focus:ring-zinc-500 outline-none transition-all"
+                  placeholder="9876543210 or +91 9876543210"
+                  className="w-full bg-zinc-900/40 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-200 focus:ring-1 focus:ring-zinc-500 outline-none transition-all placeholder:text-zinc-700"
                 />
               </div>
               <div className="space-y-2">

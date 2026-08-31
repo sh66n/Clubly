@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { connectToDb } from "@/lib/connectToDb";
-import { Event, Payment, Hackathon, HackathonRound } from "@/models";
+import { Event, Payment, Hackathon, HackathonRound, User, Group, HackathonTeam } from "@/models";
+import { getProfileStatus } from "@/lib/utils";
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 
@@ -140,6 +141,21 @@ export async function POST(request: Request) {
 
     await connectToDb();
 
+    const dbUser = await User.findById(session.user.id);
+    if (!dbUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const { isComplete, missingFields } = getProfileStatus(dbUser);
+    if (!isComplete) {
+      return NextResponse.json(
+        {
+          error: `Please complete your profile before proceeding. Missing fields: ${missingFields.join(", ")}`,
+        },
+        { status: 400 },
+      );
+    }
+
     let amountInPaise = 0;
     let notes: any = { userId: session.user.id };
 
@@ -154,6 +170,25 @@ export async function POST(request: Request) {
       const event = await Event.findById(eventId);
       if (!event) {
         return NextResponse.json({ error: "Event not found" }, { status: 404 });
+      }
+
+      if (groupId) {
+        const group = await Group.findById(groupId).populate("members");
+        if (group && Array.isArray(group.members)) {
+          const incompleteMember = group.members.find(
+            (member: any) => !getProfileStatus(member).isComplete,
+          );
+          if (incompleteMember) {
+            const { missingFields: memberMissing } =
+              getProfileStatus(incompleteMember);
+            return NextResponse.json(
+              {
+                error: `All team members must have a complete profile. ${incompleteMember.name || "A member"} is missing: ${memberMissing.join(", ")}`,
+              },
+              { status: 400 },
+            );
+          }
+        }
       }
 
       if ((event.customQuestions?.length ?? 0) > 0 && customQuestionAnswers.length === 0) {
@@ -187,6 +222,25 @@ export async function POST(request: Request) {
       const round = await HackathonRound.findById(roundId);
       if (!round || round.hackathon.toString() !== hackathonId) {
         return NextResponse.json({ error: "Round not found" }, { status: 404 });
+      }
+
+      if (teamId) {
+        const team = await HackathonTeam.findById(teamId).populate("members");
+        if (team && Array.isArray(team.members)) {
+          const incompleteMember = team.members.find(
+            (member: any) => !getProfileStatus(member).isComplete,
+          );
+          if (incompleteMember) {
+            const { missingFields: memberMissing } =
+              getProfileStatus(incompleteMember);
+            return NextResponse.json(
+              {
+                error: `All team members must have a complete profile. ${incompleteMember.name || "A member"} is missing: ${memberMissing.join(", ")}`,
+              },
+              { status: 400 },
+            );
+          }
+        }
       }
 
       if (!round.registrationFee || round.registrationFee <= 0) {

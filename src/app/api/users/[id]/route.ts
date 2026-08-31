@@ -78,8 +78,23 @@ export async function PATCH(
     const updateData: Record<string, any> = {};
 
     // 3. Security: Only allow specific fields to be updated via this route
-    if (name) updateData.name = name;
-    if (phoneNumber) updateData.phoneNumber = phoneNumber;
+    if (name) updateData.name = name.trim();
+    if (phoneNumber !== null && phoneNumber !== undefined) {
+      const trimmed = phoneNumber.trim();
+      if (trimmed) {
+        const cleanPhone = trimmed.replace(/[\s\-()]/g, "");
+        const isValid = /^(?:\+91|91)?[6-9]\d{9}$/.test(cleanPhone);
+        if (!isValid) {
+          return NextResponse.json(
+            { error: "Invalid phone number. Please enter a valid 10-digit mobile number." },
+            { status: 400 },
+          );
+        }
+        updateData.phoneNumber = cleanPhone;
+      } else {
+        updateData.phoneNumber = "";
+      }
+    }
     if (college !== null && college !== undefined) updateData.college = college;
     if (department !== null && department !== undefined) updateData.department = department;
     if (year !== null && year !== undefined) {

@@ -28,42 +28,41 @@ export function getProfileStatus(user: any) {
   let score = 0;
   const missing: string[] = [];
 
-  if (user?.name) {
-    score += 20;
+  if (user?.name && String(user.name).trim() !== "") {
+    score += 25;
   } else {
     missing.push("Name");
   }
 
-  if (user?.email) {
-    score += 20;
+  if (user?.email && String(user.email).trim() !== "") {
+    score += 25;
   } else {
     missing.push("Email Address");
   }
 
-  if (user?.image) {
+  if (user?.image && String(user.image).trim() !== "") {
     score += 10;
   } else {
     missing.push("Profile Picture");
   }
 
-  if (user?.phoneNumber && user.phoneNumber.trim() !== "") {
-    score += 20;
-  } else {
-    missing.push("Phone Number");
-  }
-
   if (
     user?.department &&
-    user.department.trim() !== "" &&
+    String(user.department).trim() !== "" &&
     user.department !== "Not Assigned"
   ) {
-    score += 20;
+    score += 25;
   } else {
     missing.push("Department");
   }
 
-  if (user?.year && user.year !== "Not Assigned") {
-    score += 10;
+  if (
+    user?.year !== undefined &&
+    user?.year !== null &&
+    user.year !== "Not Assigned" &&
+    String(user.year).trim() !== ""
+  ) {
+    score += 15;
   } else {
     missing.push("Year");
   }

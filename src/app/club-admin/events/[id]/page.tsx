@@ -3235,7 +3235,7 @@ export default function EventDetailsPage() {
                 entityId={event._id}
                 organizingClubId={typeof event.organizingClub === "object" ? event.organizingClub?._id : event.organizingClub}
                 collaboratingClubs={event.collaboratingClubs}
-                onUpdate={fetchData}
+                onUpdate={fetchDetails}
               />
             </div>
           )}
