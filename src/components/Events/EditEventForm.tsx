@@ -81,14 +81,31 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
   const d = new Date(event.date);
 
   // Force IST extraction
-  const istTime = d.toLocaleTimeString("en-IN", {
+  const istDate = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Kolkata",
-    hour12: false,
+  }).format(d);
+
+  const istTime = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
     hour: "2-digit",
     minute: "2-digit",
-  });
+    hour12: false,
+  }).format(d);
 
   const defaultTime = istTime;
+
+  const rd = event.registrationDeadline ? new Date(event.registrationDeadline) : null;
+  const istDeadlineDate = rd
+    ? new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(rd)
+    : "";
+  const istDeadlineTime = rd
+    ? new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Asia/Kolkata",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }).format(rd)
+    : "23:59";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -200,11 +217,11 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
 
         {/* Date */}
         <div className="flex flex-col gap-1">
-          <label className="text-sm text-gray-300">Date</label>
+          <label className="text-sm text-gray-300">Event Date</label>
           <Input
             type="date"
             name="date"
-            defaultValue={d.toISOString().split("T")[0]}
+            defaultValue={istDate}
             min={today}
             required
           />
@@ -218,6 +235,27 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
             name="eventTime"
             defaultValue={defaultTime}
             required
+          />
+        </div>
+
+        {/* Registration Deadline Date */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-gray-300">Registration Deadline Date</label>
+          <Input
+            type="date"
+            name="registrationDeadline"
+            defaultValue={istDeadlineDate}
+            placeholder="Defaults to Event Date if left empty"
+          />
+        </div>
+
+        {/* Registration Deadline Time */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-gray-300">Registration Deadline Time (IST)</label>
+          <Input
+            type="time"
+            name="registrationDeadlineTime"
+            defaultValue={istDeadlineTime}
           />
         </div>
 

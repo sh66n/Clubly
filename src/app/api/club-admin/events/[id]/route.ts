@@ -39,12 +39,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const eventTime = formData.get("eventTime") as string;
     
     if (date || eventTime) {
-      const d = date || event.date.toISOString().split("T")[0];
-      const t = eventTime || `${event.date.getHours().toString().padStart(2, "0")}:${event.date.getMinutes().toString().padStart(2, "0")}`;
+      const d = date || new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date(event.date));
+      const t = eventTime || new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Asia/Kolkata",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }).format(new Date(event.date));
       
-      const [year, month, day] = d.split("-").map(Number);
-      const [hours, minutes] = t.split(":").map(Number);
-      updateData.date = new Date(year, month - 1, day, hours, minutes);
+      updateData.date = new Date(`${d}T${t}:00+05:30`);
+    }
+
+    if (formData.has("registrationDeadline")) {
+      const rdDate = formData.get("registrationDeadline") as string;
+      const rdTime = (formData.get("registrationDeadlineTime") as string) || "23:59";
+      if (rdDate) {
+        updateData.registrationDeadline = new Date(`${rdDate}T${rdTime}:00+05:30`);
+      } else {
+        updateData.$unset = { ...(updateData.$unset || {}), registrationDeadline: 1 };
+      }
     }
 
     if (formData.has("prize")) updateData.prize = Number(formData.get("prize"));

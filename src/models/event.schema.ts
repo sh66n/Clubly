@@ -7,6 +7,7 @@ export const zEvent = z.object({
   name: z.string(),
   description: z.string().optional(),
   date: z.date(),
+  registrationDeadline: z.date().optional(),
   eventType: z.enum(["team", "individual"]).default("individual"),
   teamSize: z.number().optional(),
   prize: z.number().optional(),
@@ -64,6 +65,7 @@ export interface IEvent {
   name: string;
   description?: string;
   date: Date;
+  registrationDeadline?: Date;
   eventType: "team" | "individual";
   teamSize?: number;
   teamSizeRange?: {

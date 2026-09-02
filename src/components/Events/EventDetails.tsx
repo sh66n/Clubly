@@ -74,23 +74,13 @@ export default function EventDetails({
 
   const isProfileComplete = incompleteMembers.length === 0;
 
-  useEffect(() => {
-    if (viewLoggedEvents.has(event._id)) return;
-    viewLoggedEvents.add(event._id);
-
-    fetch(`/api/events/${event._id}/view`, { method: "POST" })
-      .then(async (res) => {
-        const data = await res.json();
-        // If the view count was updated, refresh the router cache so that 
-        // when the user navigates back to the event list, they see the new count
-        if (data.views) {
-          router.refresh();
-        }
-      })
-      .catch((err) =>
-        console.error("Failed to record view", err),
-      );
-  }, [event._id]);
+  // View logging disabled to avoid any client fetch retriggering
+  // const eventIdStr = String(event._id);
+  // useEffect(() => {
+  //   if (!eventIdStr || viewLoggedEvents.has(eventIdStr)) return;
+  //   viewLoggedEvents.add(eventIdStr);
+  //   fetch(`/api/events/${eventIdStr}/view`, { method: "POST" }).catch(() => {});
+  // }, [eventIdStr]);
 
   const [registrationStatus, setRegistrationStatus] =
     useState<RegistrationStatus>("idle");
@@ -151,6 +141,7 @@ export default function EventDetails({
 
   //  Check if event has passed
   const hasEventPassed = today > eventDate;
+  const hasRegistrationPassed = event.registrationDeadline ? (today > new Date(event.registrationDeadline)) : hasEventPassed;
 
   const registrationsFull =
     Number((event as any).registrationCount ?? 0) >= event.maxRegistrations;
@@ -166,7 +157,7 @@ export default function EventDetails({
   const isRegisterDisabled =
     registrationStatus !== "idle" ||
     isAlreadyRegistered ||
-    hasEventPassed ||
+    hasRegistrationPassed ||
     isLoading ||
     registrationsFull ||
     event.isRegistrationOpen === false ||
@@ -191,7 +182,7 @@ export default function EventDetails({
     }
 
     //handle event passing
-    if (hasEventPassed) {
+    if (hasRegistrationPassed) {
       return "Registrations closed";
     }
 
@@ -377,6 +368,19 @@ export default function EventDetails({
             </BorderedDiv>
           </div>
 
+          {/* Event Date */}
+          <div className="mb-4">
+            <h2 className="text-xl mb-2">Event Date</h2>
+            <BorderedDiv className="flex-1 p-4">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
+                  <Calendar />
+                </div>
+                {format(new Date(event.date), "PPP p")}
+              </div>
+            </BorderedDiv>
+          </div>
+
           {/* Registration Deadline */}
           <div className="mb-4">
             <h2 className="text-xl mb-2">Registration Deadline</h2>
@@ -385,7 +389,7 @@ export default function EventDetails({
                 <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
                   <Calendar />
                 </div>
-                {format(new Date(event.date), "PPP")}
+                {format(new Date(event.registrationDeadline || event.date), "PPP p")}
               </div>
             </BorderedDiv>
           </div>
@@ -451,7 +455,7 @@ export default function EventDetails({
                   >
                     {isAlreadyRegistered
                       ? "Registered"
-                      : hasEventPassed
+                      : hasRegistrationPassed
                         ? "Registrations Closed"
                         : registrationStatus === "processing"
                           ? "Registering..."
@@ -462,7 +466,7 @@ export default function EventDetails({
                     onClick={() => setIsIncompleteModalOpen(true)}
                     disabled={
                       isAlreadyRegistered ||
-                      hasEventPassed ||
+                      hasRegistrationPassed ||
                       registrationsFull ||
                       event.isRegistrationOpen === false ||
                       (event.eventType === "team" &&
@@ -475,7 +479,7 @@ export default function EventDetails({
                     }
                     className={`w-full py-2 rounded-lg font-semibold mb-2 ${
                       isAlreadyRegistered ||
-                      hasEventPassed ||
+                      hasRegistrationPassed ||
                       registrationsFull ||
                       event.isRegistrationOpen === false ||
                       (event.eventType === "team" &&

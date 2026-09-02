@@ -267,6 +267,8 @@ export const PATCH = async (
       "description",
       "date",
       "eventTime",
+      "registrationDeadline",
+      "registrationDeadlineTime",
       "eventType",
       "teamSize",
       "teamSizeRange.min",
@@ -378,6 +380,13 @@ export const PATCH = async (
 
       body.date = istDateTime; // Mongo stores as UTC internally
       delete body.eventTime;
+    }
+
+    if (body.registrationDeadline) {
+      const rdStr = body.registrationDeadline;
+      const rdTimeStr = body.registrationDeadlineTime || "23:59";
+      body.registrationDeadline = new Date(`${rdStr}T${rdTimeStr}:00+05:30`);
+      delete body.registrationDeadlineTime;
     }
 
     // Validate maxRegistrations

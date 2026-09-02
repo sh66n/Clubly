@@ -60,6 +60,7 @@ interface EventItem {
   name: string;
   description?: string;
   date: string;
+  registrationDeadline?: string;
   eventType: EventType;
   status: EventStatus;
   image?: string;
@@ -362,6 +363,8 @@ function CreateEditDrawer({
   const [description, setDescription] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("10:00");
+  const [registrationDeadline, setRegistrationDeadline] = useState("");
+  const [registrationDeadlineTime, setRegistrationDeadlineTime] = useState("23:59");
   const [eventType, setEventType] = useState<EventType>("individual");
   const [teamSize, setTeamSize] = useState("");
   const [teamSizeMin, setTeamSizeMin] = useState("");
@@ -382,10 +385,30 @@ function CreateEditDrawer({
       setName(editEvent.name);
       setDescription(editEvent.description || "");
       const d = new Date(editEvent.date);
-      setDate(d.toISOString().split("T")[0]);
+      setDate(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(d));
       setTime(
-        `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`,
+        new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Asia/Kolkata",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        }).format(d),
       );
+      if (editEvent.registrationDeadline) {
+        const rd = new Date(editEvent.registrationDeadline);
+        setRegistrationDeadline(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(rd));
+        setRegistrationDeadlineTime(
+          new Intl.DateTimeFormat("en-GB", {
+            timeZone: "Asia/Kolkata",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          }).format(rd),
+        );
+      } else {
+        setRegistrationDeadline("");
+        setRegistrationDeadlineTime("23:59");
+      }
       setEventType(editEvent.eventType);
       setTeamSize(editEvent.teamSize?.toString() || "");
       setTeamSizeMin(editEvent.teamSizeRange?.min?.toString() || "");
@@ -403,6 +426,8 @@ function CreateEditDrawer({
       setDescription("");
       setDate("");
       setTime("10:00");
+      setRegistrationDeadline("");
+      setRegistrationDeadlineTime("23:59");
       setEventType("individual");
       setTeamSize("");
       setTeamSizeMin("");
@@ -479,6 +504,10 @@ function CreateEditDrawer({
       formData.append("description", description.trim());
       formData.append("date", date);
       formData.append("eventTime", time);
+      if (registrationDeadline) {
+        formData.append("registrationDeadline", registrationDeadline);
+        formData.append("registrationDeadlineTime", registrationDeadlineTime);
+      }
       formData.append("eventType", eventType);
       formData.append("providesCertificate", String(providesCertificate));
       formData.append("registrationFee", registrationFee || "0");
@@ -603,7 +632,7 @@ function CreateEditDrawer({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">
-                    Date
+                    Event Date
                   </label>
                   <input
                     type="date"
@@ -614,12 +643,37 @@ function CreateEditDrawer({
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1">
-                    Time
+                    Event Time
                   </label>
                   <input
                     type="time"
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-slate-400 outline-none text-slate-800"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">
+                    Registration Deadline
+                  </label>
+                  <input
+                    type="date"
+                    value={registrationDeadline}
+                    onChange={(e) => setRegistrationDeadline(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-slate-400 outline-none text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">
+                    Deadline Time
+                  </label>
+                  <input
+                    type="time"
+                    value={registrationDeadlineTime}
+                    onChange={(e) => setRegistrationDeadlineTime(e.target.value)}
                     className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-slate-400 outline-none text-slate-800"
                   />
                 </div>

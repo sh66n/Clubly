@@ -28,9 +28,6 @@ export const POST = async (
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    revalidatePath("/events");
-    revalidatePath(`/events/${id}`);
-
     const response = NextResponse.json({ views: event.views }, { status: 200 });
     
     response.cookies.set(cookieName, "true", {

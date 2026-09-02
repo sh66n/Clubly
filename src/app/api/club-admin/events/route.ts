@@ -170,9 +170,13 @@ export async function POST(req: NextRequest) {
     const eventTime = (formData.get("eventTime") as string) || "00:00";
     const status = (formData.get("status") as string) || "live";
 
-    const [year, month, day] = date.split("-").map(Number);
-    const [hours, minutes] = eventTime.split(":").map(Number);
-    const eventDate = new Date(year, month - 1, day, hours, minutes);
+    const eventDate = new Date(`${date}T${eventTime}:00+05:30`);
+
+    const registrationDeadlineRaw = formData.get("registrationDeadline") as string | null;
+    const registrationDeadlineTime = (formData.get("registrationDeadlineTime") as string) || "23:59";
+    const registrationDeadline = registrationDeadlineRaw
+      ? new Date(`${registrationDeadlineRaw}T${registrationDeadlineTime}:00+05:30`)
+      : eventDate;
 
     const eventType = formData.get("eventType") as string;
     const teamSize = formData.get("teamSize") as string | null;
@@ -277,6 +281,7 @@ export async function POST(req: NextRequest) {
       name,
       description,
       date: eventDate,
+      registrationDeadline,
       eventType,
       teamSize: finalTeamSize,
       teamSizeRange,

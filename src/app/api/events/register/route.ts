@@ -186,6 +186,13 @@ export async function POST(req: Request) {
       );
     }
 
+    if (event.registrationDeadline && new Date() > new Date(event.registrationDeadline)) {
+      return NextResponse.json(
+        { error: "Registration deadline has passed for this event" },
+        { status: 403 },
+      );
+    }
+
     const answersValidation = validateAndNormalizeAnswers(
       event,
       customQuestionAnswers,

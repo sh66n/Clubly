@@ -26,6 +26,10 @@ const eventSchema = new Schema<IEvent>(
       type: Date,
       required: true,
     },
+    registrationDeadline: {
+      type: Date,
+      required: false,
+    },
     eventType: {
       type: String,
       enum: ["team", "individual"],
