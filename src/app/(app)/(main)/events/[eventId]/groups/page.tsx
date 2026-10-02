@@ -1,76 +1,46 @@
 import React from "react";
-import { headers } from "next/headers";
-import GroupGrid from "@/components/Groups/GroupGrid";
-import BackButton from "@/components/BackButton";
 import GroupSearchWrapper from "@/components/Groups/GroupSearchWrapper";
-import { IEvent } from "@/models/event.schema";
-
-const getAllGroups = async (eventId) => {
-  const nextHeaders = await headers();
-  const cookieHeader = nextHeaders.get("cookie") ?? "";
-
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/events/${eventId}/groups`,
-    {
-      method: "GET",
-      headers: {
-        cookie: cookieHeader,
-      },
-      cache: "no-store",
-    },
-  );
-  
-  if (!res.ok) {
-    return null;
-  }
-  
-  const allGroups = await res.json();
-  return allGroups;
-};
-
-const getEventName = async (eventId) => {
-  const nextHeaders = await headers();
-  const cookieHeader = nextHeaders.get("cookie") ?? "";
-
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/events/${eventId}`,
-    {
-      method: "GET",
-      headers: {
-        cookie: cookieHeader,
-      },
-    },
-  );
-
-  if (!res.ok) {
-    return null;
-  }
-
-  const { event } = await res.json();
-  return event.name;
-};
+import BackButton from "@/components/BackButton";
+import { connectToDb } from "@/lib/connectToDb";
+import { Event, Group } from "@/models";
+import { notFound, redirect } from "next/navigation";
+import { auth } from "@/auth";
 
 export default async function GroupsPage({
   params,
 }: {
   params: Promise<{ eventId: string }>;
 }) {
+  const session = await auth();
   const { eventId } = await params;
 
-  const [allGroups, eventName] = await Promise.all([
-    getAllGroups(eventId),
-    getEventName(eventId),
-  ]);
+  if (!session?.user) {
+    redirect(`/login?callbackUrl=/events/${eventId}/groups`);
+  }
+
+  await connectToDb();
+
+  const event = await Event.findById(eventId).select("name").lean();
+  if (!event) {
+    notFound();
+  }
+
+  const groups = await Group.find({ event: eventId })
+    .populate("members", "name email image")
+    .populate("leader", "name email image")
+    .lean();
+
+  const serializedGroups = JSON.parse(JSON.stringify(groups));
 
   return (
     <div>
       <BackButton link={`/events/${eventId}`} />
       <h1 className="text-5xl font-semibold mt-4">Groups</h1>
       <div className="my-2 text-[#717171] mb-4">
-        All participant groups for {eventName ? `"${eventName}"` : "this event"}
+        All participant groups for {event.name ? `"${event.name}"` : "this event"}
       </div>
       <div className="mt-12">
-        <GroupSearchWrapper initialGroups={allGroups ?? []} eventId={eventId} />
+        <GroupSearchWrapper initialGroups={serializedGroups ?? []} eventId={eventId} />
       </div>
     </div>
   );

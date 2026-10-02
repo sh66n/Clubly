@@ -61,6 +61,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     if (formData.has("prize")) updateData.prize = Number(formData.get("prize"));
+
+    if (formData.has("numberOfWinners")) {
+      const nw = Number(formData.get("numberOfWinners"));
+      if (nw >= 1 && nw <= 3) {
+        updateData.numberOfWinners = nw;
+      }
+    }
     
     const maxRegistrations = formData.get("maxRegistrations");
     if (maxRegistrations !== null) {
@@ -72,6 +79,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     if (formData.has("whatsappGroupLink")) updateData.whatsappGroupLink = formData.get("whatsappGroupLink") as string;
+    
+    if (formData.has("superEvent")) {
+      const seVal = formData.get("superEvent") as string;
+      if (seVal && seVal.trim() !== "" && seVal !== "undefined" && seVal !== "null") {
+        updateData.superEvent = seVal.trim();
+      } else {
+        updateData.$unset = { ...(updateData.$unset || {}), superEvent: 1 };
+      }
+    }
     
     const customQuestionsRaw = formData.get("customQuestions") as string | null;
     if (customQuestionsRaw) {

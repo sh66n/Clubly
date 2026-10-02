@@ -3922,6 +3922,7 @@ function CreateEditDrawer({
   const [teamSizeMax, setTeamSizeMax] = useState("");
   const [registrationFee, setRegistrationFee] = useState("0");
   const [prize, setPrize] = useState("");
+  const [numberOfWinners, setNumberOfWinners] = useState<1 | 2 | 3>(1);
   const [maxRegistrations, setMaxRegistrations] = useState("");
   const [whatsappLink, setWhatsappLink] = useState("");
   const [providesCertificate, setProvidesCertificate] = useState(false);
@@ -3930,6 +3931,23 @@ function CreateEditDrawer({
   const [certFile, setCertFile] = useState<File | null>(null);
   const [certPreview, setCertPreview] = useState<string | null>(null);
   const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
+  const [superEvents, setSuperEvents] = useState<{ _id: string; name: string }[]>([]);
+  const [selectedSuperEvent, setSelectedSuperEvent] = useState("");
+
+  useEffect(() => {
+    async function fetchSuperEvents() {
+      try {
+        const res = await fetch("/api/superevents");
+        if (res.ok) {
+          const data = await res.json();
+          setSuperEvents(data || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch super events", err);
+      }
+    }
+    fetchSuperEvents();
+  }, []);
 
   useEffect(() => {
     if (open && editEvent) {
@@ -3966,12 +3984,43 @@ function CreateEditDrawer({
       setTeamSizeMax(editEvent.teamSizeRange?.max?.toString() || "");
       setRegistrationFee(editEvent.registrationFee?.toString() || "0");
       setPrize(editEvent.prize?.toString() || "");
+      setNumberOfWinners(((editEvent.numberOfWinners as any) || 1) as 1 | 2 | 3);
       setMaxRegistrations(editEvent.maxRegistrations?.toString() || "");
       setWhatsappLink(editEvent.whatsappGroupLink || "");
       setProvidesCertificate(editEvent.providesCertificate);
       setImagePreview(editEvent.image || null);
       setCertPreview(editEvent.certificateTemplate?.url || null);
       setCustomQuestions(editEvent.customQuestions || []);
+      setSelectedSuperEvent(
+        editEvent.superEvent?._id
+          ? String(editEvent.superEvent._id)
+          : typeof editEvent.superEvent === "string"
+            ? editEvent.superEvent
+            : "",
+      );
+    } else if (open) {
+      setName("");
+      setDescription("");
+      setDate("");
+      setTime("10:00");
+      setRegistrationDeadline("");
+      setRegistrationDeadlineTime("23:59");
+      setEventType("individual");
+      setTeamSize("");
+      setTeamSizeMin("");
+      setTeamSizeMax("");
+      setRegistrationFee("0");
+      setPrize("");
+      setNumberOfWinners(1);
+      setMaxRegistrations("");
+      setWhatsappLink("");
+      setProvidesCertificate(false);
+      setImageFile(null);
+      setImagePreview(null);
+      setCertFile(null);
+      setCertPreview(null);
+      setCustomQuestions([]);
+      setSelectedSuperEvent("");
     }
   }, [open, editEvent]);
 
@@ -4054,9 +4103,11 @@ function CreateEditDrawer({
         }
       }
       if (prize) formData.append("prize", prize);
+      formData.append("numberOfWinners", String(numberOfWinners));
       if (maxRegistrations)
         formData.append("maxRegistrations", maxRegistrations);
       if (whatsappLink) formData.append("whatsappGroupLink", whatsappLink);
+      formData.append("superEvent", selectedSuperEvent || "");
 
       if (customQuestions.length > 0) {
         formData.append("customQuestions", JSON.stringify(customQuestions));
@@ -4138,6 +4189,27 @@ function CreateEditDrawer({
                   placeholder="e.g. Annual Codethon"
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-slate-400 outline-none text-slate-800"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">
+                  Super Event (Optional)
+                </label>
+                <select
+                  value={selectedSuperEvent}
+                  onChange={(e) => setSelectedSuperEvent(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-slate-400 outline-none text-slate-800 bg-white"
+                >
+                  <option value="">None (Standalone Event)</option>
+                  {superEvents.map((se) => (
+                    <option key={se._id} value={se._id}>
+                      {se.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Nest this event under a larger umbrella event or fest.
+                </p>
               </div>
 
               <div>
@@ -4296,6 +4368,28 @@ function CreateEditDrawer({
                   placeholder="Optional"
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-slate-400 outline-none text-slate-800"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-2">
+                  Number of Winners
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([1, 2, 3] as const).map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setNumberOfWinners(n)}
+                      className={`py-2 px-3 rounded-lg border text-xs font-semibold transition-colors ${
+                        numberOfWinners === n
+                          ? "border-slate-800 bg-slate-800 text-white"
+                          : "border-slate-200 hover:border-slate-300 text-slate-600"
+                      }`}
+                    >
+                      {n} {n === 1 ? "Winner" : "Winners"}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>

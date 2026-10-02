@@ -274,6 +274,8 @@ export const PATCH = async (
       "teamSizeRange.min",
       "teamSizeRange.max",
       "prize",
+      "numberOfWinners",
+      "superEvent",
       "providesCertificate",
       "certificateId",
       "certificate",
@@ -341,6 +343,7 @@ export const PATCH = async (
           "teamSizeRange.min",
           "teamSizeRange.max",
           "prize",
+          "numberOfWinners",
           "registrationFee",
           "maxRegistrations",
         ].includes(parsedKey)
@@ -535,6 +538,16 @@ export const PATCH = async (
       } else {
         unsetBody.certificate = 1;
         delete body.certificate;
+      }
+    }
+
+    if (formData.has("superEvent")) {
+      const seVal = formData.get("superEvent") as string;
+      if (seVal && seVal.trim() !== "" && seVal !== "undefined" && seVal !== "null") {
+        body.superEvent = seVal.trim();
+      } else {
+        unsetBody.superEvent = 1;
+        delete body.superEvent;
       }
     }
 

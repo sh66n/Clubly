@@ -44,9 +44,45 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
       : String(event.certificate)
     : "";
 
+  const initialSuperEventId = event.superEvent
+    ? typeof event.superEvent === "object" && event.superEvent !== null && "_id" in event.superEvent
+      ? String((event.superEvent as any)._id)
+      : String(event.superEvent)
+    : "";
+
+  const [superEvents, setSuperEvents] = useState<{ _id: string; name: string }[]>([]);
+  const [selectedSuperEvent, setSelectedSuperEvent] = useState<string>(initialSuperEventId);
+  const [numberOfWinners, setNumberOfWinners] = useState<1 | 2 | 3>(
+    (event.numberOfWinners as 1 | 2 | 3) || 1,
+  );
+
   const [certificates, setCertificates] = useState<any[]>([]);
   const [selectedCertificateId, setSelectedCertificateId] = useState<string>(initialCertId);
   const [providesCertificate, setProvidesCertificate] = useState(event.providesCertificate);
+
+  // Fetch super events
+  useEffect(() => {
+    async function fetchSuperEvents() {
+      try {
+        const club =
+          user.adminClub ||
+          (typeof event.organizingClub === "object" &&
+          event.organizingClub !== null &&
+          "_id" in event.organizingClub
+            ? (event.organizingClub as any)._id
+            : String(event.organizingClub || ""));
+        const url = club ? `/api/superevents?club=${club}` : `/api/superevents`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          setSuperEvents(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch super events", err);
+      }
+    }
+    fetchSuperEvents();
+  }, [user.adminClub, event.organizingClub]);
 
   // Fetch certificates on mount
   useEffect(() => {
@@ -144,6 +180,8 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
       "customQuestions",
       JSON.stringify(normalizeCustomQuestions(customQuestions)),
     );
+    formData.set("superEvent", selectedSuperEvent);
+    formData.set("numberOfWinners", String(numberOfWinners));
 
     try {
       const res = await fetch(`/api/events/${event._id}`, {
@@ -259,6 +297,26 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
           />
         </div>
 
+        {/* Super Event */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-gray-300">
+            Super Event <span className="text-xs text-gray-500">(Optional)</span>
+          </label>
+          <select
+            name="superEvent"
+            value={selectedSuperEvent}
+            onChange={(e) => setSelectedSuperEvent(e.target.value)}
+            className="w-full rounded-xl border border-gray-700 p-3 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          >
+            <option value="">None (Standalone Event)</option>
+            {superEvents.map((se) => (
+              <option key={se._id} value={se._id}>
+                {se.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Event Type */}
         <div className="flex flex-col gap-1">
           <label className="text-sm text-gray-300">Event Type</label>
@@ -328,6 +386,27 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
         <div className="flex flex-col gap-1">
           <label className="text-sm text-gray-300">Prize</label>
           <Input type="number" name="prize" defaultValue={event.prize} />
+        </div>
+
+        {/* Number of Winners */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-gray-300">Number of Winners</label>
+          <div className="flex gap-2">
+            {([1, 2, 3] as const).map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setNumberOfWinners(n)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all flex-1 ${
+                  numberOfWinners === n
+                    ? "border-blue-500 bg-blue-500/20 text-blue-400"
+                    : "border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600"
+                }`}
+              >
+                {n} {n === 1 ? "Winner" : "Winners"}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Certificate */}

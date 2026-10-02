@@ -20,6 +20,7 @@ import {
   UsersRound,
   X,
   Upload,
+  Layers,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -139,7 +140,7 @@ export default function NewEventForm({ user }: NewEventFormProps) {
     formData.set("eventType", eventType);
     formData.set("providesCertificate", String(providesCertificate));
     formData.set("registrationFee", fee || "0");
-    formData.set("organizingClub", user.adminClub);
+    formData.set("organizingClub", user.adminClub || "");
 
     if (prize) formData.set("prize", prize);
     if (maxReg) formData.set("maxRegistrations", maxReg);
@@ -335,6 +336,23 @@ export default function NewEventForm({ user }: NewEventFormProps) {
                   />
                 </Field>
               </div>
+
+              <Field label="Super Event" icon={<Layers className="w-4 h-4" />} optional>
+                <select
+                  value={selectedSuperEvent}
+                  onChange={(e) => setSelectedSuperEvent(e.target.value)}
+                  className={inputCls}
+                >
+                  <option value="" className="bg-[#111] text-gray-400">
+                    None (Standalone Event)
+                  </option>
+                  {superEvents.map((se) => (
+                    <option key={se._id} value={se._id} className="bg-[#111] text-white">
+                      {se.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
 
               {(eventName || eventDate) && (
                 <div className="rounded-xl bg-blue-500/5 border border-blue-500/20 px-4 py-3 flex items-center gap-3">

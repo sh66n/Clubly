@@ -11,6 +11,21 @@ export async function GET(req: Request) {
   const club = searchParams.get("club");
 
   if (!club) {
+    const session = await auth();
+    if (session?.user?.role === "club-admin" && session.user.adminClub) {
+      const adminClub = session.user.adminClub;
+      const superEvents = await SuperEvent.find(
+        {
+          $or: [{ organizingClub: adminClub }, { collaboratingClubs: adminClub }],
+        },
+        { name: 1 },
+      )
+        .sort({ startDate: -1 })
+        .populate("collaboratingClubs")
+        .lean();
+      return NextResponse.json(superEvents);
+    }
+
     const allSuperEvents = await SuperEvent.find({})
       .sort({ startDate: -1 })
       .populate("organizingClub")
@@ -19,7 +34,9 @@ export async function GET(req: Request) {
   }
 
   const superEvents = await SuperEvent.find(
-    { organizingClub: club },
+    {
+      $or: [{ organizingClub: club }, { collaboratingClubs: club }],
+    },
     { name: 1 },
   )
     .sort({ startDate: -1 })

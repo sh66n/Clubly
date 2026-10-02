@@ -4,7 +4,6 @@ import GroupCard from "@/components/Groups/GroupCard";
 import JoinGroupForm from "@/components/Groups/JoinGroupForm";
 import BackButton from "@/components/BackButton";
 import { Globe, Lock, Users, Crown } from "lucide-react";
-import { headers } from "next/headers";
 import React from "react";
 import RemoveMemberButton from "@/components/Groups/RemoveMemberButton";
 import { auth } from "@/auth";
@@ -12,21 +11,9 @@ import DisbandGroupButton from "@/components/Groups/DisbandGroupButton";
 import EditGroupForm from "@/components/Groups/EditGroupForm";
 import EditGroupButton from "@/components/Groups/EditGroupButton";
 
-const getGroup = async (eventId: string, groupId: string) => {
-  const nextHeaders = await headers();
-  const cookieHeader = nextHeaders.get("cookie") ?? "";
-
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/events/${eventId}/groups/${groupId}`,
-    {
-      headers: { cookie: cookieHeader },
-      cache: "no-store",
-    },
-  );
-
-  if (!res.ok) return null;
-  return res.json();
-};
+import { connectToDb } from "@/lib/connectToDb";
+import { Event, Group } from "@/models";
+import { notFound, redirect } from "next/navigation";
 
 export default async function GroupDetails({
   params,
@@ -35,12 +22,33 @@ export default async function GroupDetails({
 }) {
   const session = await auth();
   const { eventId, groupId } = await params;
-  const group = await getGroup(eventId, groupId);
 
-  if (!group)
+  if (!session?.user) {
+    redirect(`/login?callbackUrl=/events/${eventId}/groups/${groupId}`);
+  }
+
+  await connectToDb();
+
+  const event = await Event.findById(eventId).select("_id").lean();
+  if (!event) {
+    notFound();
+  }
+
+  const groupDoc = await Group.findById(groupId)
+    .populate("members", "name email image")
+    .populate("leader", "name email image")
+    .lean();
+
+  if (!groupDoc || groupDoc.event?.toString() !== eventId) {
     return (
       <div className="text-gray-500 p-10 text-center">Group not found.</div>
     );
+  }
+
+  const group = JSON.parse(JSON.stringify({
+    ...groupDoc,
+    capacity: groupDoc.maxSize,
+  }));
 
   // Check if current user is the leader
   const isLeader = session?.user?.id === group.leader._id;

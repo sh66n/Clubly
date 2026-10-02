@@ -1,24 +1,9 @@
 import EditGroupForm from "@/components/Groups/EditGroupForm";
-import { headers } from "next/headers";
 import { auth } from "@/auth";
 import React from "react";
-import { redirect } from "next/navigation";
-
-const getGroup = async (eventId: string, groupId: string) => {
-  const nextHeaders = await headers();
-  const cookieHeader = nextHeaders.get("cookie") ?? "";
-
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/events/${eventId}/groups/${groupId}`,
-    {
-      headers: { cookie: cookieHeader },
-      cache: "no-store",
-    },
-  );
-
-  if (!res.ok) return null;
-  return res.json();
-};
+import { notFound, redirect } from "next/navigation";
+import { connectToDb } from "@/lib/connectToDb";
+import { Group } from "@/models";
 
 export default async function EditGroup({
   params,
@@ -26,16 +11,20 @@ export default async function EditGroup({
   params: Promise<{ eventId: string; groupId: string }>;
 }) {
   const { eventId, groupId } = await params;
-  const group = await getGroup(eventId, groupId);
-
   const session = await auth();
-  if (!session?.user?.id) return <div>Please login to edit this group</div>;
+  if (!session?.user?.id) {
+    redirect(`/login?callbackUrl=/events/${eventId}/groups/${groupId}/edit`);
+  }
 
-  if (!group) {
+  await connectToDb();
+
+  const group = await Group.findById(groupId).lean();
+
+  if (!group || group.event?.toString() !== eventId) {
     return <div className="text-gray-500 p-10 text-center">Group not found</div>;
   }
 
-  if (group.leader._id.toString() !== session.user.id) {
+  if (group.leader.toString() !== session.user.id) {
     redirect("/forbidden");
   }
 

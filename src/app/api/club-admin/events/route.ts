@@ -61,6 +61,7 @@ export async function GET(req: NextRequest) {
     const events = await Event.find(query)
       .populate("organizingClub", "name logo")
       .populate("collaboratingClubs", "name logo")
+      .populate("superEvent", "name image")
       .sort({
         createdAt: -1,
       }).lean();
@@ -206,9 +207,15 @@ export async function POST(req: NextRequest) {
       ? Number(formData.get("numberOfWinners"))
       : 1;
     const whatsappGroupLink = formData.get("whatsappGroupLink") as string | null;
+    const superEventRaw = formData.get("superEvent") as string | null;
+    const superEvent =
+      superEventRaw &&
+      superEventRaw.trim() !== "" &&
+      superEventRaw !== "undefined" &&
+      superEventRaw !== "null"
+        ? superEventRaw.trim()
+        : undefined;
     const customQuestionsRaw = formData.get("customQuestions") as string | null;
-    
-    let customQuestions: any[] = [];
     if (customQuestionsRaw) {
       try {
         customQuestions = JSON.parse(customQuestionsRaw);
@@ -291,6 +298,7 @@ export async function POST(req: NextRequest) {
       registrationFee: registrationFee ? Number(registrationFee) : 0,
       image: imageUrl,
       maxRegistrations: maxRegistrations ? Number(maxRegistrations) : undefined,
+      superEvent: superEvent || undefined,
       whatsappGroupLink: whatsappGroupLink || undefined,
       customQuestions,
       certificatesByPosition,
