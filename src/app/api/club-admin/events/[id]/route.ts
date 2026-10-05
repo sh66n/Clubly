@@ -60,6 +60,69 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
+    if (formData.has("registrationFee")) {
+      updateData.registrationFee = Number(formData.get("registrationFee") || 0);
+    }
+
+    if (formData.has("status")) {
+      const status = formData.get("status") as string;
+      if (["draft", "live", "completed"].includes(status)) {
+        updateData.status = status;
+        updateData.isRegistrationOpen = status === "live";
+      }
+    }
+
+    const eventType = formData.get("eventType") as string | null;
+    const teamSizeMin = formData.get("teamSizeRange[min]") as string | null;
+    const teamSizeMax = formData.get("teamSizeRange[max]") as string | null;
+    const teamSize = formData.get("teamSize") as string | null;
+
+    if (eventType === "individual") {
+      updateData.eventType = "individual";
+      updateData.teamSize = 1;
+      updateData.$unset = { ...(updateData.$unset || {}), teamSizeRange: 1 };
+      delete updateData.teamSizeRange;
+    } else if (eventType === "team") {
+      updateData.eventType = "team";
+      if (teamSizeMin && teamSizeMax) {
+        const min = Number(teamSizeMin);
+        const max = Number(teamSizeMax);
+        if (isNaN(min) || isNaN(max) || min < 1 || max < min) {
+          return NextResponse.json({ error: "Invalid team size range" }, { status: 400 });
+        }
+        updateData.teamSizeRange = { min, max };
+        updateData.$unset = { ...(updateData.$unset || {}), teamSize: 1 };
+        delete updateData.teamSize;
+      } else if (teamSize) {
+        const ts = Number(teamSize);
+        if (isNaN(ts) || ts < 1) {
+          return NextResponse.json({ error: "Invalid team size" }, { status: 400 });
+        }
+        updateData.teamSize = ts;
+        updateData.$unset = { ...(updateData.$unset || {}), teamSizeRange: 1 };
+        delete updateData.teamSizeRange;
+      }
+    } else {
+      if (teamSizeMin && teamSizeMax) {
+        const min = Number(teamSizeMin);
+        const max = Number(teamSizeMax);
+        if (isNaN(min) || isNaN(max) || min < 1 || max < min) {
+          return NextResponse.json({ error: "Invalid team size range" }, { status: 400 });
+        }
+        updateData.teamSizeRange = { min, max };
+        updateData.$unset = { ...(updateData.$unset || {}), teamSize: 1 };
+        delete updateData.teamSize;
+      } else if (teamSize) {
+        const ts = Number(teamSize);
+        if (isNaN(ts) || ts < 1) {
+          return NextResponse.json({ error: "Invalid team size" }, { status: 400 });
+        }
+        updateData.teamSize = ts;
+        updateData.$unset = { ...(updateData.$unset || {}), teamSizeRange: 1 };
+        delete updateData.teamSizeRange;
+      }
+    }
+
     if (formData.has("prize")) updateData.prize = Number(formData.get("prize"));
 
     if (formData.has("numberOfWinners")) {

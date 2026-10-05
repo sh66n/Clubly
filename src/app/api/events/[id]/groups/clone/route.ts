@@ -87,7 +87,7 @@ export async function POST(
     }
 
     // Group size constraints from event
-    const maxSize = event.teamSize ? event.teamSize : event.teamSizeRange.max;
+    const maxSize = event.teamSizeRange?.max ? event.teamSizeRange.max : (event.teamSize || 4);
     if (memberIds.length > maxSize) {
       return NextResponse.json(
         { error: "Past group has more members than the maximum allowed for this event" },

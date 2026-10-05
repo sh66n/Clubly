@@ -94,7 +94,7 @@ export async function POST(
       event: event._id,
       isPublic,
       joinCode,
-      maxSize: event.teamSize ? event.teamSize : event.teamSizeRange.max, // inherit from event
+      maxSize: event.teamSizeRange?.max ? event.teamSizeRange.max : (event.teamSize || 4), // inherit from event
     });
 
     //  push group into event registrations

@@ -444,9 +444,15 @@ function CreateEditDrawer({
         setRegistrationDeadlineTime("23:59");
       }
       setEventType(editEvent.eventType);
-      setTeamSize(editEvent.teamSize?.toString() || "");
-      setTeamSizeMin(editEvent.teamSizeRange?.min?.toString() || "");
-      setTeamSizeMax(editEvent.teamSizeRange?.max?.toString() || "");
+      if (editEvent.teamSizeRange?.min && editEvent.teamSizeRange?.max) {
+        setTeamSizeMin(editEvent.teamSizeRange.min.toString());
+        setTeamSizeMax(editEvent.teamSizeRange.max.toString());
+        setTeamSize("");
+      } else {
+        setTeamSize(editEvent.teamSize?.toString() || "");
+        setTeamSizeMin("");
+        setTeamSizeMax("");
+      }
       setRegistrationFee(editEvent.registrationFee?.toString() || "0");
       setPrize(editEvent.prize?.toString() || "");
       setNumberOfWinners(((editEvent.numberOfWinners as any) || 1) as 1 | 2 | 3);
@@ -558,11 +564,33 @@ function CreateEditDrawer({
       formData.append("status", asDraft ? "draft" : "live");
 
       if (eventType === "team") {
+        if ((teamSizeMin && !teamSizeMax) || (!teamSizeMin && teamSizeMax)) {
+          toast.error("Please provide both Min and Max team sizes");
+          setLoading(false);
+          return;
+        }
         if (teamSizeMin && teamSizeMax) {
+          const min = Number(teamSizeMin);
+          const max = Number(teamSizeMax);
+          if (min < 1 || max < min) {
+            toast.error("Max team size must be greater than or equal to Min (and at least 1)");
+            setLoading(false);
+            return;
+          }
           formData.append("teamSizeRange[min]", teamSizeMin);
           formData.append("teamSizeRange[max]", teamSizeMax);
         } else if (teamSize) {
+          const size = Number(teamSize);
+          if (size < 1) {
+            toast.error("Team size must be at least 1");
+            setLoading(false);
+            return;
+          }
           formData.append("teamSize", teamSize);
+        } else {
+          toast.error("Please specify either an exact team size or a Min-Max range");
+          setLoading(false);
+          return;
         }
       }
       if (prize) formData.append("prize", prize);
@@ -1340,6 +1368,18 @@ function EventDetailPanel({
                   {event.numberOfWinners || 1} {(event.numberOfWinners || 1) === 1 ? "Winner" : "Winners"}
                 </span>
               </div>
+              {event.eventType === "team" && (
+                <div>
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
+                    Team Size
+                  </span>
+                  <span className="text-xs font-bold text-slate-700 block mt-0.5">
+                    {event.teamSizeRange?.min && event.teamSizeRange?.max
+                      ? `${event.teamSizeRange.min} - ${event.teamSizeRange.max} Members`
+                      : `${event.teamSize || 1} Members`}
+                  </span>
+                </div>
+              )}
             </div>
 
             <hr className="border-slate-100" />

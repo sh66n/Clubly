@@ -165,7 +165,7 @@ export default function EventDetails({
       (!group || // No group
         !isTeamLeader || // Not leader
         group.members.length <
-          (event.teamSize ? event.teamSize : (event.teamSizeRange?.min ?? 1)))); // Team too small
+          (event.teamSizeRange?.min ? event.teamSizeRange.min : (event.teamSize ?? 1)))); // Team too small
 
   const getCTA = () => {
     //handle processing
@@ -209,9 +209,9 @@ export default function EventDetails({
       return "Create or join a group to continue";
     }
 
-    const required = event.teamSize
-      ? event.teamSize
-      : (event?.teamSizeRange?.min ?? 1);
+    const required = event?.teamSizeRange?.min
+      ? event.teamSizeRange.min
+      : (event.teamSize ?? 1);
     const current = group.members.length;
 
     if (current < required) {
@@ -473,9 +473,9 @@ export default function EventDetails({
                         (!group ||
                           !isTeamLeader ||
                           group.members.length <
-                            (event.teamSize
-                              ? event.teamSize
-                              : (event.teamSizeRange?.min ?? 1))))
+                            (event.teamSizeRange?.min
+                              ? event.teamSizeRange.min
+                              : (event.teamSize ?? 1))))
                     }
                     className={`w-full py-2 rounded-lg font-semibold mb-2 ${
                       isAlreadyRegistered ||
@@ -486,9 +486,9 @@ export default function EventDetails({
                         (!group ||
                           !isTeamLeader ||
                           group.members.length <
-                            (event.teamSize
-                              ? event.teamSize
-                              : (event.teamSizeRange?.min ?? 1))))
+                            (event.teamSizeRange?.min
+                              ? event.teamSizeRange.min
+                              : (event.teamSize ?? 1))))
                         ? "bg-[#000F57] opacity-50 cursor-not-allowed"
                         : "bg-[#000F57] text-white"
                     }`}
@@ -544,10 +544,10 @@ export default function EventDetails({
                   <div className="flex flex-col">
                     <span className="text-xs">Team Size</span>
                     <span className="text-sm">
-                      {event.teamSize
-                        ? event.teamSize
-                        : event.teamSizeRange
-                          ? `${event.teamSizeRange.min} - ${event.teamSizeRange.max}`
+                      {event.teamSizeRange?.min && event.teamSizeRange?.max
+                        ? `${event.teamSizeRange.min} - ${event.teamSizeRange.max}`
+                        : event.teamSize
+                          ? event.teamSize
                           : "1"}
                     </span>
                   </div>

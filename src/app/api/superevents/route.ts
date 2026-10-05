@@ -18,7 +18,6 @@ export async function GET(req: Request) {
         {
           $or: [{ organizingClub: adminClub }, { collaboratingClubs: adminClub }],
         },
-        { name: 1 },
       )
         .sort({ startDate: -1 })
         .populate("collaboratingClubs")
@@ -37,7 +36,6 @@ export async function GET(req: Request) {
     {
       $or: [{ organizingClub: club }, { collaboratingClubs: club }],
     },
-    { name: 1 },
   )
     .sort({ startDate: -1 })
     .populate("collaboratingClubs")
@@ -60,9 +58,12 @@ export const POST = async (req: NextRequest) => {
     }
 
     const formData = await req.formData();
-    const organizingClub = formData.get("organizingClub") as string;
+    const organizingClub = formData.get("organizingClub") as string | null || session.user.adminClub;
 
-    // make sure super event being created has the same organizing club as the club-admin
+    if (!organizingClub) {
+      return NextResponse.json({ error: "No club associated" }, { status: 400 });
+    }
+
     if (organizingClub.toString() !== session.user.adminClub?.toString()) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }

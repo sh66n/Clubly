@@ -14,6 +14,7 @@ import {
   X,
   MessageSquare,
   Handshake,
+  Crown,
 } from "lucide-react";
 
 interface ClubAdminSidebarProps {
@@ -47,6 +48,11 @@ export default function ClubAdminSidebar({
       name: "Dashboard",
       icon: <LayoutGrid size={20} />,
       href: "/club-admin/dashboard",
+    },
+    {
+      name: "Super Events",
+      icon: <Crown size={20} />,
+      href: "/club-admin/superevents",
     },
     {
       name: "My Events",

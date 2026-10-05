@@ -1148,7 +1148,11 @@ export default function EventDetailsPage() {
               </h1>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold text-slate-600 bg-slate-100/80 border border-slate-200 px-2 py-0.5 rounded uppercase tracking-wide">
-                  {event.eventType === "team" ? "Team" : "Individual"} Format
+                  {event.eventType === "team"
+                    ? event.teamSizeRange?.min && event.teamSizeRange?.max
+                      ? `Team (${event.teamSizeRange.min}-${event.teamSizeRange.max} Members)`
+                      : `Team (${event.teamSize || 1} Members)`
+                    : "Individual"} Format
                 </span>
                 <span
                   className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wide ${
@@ -1219,6 +1223,17 @@ export default function EventDetailsPage() {
                   ? event.registrationFee.toLocaleString()
                   : "Free Event"}
               </span>
+              {event.eventType === "team" && (
+                <span className="flex items-center gap-1.5">
+                  <Users size={13} className="text-slate-400" />
+                  <span>
+                    Size:{" "}
+                    {event.teamSizeRange?.min && event.teamSizeRange?.max
+                      ? `${event.teamSizeRange.min} - ${event.teamSizeRange.max}`
+                      : `${event.teamSize || 1}`}
+                  </span>
+                </span>
+              )}
               {event.maxRegistrations && (
                 <span className="flex items-center gap-1.5">
                   <Users size={13} className="text-slate-400" />
@@ -3979,9 +3994,15 @@ function CreateEditDrawer({
         setRegistrationDeadlineTime("23:59");
       }
       setEventType(editEvent.eventType);
-      setTeamSize(editEvent.teamSize?.toString() || "");
-      setTeamSizeMin(editEvent.teamSizeRange?.min?.toString() || "");
-      setTeamSizeMax(editEvent.teamSizeRange?.max?.toString() || "");
+      if (editEvent.teamSizeRange?.min && editEvent.teamSizeRange?.max) {
+        setTeamSizeMin(editEvent.teamSizeRange.min.toString());
+        setTeamSizeMax(editEvent.teamSizeRange.max.toString());
+        setTeamSize("");
+      } else {
+        setTeamSize(editEvent.teamSize?.toString() || "");
+        setTeamSizeMin("");
+        setTeamSizeMax("");
+      }
       setRegistrationFee(editEvent.registrationFee?.toString() || "0");
       setPrize(editEvent.prize?.toString() || "");
       setNumberOfWinners(((editEvent.numberOfWinners as any) || 1) as 1 | 2 | 3);
@@ -4095,11 +4116,33 @@ function CreateEditDrawer({
       );
 
       if (eventType === "team") {
+        if ((teamSizeMin && !teamSizeMax) || (!teamSizeMin && teamSizeMax)) {
+          toast.error("Please provide both Min and Max team sizes");
+          setLoading(false);
+          return;
+        }
         if (teamSizeMin && teamSizeMax) {
+          const min = Number(teamSizeMin);
+          const max = Number(teamSizeMax);
+          if (min < 1 || max < min) {
+            toast.error("Max team size must be greater than or equal to Min (and at least 1)");
+            setLoading(false);
+            return;
+          }
           formData.append("teamSizeRange[min]", teamSizeMin);
           formData.append("teamSizeRange[max]", teamSizeMax);
         } else if (teamSize) {
+          const size = Number(teamSize);
+          if (size < 1) {
+            toast.error("Team size must be at least 1");
+            setLoading(false);
+            return;
+          }
           formData.append("teamSize", teamSize);
+        } else {
+          toast.error("Please specify either an exact team size or a Min-Max range");
+          setLoading(false);
+          return;
         }
       }
       if (prize) formData.append("prize", prize);

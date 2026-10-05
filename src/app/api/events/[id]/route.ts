@@ -509,6 +509,31 @@ export const PATCH = async (
 
     const unsetBody: Record<string, 1> = {};
 
+    if (body.eventType === "individual") {
+      body.teamSize = 1;
+      unsetBody.teamSizeRange = 1;
+      delete body["teamSizeRange.min"];
+      delete body["teamSizeRange.max"];
+      delete body.teamSizeRange;
+    } else if (
+      body["teamSizeRange.min"] !== undefined &&
+      body["teamSizeRange.max"] !== undefined
+    ) {
+      body.teamSizeRange = {
+        min: body["teamSizeRange.min"],
+        max: body["teamSizeRange.max"],
+      };
+      delete body["teamSizeRange.min"];
+      delete body["teamSizeRange.max"];
+      unsetBody.teamSize = 1;
+      delete body.teamSize;
+    } else if (body.teamSize !== undefined && body.eventType !== "individual") {
+      unsetBody.teamSizeRange = 1;
+      delete body["teamSizeRange.min"];
+      delete body["teamSizeRange.max"];
+      delete body.teamSizeRange;
+    }
+
     if (removeCertificateTemplate || body.providesCertificate === false) {
       unsetBody.certificateTemplate = 1;
       delete body.certificateTemplate;
