@@ -50,7 +50,6 @@ import {
   Loader2,
   Mail,
   User,
-  Download,
   Star,
   Pencil,
   X,
@@ -76,6 +75,7 @@ import { toast } from "sonner";
 import ClublyLoader from "@/components/ClubAdmin/ClublyLoader";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { generateAttendancePDF } from "@/lib/generateAttendancePDF";
 
 type EventStatus = "draft" | "live" | "completed";
 type EventType = "team" | "individual";
@@ -97,12 +97,13 @@ interface RegistrationItem {
     email: string;
     image?: string;
     department?: string;
+    year?: number;
   };
   groupId?: {
     _id: string;
     name: string;
-    members: { _id: string; name: string; email: string; image?: string }[];
-    leader: { _id: string; name: string; email: string };
+    members: { _id: string; name: string; email: string; image?: string; department?: string; year?: number }[];
+    leader: { _id: string; name: string; email: string; department?: string; year?: number };
   };
   status: "registered" | "attended" | "absent";
   registeredAt: string;
@@ -165,6 +166,13 @@ interface EventDetails {
   numberOfWinners?: number;
   contact?: { _id: string; name: string; email: string; image?: string }[];
   superEvent?: { _id: string; name: string; image?: string };
+  organizingClub?: {
+    _id: string;
+    name: string;
+    fullName?: string;
+    department?: string;
+    logo?: string;
+  };
   customQuestions?: {
     id: string;
     question: string;
@@ -225,6 +233,7 @@ export default function EventDetailsPage() {
   const [timeFilterOpen, setTimeFilterOpen] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
   const [downloadingBill, setDownloadingBill] = useState(false);
+  const [downloadingAttendance, setDownloadingAttendance] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [openDropdownPos, setOpenDropdownPos] = useState<number | null>(null);
   const billRef = useRef<HTMLDivElement>(null);
@@ -545,86 +554,26 @@ export default function EventDetailsPage() {
     }
   };
 
-  const downloadCSV = () => {
-    if (!event || registrations.length === 0) {
-      toast.error("No data to download");
+  const downloadAttendanceSheetPDF = async () => {
+    if (!event) return;
+    if (registrations.length === 0) {
+      toast.error("No registrations to download");
       return;
     }
 
-    const headers = [
-      event.eventType === "team" ? "Team Name" : "Participant Name",
-      "Email/Leader Info",
-      "Attendance Status",
-      "Registration Date",
-    ];
-
-    if (event.eventType === "team") {
-      headers.push("Team Members");
+    try {
+      setDownloadingAttendance(true);
+      toast.info("Generating attendance sheet PDF, please wait...");
+      await generateAttendancePDF(event as any, registrations as any);
+      toast.success("Attendance sheet PDF downloaded successfully");
+    } catch (err: any) {
+      console.error("Attendance PDF generation error:", err);
+      toast.error(`Failed to generate attendance sheet: ${err?.message || err}`);
+    } finally {
+      setDownloadingAttendance(false);
     }
-
-    event.customQuestions?.forEach((q) => {
-      headers.push(q.question);
-    });
-
-    const csvRows = [headers.join(",")];
-
-    registrations.forEach((reg) => {
-      const nameField =
-        event.eventType === "team"
-          ? reg.groupId?.name || "Unknown Team"
-          : reg.userId?.name || "Unknown user";
-
-      const emailField =
-        event.eventType === "team"
-          ? reg.groupId?.leader?.email || ""
-          : reg.userId?.email || "";
-
-      const membersField =
-        event.eventType === "team"
-          ? reg.groupId?.members?.map((m) => m.name).join("; ") || ""
-          : "";
-
-      const row = [
-        `"${nameField}"`,
-        `"${emailField}"`,
-        `"${reg.status}"`,
-        `"${new Date(reg.registeredAt).toLocaleDateString("en-IN")}"`,
-      ];
-
-      if (event.eventType === "team") {
-        row.push(`"${membersField}"`);
-      }
-
-      event.customQuestions?.forEach((q) => {
-        const ansObj = reg.customQuestionAnswers?.find(
-          (ans) => ans.questionId === q.id,
-        );
-        const ansVal = ansObj
-          ? Array.isArray(ansObj.answer)
-            ? ansObj.answer.join("; ")
-            : ansObj.answer
-          : "";
-        row.push(`"${ansVal.toString().replace(/"/g, '""')}"`);
-      });
-
-      csvRows.push(row.join(","));
-    });
-
-    const blob = new Blob([csvRows.join("\n")], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute(
-      "download",
-      `${event.name.replace(/\s+/g, "_")}_participants.csv`,
-    );
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
+
 
   const filteredRegistrations = useMemo(() => {
     if (!searchQuery.trim()) return registrations;
@@ -1418,12 +1367,18 @@ export default function EventDetailsPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <button
-              onClick={downloadCSV}
-              className="px-4 py-2.5 text-xs font-bold text-white bg-[#7CB342] border border-[#7CB342] hover:bg-[#689F38] rounded-xl transition-all shadow-sm flex items-center gap-2 whitespace-nowrap cursor-pointer"
+              onClick={downloadAttendanceSheetPDF}
+              disabled={downloadingAttendance}
+              className="px-4 py-2.5 text-xs font-bold text-white bg-[#7CB342] border border-[#7CB342] hover:bg-[#689F38] rounded-xl transition-all shadow-sm flex items-center gap-2 whitespace-nowrap cursor-pointer disabled:opacity-60"
             >
-              <Download size={13} /> Export CSV
+              {downloadingAttendance ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <FileText size={13} />
+              )}
+              Export PDF
             </button>
           </div>
         </div>

@@ -18,6 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // 1. Fetch Event and verify ownership
     const event = await Event.findById(id)
+      .populate("organizingClub", "name fullName department logo")
       .populate("likedBy", "name email image")
       .populate("contact", "name email image")
       .populate("winner", "name email image")
@@ -34,8 +35,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         path: "winners.group",
         select: "name members leader",
         populate: [
-          { path: "members", select: "name email image department" },
-          { path: "leader", select: "name email image department" }
+          { path: "members", select: "name email image department year" },
+          { path: "leader", select: "name email image department year" }
         ]
       })
       .lean();
@@ -43,27 +44,28 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    if (event.organizingClub.toString() !== session.user.adminClub.toString()) {
+    if (event.organizingClub?._id?.toString() !== session.user.adminClub.toString() && event.organizingClub?.toString() !== session.user.adminClub.toString()) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // 2. Fetch Registrations and populate users
     const registrations = await Registration.find({ eventId: id })
-      .populate("userId", "name email image department")
+      .populate("userId", "name email image department year")
       .populate({
         path: "groupId",
         select: "name members leader",
         populate: [
           {
             path: "members",
-            select: "name email image department"
+            select: "name email image department year"
           },
           {
             path: "leader",
-            select: "name email image department"
+            select: "name email image department year"
           }
         ]
       })
+      .sort({ registeredAt: 1 })
       .lean();
 
     // 3. Fetch Groups/Teams for this event
