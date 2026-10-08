@@ -74,13 +74,12 @@ export default function EventDetails({
 
   const isProfileComplete = incompleteMembers.length === 0;
 
-  // View logging disabled to avoid any client fetch retriggering
-  // const eventIdStr = String(event._id);
-  // useEffect(() => {
-  //   if (!eventIdStr || viewLoggedEvents.has(eventIdStr)) return;
-  //   viewLoggedEvents.add(eventIdStr);
-  //   fetch(`/api/events/${eventIdStr}/view`, { method: "POST" }).catch(() => {});
-  // }, [eventIdStr]);
+  const eventIdStr = String(event._id);
+  useEffect(() => {
+    if (!eventIdStr || viewLoggedEvents.has(eventIdStr)) return;
+    viewLoggedEvents.add(eventIdStr);
+    fetch(`/api/events/${eventIdStr}/view`, { method: "POST" }).catch(() => {});
+  }, [eventIdStr]);
 
   const [registrationStatus, setRegistrationStatus] =
     useState<RegistrationStatus>("idle");
@@ -796,7 +795,7 @@ export default function EventDetails({
       )}
 
       {/* Floating Feedback & Certificate Widget */}
-      {hasEventPassed && (isAlreadyRegistered || (user?.role === "club-admin" && event?.organizingClub?._id?.toString() === user?.adminClub?.toString())) && (
+      {(((hasEventPassed || Boolean(event.feedbackForm)) && isAlreadyRegistered) || user?.role === "club-admin" || user?.role === "admin") && (
         <EventFeedbackWidget eventId={String(event._id)} eventName={event.name} />
       )}
     </>

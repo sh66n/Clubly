@@ -69,6 +69,8 @@ import {
   ExternalLink,
   Trash2,
   Handshake,
+  Share2,
+  Copy,
 } from "lucide-react";
 import CollabSection from "@/components/ClubAdmin/CollabSection";
 import { toast } from "sonner";
@@ -1874,7 +1876,33 @@ export default function EventDetailsPage() {
                 {/* Top Action Bar: Form Selector & Delete Button on the Top Right */}
                 <div className="flex items-center justify-end">
                   <div className="relative">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const origin = typeof window !== "undefined" ? window.location.origin : "";
+                          const url = `${origin}/events/${eventId}/feedback`;
+                          navigator.clipboard.writeText(url);
+                          toast.success("Feedback form link copied to clipboard!");
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-2xs transition-all cursor-pointer"
+                        title="Copy shareable feedback form link"
+                      >
+                        <Copy size={13} />
+                        <span>Copy Form Link</span>
+                      </button>
+
+                      <a
+                        href={`/events/${eventId}/feedback`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-slate-300 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all"
+                        title="Open feedback form in new tab"
+                      >
+                        <ExternalLink size={13} />
+                        <span>Preview</span>
+                      </a>
+
                       <button
                         type="button"
                         onClick={() => setFeedbackDropdownOpen(!feedbackDropdownOpen)}

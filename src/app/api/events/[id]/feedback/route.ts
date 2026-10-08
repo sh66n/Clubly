@@ -99,10 +99,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       });
     }
 
-    const hasFeedback = await Feedback.exists({
-      eventId: id,
-      userId: session.user.id,
-    });
+    const isClubAdmin = session.user.role === "club-admin" || session.user.role === "admin";
+
+    const hasFeedback = isClubAdmin
+      ? false
+      : await Feedback.exists({
+          eventId: id,
+          userId: session.user.id,
+        });
 
     const form = await FeedbackForm.findById(event.feedbackForm).select("name questions").lean();
 
@@ -110,6 +114,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       submitted: !!hasFeedback,
       form: hasFeedback ? null : form,
       certificate: certificateInfo,
+      hasCertificate: !!certificateInfo,
+      eventName: event.name,
       userName: session.user.name || "Student",
       userId: session.user.id,
     });
@@ -127,7 +133,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const { id } = await params;
-    const { answers } = await req.json();
+    const { answers, comment } = await req.json();
 
     if (!answers || !Array.isArray(answers)) {
       return NextResponse.json({ error: "Invalid answers" }, { status: 400 });
@@ -140,6 +146,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "No feedback form required for this event" }, { status: 400 });
     }
 
+    const isClubAdmin = session.user.role === "club-admin" || session.user.role === "admin";
+
+    // Validate answers format
+    for (const ans of answers) {
+      if (!ans.questionId || typeof ans.rating !== 'number' || ans.rating < 1 || ans.rating > 5) {
+        return NextResponse.json({ error: "Invalid rating value for one or more questions" }, { status: 400 });
+      }
+    }
+
+    // For club admins: treat everything as same but don't save their entries in database
+    if (isClubAdmin) {
+      return NextResponse.json({ success: true, isAdminTest: true }, { status: 201 });
+    }
+
     const hasFeedback = await Feedback.exists({
       eventId: id,
       userId: session.user.id,
@@ -149,18 +169,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "Feedback already submitted" }, { status: 400 });
     }
 
-    // Validate answers format
-    for (const ans of answers) {
-      if (!ans.questionId || typeof ans.rating !== 'number' || ans.rating < 1 || ans.rating > 5) {
-        return NextResponse.json({ error: "Invalid rating value for one or more questions" }, { status: 400 });
-      }
-    }
-
     await Feedback.create({
       eventId: id,
       userId: session.user.id,
       feedbackFormId: event.feedbackForm,
       answers,
+      comment: typeof comment === "string" ? comment.trim() : undefined,
     });
 
     return NextResponse.json({ success: true }, { status: 201 });

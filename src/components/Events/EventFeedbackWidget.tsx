@@ -25,6 +25,7 @@ import {
 } from "react-icons/fa6";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import BorderedDiv from "@/components/BorderedDiv";
 
 interface EventFeedbackWidgetProps {
@@ -179,21 +180,19 @@ export default function EventFeedbackWidget({
   const [certificate, setCertificate] = useState<any>(null);
   const [userName, setUserName] = useState<string>("Student");
   const [userId, setUserId] = useState<string>("");
-  const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [hoveredStars, setHoveredStars] = useState<
-    Record<string, number | null>
-  >({});
   const [imgScale, setImgScale] = useState<{
     clientWidth: number;
     naturalWidth: number;
   }>({ clientWidth: 600, naturalWidth: 1920 });
 
-  const [submitting, setSubmitting] = useState(false);
   const [certDownloading, setCertDownloading] = useState(false);
   const imgRef = React.useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     if (isOpen) {
+      if (certificate) {
+        triggerConfetti();
+      }
       const timer = setTimeout(() => {
         if (imgRef.current && imgRef.current.clientWidth > 0) {
           setImgScale({
@@ -246,16 +245,29 @@ export default function EventFeedbackWidget({
           setUserId(formData.userId);
         }
 
-        if (formData.form && !formData.submitted) {
-          setFeedbackRequired(true);
-          setFeedbackSubmitted(false);
-          setFeedbackForm(formData.form);
-          return;
-        } else if (formData.submitted) {
-          setFeedbackRequired(false);
-          setFeedbackSubmitted(true);
-          return;
+        const isRequired = Boolean(formData.form && !formData.submitted);
+        setFeedbackRequired(isRequired);
+        setFeedbackSubmitted(Boolean(formData.submitted));
+        if (formData.form) setFeedbackForm(formData.form);
+
+        // Check if redirected from feedback completion
+        if (typeof window !== "undefined") {
+          const params = new URLSearchParams(window.location.search);
+          const shouldOpenCert =
+            params.get("openCertificate") === "true" ||
+            params.get("confetti") === "true";
+
+          if (shouldOpenCert) {
+            window.history.replaceState({}, "", window.location.pathname);
+            if (formData.certificate) {
+              setIsOpen(true);
+              toast.success("Feedback submitted! Your certificate is unlocked.");
+            } else {
+              toast.success("Feedback submitted successfully!");
+            }
+          }
         }
+        return;
       }
 
       setFeedbackRequired(false);
@@ -264,49 +276,6 @@ export default function EventFeedbackWidget({
       console.error(error);
     } finally {
       if (isInitial) setLoading(false);
-    }
-  };
-
-  const handleRating = (questionId: string, rating: number) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: rating }));
-  };
-
-  const handleSubmitFeedback = async () => {
-    if (!feedbackForm) return;
-
-    for (const q of feedbackForm.questions) {
-      if (q.required && !answers[q.id]) {
-        toast.error("Please answer all required questions");
-        return;
-      }
-    }
-
-    const formattedAnswers = Object.entries(answers).map(
-      ([questionId, rating]) => ({
-        questionId,
-        rating,
-      }),
-    );
-
-    setSubmitting(true);
-    try {
-      const res = await fetch(`/api/events/${eventId}/feedback`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers: formattedAnswers }),
-      });
-
-      if (!res.ok) throw new Error("Failed to submit feedback");
-
-      toast.success("Thank you for your feedback! Certificate unlocked.");
-      setFeedbackSubmitted(true);
-      setFeedbackRequired(false);
-      triggerConfetti();
-      checkStatus(false);
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -612,8 +581,7 @@ export default function EventFeedbackWidget({
   };
 
   if (loading) return null;
-  if (!certificate?.url) return null;
-  if (!feedbackRequired && !feedbackSubmitted) return null;
+  if (!feedbackRequired && !certificate?.url) return null;
 
   const renderCertificatePreview = () => {
     if (certificate?.url) {
@@ -772,56 +740,58 @@ export default function EventFeedbackWidget({
                   />
                 </div>
 
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsOpen(true);
-                  }}
-                  className="w-full py-2.5 px-4 bg-[#b5b8bd] hover:bg-[#c4c7cc] active:bg-[#a6a9ae] text-gray-900 font-semibold rounded-full text-sm transition-colors duration-150 shadow-sm cursor-pointer mt-2 mb-2.5 relative z-10"
+                <Link
+                  href={`/events/${eventId}/feedback`}
+                  className="w-full py-2.5 px-4 bg-[#b5b8bd] hover:bg-[#c4c7cc] active:bg-[#a6a9ae] text-gray-900 font-semibold rounded-full text-sm transition-colors duration-150 shadow-sm cursor-pointer mt-2 mb-2.5 relative z-10 block text-center"
                 >
                   Give feedback
-                </button>
+                </Link>
 
-                <p className="text-[11.5px] italic text-[#959aa3] leading-snug font-normal relative z-10">
-                  Provide us your valuable feedback and unlock your event
-                  certificate!
-                </p>
+                <div className="flex items-center justify-between w-full relative z-10 px-1">
+                  <p className="text-[11.5px] italic text-[#959aa3] leading-snug font-normal text-left">
+                    Provide us your valuable feedback and unlock your event
+                    certificate!
+                  </p>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const shareUrl = `${window.location.origin}/events/${eventId}/feedback`;
+                      navigator.clipboard.writeText(shareUrl);
+                      toast.success("Feedback form link copied!");
+                    }}
+                    title="Copy feedback link"
+                    className="p-1.5 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors cursor-pointer shrink-0 ml-2"
+                  >
+                    <Copy size={13} />
+                  </button>
+                </div>
               </BorderedDiv>
-            ) : (
+            ) : certificate?.url ? (
               <button
                 onClick={() => setIsOpen(true)}
                 className="group relative flex items-center justify-center p-0 rounded-lg shadow-2xl overflow-hidden cursor-pointer transition-all duration-300 ease-out hover:rotate-[-5deg] hover:scale-110 active:scale-95 w-36 h-24 bg-black border border-zinc-800 select-none"
               >
-                {certificate?.url ? (
-                  <div className="w-full h-full relative overflow-hidden rounded-lg bg-black flex items-center justify-center">
-                    <img
-                      src={certificate.url}
-                      alt="Certificate"
-                      className="w-full h-full object-cover blur-[1.5px] scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-black/35 flex flex-col items-center justify-center transition-opacity">
-                      <Eye className="text-white w-5 h-5 mb-1 drop-shadow" />
-                      <span className="text-[10.5px] font-semibold text-white tracking-wide drop-shadow">
-                        View
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center relative bg-[#0a0b0d] rounded-lg">
-                    <Award className="text-white mb-1 w-6 h-6" />
-                    <span className="text-[10.5px] font-semibold text-white tracking-wide">
+                <div className="w-full h-full relative overflow-hidden rounded-lg bg-black flex items-center justify-center">
+                  <img
+                    src={certificate.url}
+                    alt="Certificate"
+                    className="w-full h-full object-cover blur-[1.5px] scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-black/35 flex flex-col items-center justify-center transition-opacity">
+                    <Eye className="text-white w-5 h-5 mb-1 drop-shadow" />
+                    <span className="text-[10.5px] font-semibold text-white tracking-wide drop-shadow">
                       View
                     </span>
                   </div>
-                )}
+                </div>
               </button>
-            )}
+            ) : null}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Full Screen Modal */}
+      {/* Full Screen Certificate Modal */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -830,122 +800,21 @@ export default function EventFeedbackWidget({
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm"
           >
-            {feedbackRequired ? (
-              <motion.div
-                initial={{ scale: 0.96, opacity: 0, y: 12 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.96, opacity: 0, y: 12 }}
-                transition={{ type: "spring", stiffness: 350, damping: 28 }}
-                className="bg-[#0a0b0d] w-full max-w-lg rounded-2xl border border-white/[0.06] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+            {/* Direct Certificate Presentation without container box */}
+            <motion.div
+              initial={{ scale: 0.94, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.94, opacity: 0, y: 15 }}
+              transition={{ type: "spring", stiffness: 350, damping: 28 }}
+              className="relative w-full max-w-2xl sm:max-w-3xl flex flex-col items-center justify-center"
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setIsOpen(false)}
+                className="absolute -top-12 right-0 sm:-right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 text-gray-300 hover:text-white hover:bg-white/20 transition-colors cursor-pointer backdrop-blur-md z-20"
               >
-                {/* Modal Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.04] bg-[#0a0b0d] shrink-0">
-                  <div>
-                    <h3 className="text-base sm:text-lg font-semibold text-white tracking-tight">
-                      {eventName} Feedback
-                    </h3>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      Fill out the feedback form to unlock your event
-                      certificate!
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setIsOpen(false)}
-                    className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-
-                {/* Modal Body */}
-                <div className="p-5 overflow-y-auto bg-[#0a0b0d] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/15 hover:[&::-webkit-scrollbar-thumb]:bg-white/25 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-button]:hidden">
-                  {feedbackForm ? (
-                    <div className="space-y-4">
-                      {feedbackForm.questions.map((q: any) => {
-                        const activeRating =
-                          hoveredStars[q.id] ?? answers[q.id] ?? 0;
-                        return (
-                          <div
-                            key={q.id}
-                            className="bg-[#111215] border border-white/[0.04] rounded-xl p-4"
-                          >
-                            <p className="text-gray-200 font-medium mb-3 text-sm">
-                              {q.text}
-                            </p>
-                            <div className="flex items-center justify-center gap-2.5 sm:gap-3 py-1">
-                              {[1, 2, 3, 4, 5].map((star) => {
-                                const isFilled = activeRating >= star;
-                                return (
-                                  <button
-                                    key={star}
-                                    type="button"
-                                    onMouseEnter={() =>
-                                      setHoveredStars((prev) => ({
-                                        ...prev,
-                                        [q.id]: star,
-                                      }))
-                                    }
-                                    onMouseLeave={() =>
-                                      setHoveredStars((prev) => ({
-                                        ...prev,
-                                        [q.id]: null,
-                                      }))
-                                    }
-                                    onClick={() => handleRating(q.id, star)}
-                                    className={`p-1.5 transition-transform hover:scale-110 focus:outline-none cursor-pointer ${
-                                      isFilled
-                                        ? "text-amber-400"
-                                        : "text-zinc-700 hover:text-zinc-500"
-                                    }`}
-                                  >
-                                    <Star
-                                      size={26}
-                                      className={
-                                        isFilled ? "fill-amber-400" : ""
-                                      }
-                                    />
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : null}
-                </div>
-
-                {/* Modal Footer */}
-                <div className="px-5 py-4 border-t border-white/[0.04] bg-[#08080a] shrink-0 flex items-center justify-center">
-                  <button
-                    onClick={handleSubmitFeedback}
-                    disabled={submitting}
-                    className="w-auto px-6 py-2.5 bg-[#b5b8bd] hover:bg-[#c5c8cd] active:bg-[#a5a8ad] text-gray-950 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm"
-                  >
-                    {submitting ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      "Submit"
-                    )}
-                  </button>
-                </div>
-              </motion.div>
-            ) : (
-              /* Direct Certificate Presentation without container box */
-              <motion.div
-                initial={{ scale: 0.94, opacity: 0, y: 15 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.94, opacity: 0, y: 15 }}
-                transition={{ type: "spring", stiffness: 350, damping: 28 }}
-                className="relative w-full max-w-2xl sm:max-w-3xl flex flex-col items-center justify-center"
-              >
-                {/* Close Button */}
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="absolute -top-12 right-0 sm:-right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 text-gray-300 hover:text-white hover:bg-white/20 transition-colors cursor-pointer backdrop-blur-md z-20"
-                >
-                  <X size={18} />
-                </button>
+                <X size={18} />
+              </button>
 
                 {/* Certificate */}
                 <div className="w-full flex items-center justify-center shadow-2xl rounded-xl overflow-hidden">
@@ -1088,7 +957,6 @@ export default function EventFeedbackWidget({
                   </AnimatePresence>
                 </div>
               </motion.div>
-            )}
           </motion.div>
         )}
       </AnimatePresence>

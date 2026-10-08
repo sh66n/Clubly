@@ -33,7 +33,8 @@ export const POST = async (
     response.cookies.set(cookieName, "true", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 60, // 1 minute
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24, // 24 hours (86,400 seconds)
       path: "/",
     });
 
