@@ -77,7 +77,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     else if (position === 2) rankValue = "Runner-up";
     else if (position === 3) rankValue = "Third Place";
 
-    const certificateInfo = certObj ? {
+    const isCertReady = Boolean(
+      certObj &&
+      !certObj.isDraft &&
+      certObj.url &&
+      typeof certObj.url === "string" &&
+      certObj.url.trim().length > 0
+    );
+
+    const certificateInfo = isCertReady ? {
       url: certObj.url,
       layout: certObj.layout,
       name: certObj.name || event.name,

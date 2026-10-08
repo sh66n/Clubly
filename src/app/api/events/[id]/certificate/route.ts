@@ -281,7 +281,7 @@ export async function GET(
       certObj = (event as any).certificateTemplate;
     }
 
-    if (!certObj || !certObj.url) {
+    if (!certObj || !certObj.url || certObj.isDraft) {
       return NextResponse.json(
         { error: "Certificate template is not published yet" },
         { status: 400 },

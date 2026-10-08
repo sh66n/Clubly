@@ -69,8 +69,22 @@ export default async function EventFeedbackPage({
   else if (position === 3 && posCerts?.third) targetCertId = posCerts.third;
   else targetCertId = posCerts?.participation || event.certificate || posCerts?.first;
 
+  let certObj: any = null;
+  const certIdStr = typeof targetCertId === "object" ? targetCertId?._id?.toString() : targetCertId?.toString();
+  if (certIdStr) {
+    const { Certificate } = await import("@/models");
+    certObj = await Certificate.findById(certIdStr).lean();
+  }
+  if (!certObj && event.certificateTemplate?.url) {
+    certObj = event.certificateTemplate;
+  }
+
   const hasCertificate = Boolean(
-    targetCertId || event.certificateTemplate?.url,
+    certObj &&
+    !certObj.isDraft &&
+    certObj.url &&
+    typeof certObj.url === "string" &&
+    certObj.url.trim().length > 0
   );
 
   let form = null;

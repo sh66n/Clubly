@@ -100,7 +100,7 @@ export async function getUserCertificates(userId: string): Promise<UserCertifica
       certObj = posCerts?.participation || event.certificate;
     }
 
-    if (!certObj || !certObj.url) continue;
+    if (!certObj || !certObj.url || certObj.isDraft) continue;
 
     const club = event.organizingClub as { name?: string; logo?: string } | null;
     const eventDate = event.startDate

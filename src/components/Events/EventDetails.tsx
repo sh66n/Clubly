@@ -795,7 +795,7 @@ export default function EventDetails({
       )}
 
       {/* Floating Feedback & Certificate Widget */}
-      {(((hasEventPassed || Boolean(event.feedbackForm)) && isAlreadyRegistered) || user?.role === "club-admin" || user?.role === "admin") && (
+      {(((hasEventPassed || Boolean(event.feedbackForm)) && isAlreadyRegistered) || (user?.role as any) === "club-admin" || (user?.role as any) === "admin") && (
         <EventFeedbackWidget eventId={String(event._id)} eventName={event.name} />
       )}
     </>
