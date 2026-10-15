@@ -369,8 +369,11 @@ export const POST = async (req: NextRequest) => {
 
     const certificateId = (formData.get("certificateId") || formData.get("certificate")) as string | null;
 
+    const tenantId = session.user.tenantId;
+
     /* ---------- Create Event ---------- */
     const event = await Event.create({
+      tenantId,
       organizingClub,
       name,
       description,

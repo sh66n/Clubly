@@ -1,8 +1,15 @@
 import { Schema, model, models } from "mongoose";
 import { ICertificate } from "./certificate.schema";
+import { tenantPlugin } from "@/lib/tenantPlugin";
 
 const certificateSchema = new Schema<ICertificate>(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: "Organization",
+      required: true,
+      index: true,
+    },
     club: {
       type: Schema.Types.ObjectId,
       ref: "Club",
@@ -64,6 +71,8 @@ const certificateSchema = new Schema<ICertificate>(
 );
 
 certificateSchema.index({ club: 1 });
+
+certificateSchema.plugin(tenantPlugin);
 
 if (models && models.Certificate) {
   delete (models as any).Certificate;

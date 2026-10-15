@@ -69,7 +69,7 @@ export default async function ProfilePage({
     email: user.email || "",
     image: user.image || "/images/default.png",
     role: user.role || "user",
-    college: user.college || "PVPPCOE Mumbai",
+    college: user.college || "Campus Member",
     department: user.department || "Computer Engineering",
     year: user.year,
     division: user.division,

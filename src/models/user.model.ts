@@ -1,5 +1,6 @@
 import mongoose, { Schema, model } from "mongoose";
 import { IUser } from "./user.schema";
+import { tenantPlugin } from "@/lib/tenantPlugin";
 
 export enum Department {
   COMPUTER_ENGINEERING = "Computer Engineering",
@@ -19,6 +20,12 @@ export enum Year {
 
 const userSchema = new Schema<IUser>(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: "Organization",
+      required: false, // Optional for platform-admin, required for tenant users
+      index: true,
+    },
     name: {
       type: String,
       required: true,
@@ -29,7 +36,7 @@ const userSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ["user", "club-admin", "faculty-coordinator", "super-admin"],
+      enum: ["user", "club-admin", "faculty-coordinator", "super-admin", "platform-admin"],
       required: true,
     },
     image: {
@@ -76,6 +83,9 @@ const userSchema = new Schema<IUser>(
   },
   { timestamps: true },
 );
+
+// Apply tenant isolation plugin
+userSchema.plugin(tenantPlugin, { required: false });
 
 function inferStudentInfo(email: string) {
   if (!email || !email.endsWith("@pvppcoe.ac.in")) return {};
@@ -125,7 +135,7 @@ function inferStudentInfo(email: string) {
 userSchema.pre("validate", function (next) {
   const user = this as any;
 
-  if (user.email) {
+  if (user.email && user.email.endsWith("@pvppcoe.ac.in")) {
     const { department, year } = inferStudentInfo(user.email);
 
     if (department && (user.department === undefined || user.department === null || user.department === "Not Assigned")) {
@@ -134,7 +144,7 @@ userSchema.pre("validate", function (next) {
     if (year && (user.year === undefined || user.year === null)) {
       user.year = year;
     }
-    if (user.email.endsWith("@pvppcoe.ac.in") && !user.college) {
+    if (!user.college) {
       user.college = "PVPPCOE";
     }
   }
@@ -143,7 +153,7 @@ userSchema.pre("validate", function (next) {
 });
 
 const updateDynamicYear = (doc: any) => {
-  if (doc && doc.email) {
+  if (doc && doc.email && doc.email.endsWith("@pvppcoe.ac.in")) {
     const { year } = inferStudentInfo(doc.email);
     if (year && (doc.year === undefined || doc.year === null)) {
       doc.year = year;
@@ -165,8 +175,8 @@ userSchema.post('aggregate', function (res) {
   res.forEach(updateDynamicYear);
 });
 
-// Indexes
-userSchema.index({ email: 1 }, { unique: true });
+// Indexes: email unique per tenant (and globally for users with no tenantId)
+userSchema.index({ tenantId: 1, email: 1 }, { unique: true });
 
 export const User =
   mongoose.models?.User || mongoose.model<IUser>("User", userSchema);

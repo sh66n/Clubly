@@ -119,6 +119,7 @@ export const POST = async (req: NextRequest) => {
 
     /* ---------- Create SuperEvent ---------- */
     const superEvent = await SuperEvent.create({
+      tenantId: session.user.tenantId,
       organizingClub,
       name,
       description: description || undefined,

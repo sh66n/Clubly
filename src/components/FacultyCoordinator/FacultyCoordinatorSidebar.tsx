@@ -14,6 +14,7 @@ import {
   ChevronRight,
   ShieldCheck,
 } from "lucide-react";
+import { useTenant } from "@/context/TenantContext";
 
 export type FacultyTabKey =
   | "overview"
@@ -40,6 +41,7 @@ export default function FacultyCoordinatorSidebar({
   const router = useRouter();
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { name: tenantName } = useTenant();
 
   useEffect(() => {
     try {
@@ -164,8 +166,8 @@ export default function FacultyCoordinatorSidebar({
                 <span className="text-xl font-black font-jakarta tracking-wide text-white">
                   Clubly
                 </span>
-                <span className="text-[9px] uppercase tracking-wider text-[#9CCC65] font-bold">
-                  Faculty Portal
+                <span className="text-[9px] uppercase tracking-wider text-[#9CCC65] font-bold max-w-[140px] truncate">
+                  {tenantName || "Faculty Portal"}
                 </span>
               </div>
             )}

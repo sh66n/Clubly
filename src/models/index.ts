@@ -27,11 +27,14 @@ import { Collaboration } from "./collaboration.model";
 import { Signature } from "./signature.model";
 import { AuditLog } from "./auditLog.model";
 
+import { Organization } from "./organization.model";
+
 // 2. Export them as a single block.
 // When you import { Event } from "@/models" in your API,
 // the engine is forced to load this entire file, ensuring
 // that User, Club, and Group are registered before any .populate() runs.
 export {
+  Organization,
   User,
   Club,
   Event,

@@ -23,11 +23,16 @@ export const zUser = z.object({
     .regex(/^[0-9a-fA-F]{24}$/)
     .optional(),
 
+  tenantId: z
+    .string()
+    .regex(/^[0-9a-fA-F]{24}$/)
+    .optional(),
+
   name: z.string(),
 
   email: z.string().email(),
 
-  role: z.enum(["user", "club-admin", "faculty-coordinator", "super-admin"]),
+  role: z.enum(["user", "club-admin", "faculty-coordinator", "super-admin", "platform-admin"]),
 
   image: z.string().url(),
 
@@ -40,7 +45,7 @@ export const zUser = z.object({
 
   college: z.string().optional(),
 
-  department: DepartmentEnum.optional(),
+  department: z.string().optional(),
 
   year: YearEnum.optional(),
 
@@ -51,22 +56,17 @@ export const zUser = z.object({
 
 export interface IUser {
   _id?: Types.ObjectId;
+  tenantId?: Types.ObjectId;
   name: string;
   email: string;
-  role: "user" | "club-admin" | "faculty-coordinator" | "super-admin";
+  role: "user" | "club-admin" | "faculty-coordinator" | "super-admin" | "platform-admin";
   image: string;
 
   adminClub?: Types.ObjectId;
   phoneNumber?: string;
   college?: string;
 
-  department?:
-    | "Computer Engineering"
-    | "Information Technology"
-    | "Computer Science and Engineering (AI & ML)"
-    | "Electronics and Computer Science (ECS)"
-    | "Mechatronics"
-    | "Electronics & Telecommunications";
+  department?: string;
 
   year?: 1 | 2 | 3 | 4;
 

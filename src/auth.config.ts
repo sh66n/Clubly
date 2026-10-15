@@ -2,6 +2,7 @@ import Google from "next-auth/providers/google";
 import type { NextAuthConfig } from "next-auth";
 
 export const authConfig: NextAuthConfig = {
+  trustHost: true,
   session: {
     maxAge: 3 * 24 * 60 * 60, // 3 days in seconds
   },
@@ -26,6 +27,8 @@ export const authConfig: NextAuthConfig = {
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
+        session.user.tenantId = token.tenantId as string;
+        session.user.tenantSlug = token.tenantSlug as string;
         session.user.role = token.role as string;
         session.user.adminClub = token.adminClub as string;
         session.user.points = token.points as number;

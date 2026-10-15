@@ -1,6 +1,8 @@
 import { Schema, model, models } from "mongoose";
+import { tenantPlugin } from "@/lib/tenantPlugin";
 
 export interface ISuperEvent {
+  tenantId: Schema.Types.ObjectId;
   organizingClub: Schema.Types.ObjectId;
   collaboratingClubs?: Schema.Types.ObjectId[];
   name: string;
@@ -12,6 +14,12 @@ export interface ISuperEvent {
 
 const superEventSchema = new Schema<ISuperEvent>(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: "Organization",
+      required: true,
+      index: true,
+    },
     organizingClub: {
       type: Schema.Types.ObjectId,
       ref: "Club",
@@ -42,6 +50,8 @@ const superEventSchema = new Schema<ISuperEvent>(
   },
   { timestamps: true },
 );
+
+superEventSchema.plugin(tenantPlugin);
 
 export const SuperEvent =
   models.SuperEvent || model<ISuperEvent>("SuperEvent", superEventSchema);

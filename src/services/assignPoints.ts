@@ -32,6 +32,8 @@ export async function assignPointsForEvent(
     }
   }
 
+  const tenantId = event.tenantId;
+
   // Build bulk operations for UserPoints
   const pointsOps: mongoose.AnyBulkWriteOperation<any>[] = [];
 
@@ -39,11 +41,12 @@ export async function assignPointsForEvent(
   for (const userId of presentUserIds) {
     pointsOps.push({
       updateOne: {
-        filter: { userId: new mongoose.Types.ObjectId(userId), clubId },
+        filter: { userId: new mongoose.Types.ObjectId(userId), clubId, tenantId },
         // Keep points non-negative while allowing atomic upsert updates.
         update: [
           {
             $set: {
+              tenantId,
               userId: new mongoose.Types.ObjectId(userId),
               clubId,
               points: {
@@ -66,11 +69,12 @@ export async function assignPointsForEvent(
   for (const userId of absentUserIds) {
     pointsOps.push({
       updateOne: {
-        filter: { userId: new mongoose.Types.ObjectId(userId), clubId },
+        filter: { userId: new mongoose.Types.ObjectId(userId), clubId, tenantId },
         // Keep points non-negative while allowing atomic upsert updates.
         update: [
           {
             $set: {
+              tenantId,
               userId: new mongoose.Types.ObjectId(userId),
               clubId,
               points: {

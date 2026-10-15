@@ -1,8 +1,15 @@
 import mongoose, { Schema, model, models } from "mongoose";
 import { IEvent } from "./event.schema";
+import { tenantPlugin } from "@/lib/tenantPlugin";
 
 const eventSchema = new Schema<IEvent>(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: "Organization",
+      required: true,
+      index: true,
+    },
     organizingClub: {
       type: Schema.Types.ObjectId,
       ref: "Club",
@@ -195,5 +202,7 @@ const eventSchema = new Schema<IEvent>(
 eventSchema.index({ organizingClub: 1 });
 eventSchema.index({ date: 1 });
 eventSchema.index({ superEvent: 1 });
+
+eventSchema.plugin(tenantPlugin);
 
 export const Event = models?.Event || model<IEvent>("Event", eventSchema);

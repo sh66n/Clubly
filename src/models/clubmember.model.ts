@@ -1,7 +1,9 @@
 import mongoose, { Schema, model, models } from "mongoose";
+import { tenantPlugin } from "@/lib/tenantPlugin";
 
 export interface IClubMember {
   _id: mongoose.Types.ObjectId;
+  tenantId: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
   clubId: mongoose.Types.ObjectId;
   role: "core" | "volunteer";
@@ -11,6 +13,12 @@ export interface IClubMember {
 
 const clubMemberSchema = new Schema<IClubMember>(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: "Organization",
+      required: true,
+      index: true,
+    },
     userId: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -34,6 +42,8 @@ const clubMemberSchema = new Schema<IClubMember>(
 clubMemberSchema.index({ clubId: 1, role: 1 });
 clubMemberSchema.index({ userId: 1 });
 clubMemberSchema.index({ userId: 1, clubId: 1 }, { unique: true });
+
+clubMemberSchema.plugin(tenantPlugin);
 
 export const ClubMember =
   models?.ClubMember || model<IClubMember>("ClubMember", clubMemberSchema);

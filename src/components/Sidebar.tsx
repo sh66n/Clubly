@@ -22,6 +22,7 @@ import {
   ChevronRight,
   ShieldCheck,
 } from "lucide-react";
+import { useTenant } from "@/context/TenantContext";
 
 interface SidebarProps {
   isLoggedIn: boolean;
@@ -90,6 +91,7 @@ export default function Sidebar({ isLoggedIn, points, user }: SidebarProps) {
   const pathname = usePathname().split("/")[1];
   const [isOpen, setIsOpen] = useState(false);
   const [isCompressed, setIsCompressed] = useState(false);
+  const { name: tenantName, logo: tenantLogo, isRootDomain } = useTenant();
 
   /* refs for the active-indicator animation */
   const navListRef = useRef<HTMLUListElement>(null);
@@ -125,9 +127,6 @@ export default function Sidebar({ isLoggedIn, points, user }: SidebarProps) {
     { name: "Events", icon: <Calendar size={20} />, href: "/events", section: "nav" },
     { name: "Clubs", icon: <Users size={20} />, href: "/clubs", section: "nav" },
     { name: "Leaderboard", icon: <Goal size={20} />, href: "/leaderboard", section: "nav" },
-    ...(user?.role === "super-admin"
-      ? [{ name: "Super Admin", icon: <ShieldCheck size={20} className="text-fuchsia-400" />, href: "/super-admin", section: "nav" }]
-      : []),
     { name: "__separator__", icon: null, href: "", section: "separator" },
     { name: "Settings", icon: <Bolt size={20} />, href: "/me", section: "general" },
     { name: "Help", icon: <Info size={20} />, href: "/help", section: "general" },
@@ -209,32 +208,53 @@ export default function Sidebar({ isLoggedIn, points, user }: SidebarProps) {
           {/* ===== TOP: Logo (fixed) ===== */}
           <div
             className={`flex items-center shrink-0 border-b border-[#333] rounded-t-xl bg-cover bg-center ${
-              isCompressed ? "justify-center px-2 py-5" : "justify-center px-5 py-5"
+              isCompressed ? "justify-center px-2 py-5" : "justify-center px-5 py-4"
             }`}
             style={{ backgroundImage: "url('/images/nav-bg.png')" }}
           >
             {isCompressed ? (
               <Link href={"/"} className="flex items-center justify-center">
-                <Image
-                  src="/images/logo-without-text.png"
-                  alt="Clubly Logo"
-                  width={32}
-                  height={32}
-                  priority
-                  className="object-contain"
-                />
+                {tenantLogo ? (
+                  <img
+                    src={tenantLogo}
+                    alt={tenantName || "Clubly Logo"}
+                    className="w-8 h-8 rounded-md object-contain"
+                  />
+                ) : (
+                  <Image
+                    src="/images/logo-without-text.png"
+                    alt="Clubly Logo"
+                    width={32}
+                    height={32}
+                    priority
+                    className="object-contain"
+                  />
+                )}
               </Link>
             ) : (
-              <Link href={"/"} className="flex items-center justify-center">
-                <Image
-                  src="/images/logo.png"
-                  alt="Clubly Logo"
-                  width={130}
-                  height={130}
-                  priority
-                  placeholder="empty"
-                  className="object-contain"
-                />
+              <Link href={"/"} className="flex flex-col items-center justify-center gap-1 group">
+                {tenantLogo ? (
+                  <img
+                    src={tenantLogo}
+                    alt={tenantName || "Clubly Logo"}
+                    className="max-h-9 max-w-[140px] object-contain"
+                  />
+                ) : (
+                  <Image
+                    src="/images/logo.png"
+                    alt="Clubly Logo"
+                    width={130}
+                    height={36}
+                    priority
+                    placeholder="empty"
+                    className="object-contain"
+                  />
+                )}
+                {tenantName && !isRootDomain && (
+                  <span className="text-[10px] font-semibold text-zinc-400 group-hover:text-zinc-200 transition-colors max-w-[180px] truncate text-center">
+                    {tenantName}
+                  </span>
+                )}
               </Link>
             )}
           </div>

@@ -1,4 +1,5 @@
 import mongoose, { Schema, model, models } from "mongoose";
+import { tenantPlugin } from "@/lib/tenantPlugin";
 
 export interface IFeedbackAnswer {
   questionId: string;
@@ -7,6 +8,7 @@ export interface IFeedbackAnswer {
 
 export interface IFeedback {
   _id: mongoose.Types.ObjectId;
+  tenantId: mongoose.Types.ObjectId;
   eventId: mongoose.Types.ObjectId;
   feedbackFormId?: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
@@ -27,6 +29,12 @@ const FeedbackAnswerSchema = new Schema<IFeedbackAnswer>(
 
 const FeedbackSchema = new Schema<IFeedback>(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: "Organization",
+      required: true,
+      index: true,
+    },
     eventId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Event",
@@ -60,6 +68,8 @@ const FeedbackSchema = new Schema<IFeedback>(
 // Indexes
 FeedbackSchema.index({ eventId: 1 });
 FeedbackSchema.index({ eventId: 1, userId: 1 }, { unique: true });
+
+FeedbackSchema.plugin(tenantPlugin);
 
 export const Feedback =
   models?.Feedback || model<IFeedback>("Feedback", FeedbackSchema);

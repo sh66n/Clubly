@@ -1,6 +1,8 @@
 import mongoose, { Schema, model, models } from "mongoose";
+import { tenantPlugin } from "@/lib/tenantPlugin";
 
 export interface IPayment {
+  tenantId: mongoose.Types.ObjectId;
   razorpayOrderId: string;
   razorpayPaymentId?: string;
   userId: mongoose.Types.ObjectId;
@@ -21,6 +23,12 @@ export interface IPayment {
 
 const paymentSchema = new Schema<IPayment>(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: "Organization",
+      required: true,
+      index: true,
+    },
     razorpayOrderId: {
       type: String,
       required: true,
@@ -83,6 +91,8 @@ const paymentSchema = new Schema<IPayment>(
 
 // Compound index: one paid payment per user per event
 paymentSchema.index({ userId: 1, eventId: 1, status: 1 });
+
+paymentSchema.plugin(tenantPlugin);
 
 export const Payment =
   models?.Payment || model<IPayment>("Payment", paymentSchema);

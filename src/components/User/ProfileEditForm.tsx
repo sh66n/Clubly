@@ -8,6 +8,8 @@ import { Session } from "next-auth";
 import Link from "next/link";
 import { getProfileStatus } from "@/lib/utils";
 
+import { useTenant } from "@/context/TenantContext";
+
 interface ProfileEditFormProps {
   user: Session["user"] & {
     year?: string;
@@ -25,6 +27,18 @@ export default function ProfileEditForm({ user }: ProfileEditFormProps) {
   const [previewImage, setPreviewImage] = useState<string | null>(
     user?.image || null,
   );
+  const { departments: tenantDepartments } = useTenant();
+
+  const defaultDepartments = [
+    "Computer Engineering",
+    "Information Technology",
+    "Computer Science and Engineering (AI & ML)",
+    "Electronics and Computer Science (ECS)",
+    "Mechatronics",
+    "Electronics & Telecommunications",
+  ];
+
+  const departmentsList = tenantDepartments && tenantDepartments.length > 0 ? tenantDepartments : defaultDepartments;
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -177,12 +191,11 @@ export default function ProfileEditForm({ user }: ProfileEditFormProps) {
                     className="w-full bg-zinc-900/40 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-zinc-200 focus:ring-1 focus:ring-zinc-500 outline-none transition-all"
                   >
                     <option value="" disabled className="bg-zinc-950 text-zinc-400">Select Department</option>
-                    <option value="Computer Engineering" className="bg-zinc-950 text-zinc-200">Computer Engineering</option>
-                    <option value="Information Technology" className="bg-zinc-950 text-zinc-200">Information Technology</option>
-                    <option value="Computer Science and Engineering (AI & ML)" className="bg-zinc-950 text-zinc-200">Computer Science and Engineering (AI & ML)</option>
-                    <option value="Electronics and Computer Science (ECS)" className="bg-zinc-950 text-zinc-200">Electronics and Computer Science (ECS)</option>
-                    <option value="Mechatronics" className="bg-zinc-950 text-zinc-200">Mechatronics</option>
-                    <option value="Electronics & Telecommunications" className="bg-zinc-950 text-zinc-200">Electronics & Telecommunications</option>
+                    {departmentsList.map((dept) => (
+                      <option key={dept} value={dept} className="bg-zinc-950 text-zinc-200">
+                        {dept}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 {/* Year Select */}

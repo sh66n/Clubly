@@ -1,7 +1,9 @@
 import mongoose, { Schema, model, models } from "mongoose";
+import { tenantPlugin } from "@/lib/tenantPlugin";
 
 export interface IRegistration {
   _id: mongoose.Types.ObjectId;
+  tenantId: mongoose.Types.ObjectId;
   eventId: mongoose.Types.ObjectId;
   userId?: mongoose.Types.ObjectId;
   groupId?: mongoose.Types.ObjectId;
@@ -18,6 +20,12 @@ export interface IRegistration {
 
 const registrationSchema = new Schema<IRegistration>(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: "Organization",
+      required: true,
+      index: true,
+    },
     eventId: {
       type: Schema.Types.ObjectId,
       ref: "Event",
@@ -72,6 +80,8 @@ registrationSchema.index(
 );
 registrationSchema.index({ userId: 1 });
 registrationSchema.index({ groupId: 1 });
+
+registrationSchema.plugin(tenantPlugin);
 
 export const Registration =
   models?.Registration ||

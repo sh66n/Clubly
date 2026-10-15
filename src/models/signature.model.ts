@@ -1,8 +1,15 @@
 import mongoose, { Schema, model, models } from "mongoose";
 import { ISignature } from "./signature.schema";
+import { tenantPlugin } from "@/lib/tenantPlugin";
 
 const signatureSchema = new Schema<ISignature>(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: "Organization",
+      required: true,
+      index: true,
+    },
     userId: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -30,6 +37,8 @@ const signatureSchema = new Schema<ISignature>(
 );
 
 signatureSchema.index({ userId: 1, name: 1 });
+
+signatureSchema.plugin(tenantPlugin);
 
 export const Signature =
   models?.Signature || model<ISignature>("Signature", signatureSchema);

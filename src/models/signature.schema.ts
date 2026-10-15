@@ -3,6 +3,7 @@ import { z } from "zod";
 
 export const zSignature = z.object({
   _id: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
+  tenantId: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
   userId: z.string().regex(/^[0-9a-fA-F]{24}$/),
   name: z.string().min(1),
   imageUrl: z.string().url(),
@@ -14,6 +15,7 @@ export const zSignature = z.object({
 
 export interface ISignature {
   _id: Types.ObjectId;
+  tenantId: Types.ObjectId;
   userId: Types.ObjectId;
   name: string;
   imageUrl: string;

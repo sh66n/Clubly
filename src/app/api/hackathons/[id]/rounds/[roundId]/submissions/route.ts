@@ -107,6 +107,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       await submission.save();
     } else {
       submission = await Submission.create({
+        tenantId: hackathon.tenantId || session.user.tenantId,
         hackathon: id,
         round: roundId,
         team: team._id,

@@ -4,16 +4,23 @@ import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
+import { useTenant } from "@/context/TenantContext";
+
 export default function LoginErrorToast() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
+  const { allowedEmailDomains, name } = useTenant();
 
   useEffect(() => {
     if (!error) return;
 
     switch (error) {
       case "unauthorized-domain":
-        toast.error("Only pvppcoe.ac.in email IDs are allowed");
+        if (allowedEmailDomains && allowedEmailDomains.length > 0) {
+          toast.error(`Only ${allowedEmailDomains.join(", ")} email IDs are allowed for ${name || "this college"}`);
+        } else {
+          toast.error("Your email domain is not authorized for this portal.");
+        }
         break;
 
       case "missing-email":

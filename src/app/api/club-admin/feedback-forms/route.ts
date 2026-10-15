@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
     await connectToDb();
     
     const form = await FeedbackForm.create({
+      tenantId: session.user.tenantId,
       club: session.user.adminClub,
       name,
       questions: formattedQuestions,

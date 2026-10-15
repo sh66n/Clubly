@@ -58,6 +58,7 @@ export const POST = async (
       : 1;
 
     const round = await HackathonRound.create({
+      tenantId: hackathon.tenantId || session.user.tenantId,
       hackathon: id,
       roundNumber,
       name: body.name,

@@ -1,7 +1,9 @@
 import { Schema, model, models, Types } from "mongoose";
+import { tenantPlugin } from "@/lib/tenantPlugin";
 
 export interface IHackathonRound {
   _id: Types.ObjectId;
+  tenantId: Types.ObjectId;
   hackathon: Types.ObjectId;
   roundNumber: number;
   name: string;
@@ -18,6 +20,7 @@ export interface IHackathonRound {
 
 const hackathonRoundSchema = new Schema<IHackathonRound>(
   {
+    tenantId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
     hackathon: { type: Schema.Types.ObjectId, ref: "Hackathon", required: true },
     roundNumber: { type: Number, required: true },
     name: { type: String, required: true },
@@ -37,5 +40,7 @@ const hackathonRoundSchema = new Schema<IHackathonRound>(
 );
 
 hackathonRoundSchema.index({ hackathon: 1, roundNumber: 1 }, { unique: true });
+
+hackathonRoundSchema.plugin(tenantPlugin);
 
 export const HackathonRound = models?.HackathonRound || model<IHackathonRound>("HackathonRound", hackathonRoundSchema);

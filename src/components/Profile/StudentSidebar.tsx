@@ -183,7 +183,7 @@ export default function StudentSidebar({
         <div className="mt-4 pt-3 border-t border-white/10 space-y-2 text-xs">
           <div className="flex items-center gap-2 text-zinc-400">
             <MapPin className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-            <span className="truncate">{user.college || "PVPPCOE Mumbai"}</span>
+            <span className="truncate">{user.college || "Campus Community"}</span>
           </div>
 
           {user.bio && (

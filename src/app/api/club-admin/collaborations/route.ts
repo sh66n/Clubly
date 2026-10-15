@@ -140,6 +140,7 @@ export async function POST(req: NextRequest) {
     }
 
     const collab = await Collaboration.create({
+      tenantId: entity.tenantId || session.user.tenantId,
       entityType,
       entityId: new Types.ObjectId(entityId),
       initiatorClub: adminClubId,

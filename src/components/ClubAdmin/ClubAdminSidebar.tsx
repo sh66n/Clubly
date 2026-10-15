@@ -17,6 +17,7 @@ import {
   Crown,
   GraduationCap,
 } from "lucide-react";
+import { useTenant } from "@/context/TenantContext";
 
 interface ClubAdminSidebarProps {
   user?: {
@@ -36,6 +37,7 @@ export default function ClubAdminSidebar({
 }: ClubAdminSidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { name: tenantName } = useTenant();
 
   useEffect(() => {
     try {
@@ -203,7 +205,7 @@ export default function ClubAdminSidebar({
                 />
               </>
             ) : (
-              <>
+              <div className="flex items-center gap-2">
                 <Image
                   src="/images/svg-logo.svg"
                   alt="Clubly"
@@ -212,8 +214,15 @@ export default function ClubAdminSidebar({
                   priority
                   className="object-contain"
                 />
-                <span className="text-2xl font-extrabold font-jakarta tracking-wide text-white">Clubly</span>
-              </>
+                <div className="flex flex-col">
+                  <span className="text-2xl font-extrabold font-jakarta tracking-wide text-white">Clubly</span>
+                  {tenantName && (
+                    <span className="text-[10px] font-medium text-[#c5e1a5] max-w-[140px] truncate leading-tight">
+                      {tenantName}
+                    </span>
+                  )}
+                </div>
+              </div>
             )}
           </Link>
         </div>

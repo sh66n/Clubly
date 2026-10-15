@@ -144,6 +144,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
     
     const registration = await HackathonRegistration.create({
+      tenantId: hackathon.tenantId || session.user.tenantId,
       hackathon: id,
       team: teamId,
       status: 'registered',

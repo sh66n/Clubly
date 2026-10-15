@@ -153,7 +153,7 @@ export default function SuperAdminClientLayout({
                   {user?.name || "College Administrator"}
                 </p>
                 <p className="text-[10.5px] text-[#717080] leading-tight">
-                  {user?.email || "admin@pvppcoe.ac.in"}
+                  {user?.email || "admin@college.edu"}
                 </p>
               </div>
             </div>

@@ -1595,13 +1595,31 @@ export default function FacultyCoordinatorEventPage() {
           {/* TAB 4: WINNERS (Read-Only Podium) */}
           {activeTab === "winners" && (
             <div className="p-6 sm:p-8 pb-8">
-              <div className="flex flex-col items-center justify-center max-w-xl mx-auto min-h-[320px]">
+              <style>{`
+                @keyframes spinBadge {
+                  0% { transform: rotateY(0deg); }
+                  100% { transform: rotateY(360deg); }
+                }
+                @keyframes badgeShine {
+                  0% { transform: translateX(-150%) rotate(25deg); opacity: 0; }
+                  15% { opacity: 0.85; }
+                  35% { transform: translateX(150%) rotate(25deg); opacity: 0; }
+                  100% { transform: translateX(150%) rotate(25deg); opacity: 0; }
+                }
+                @keyframes sparkleStar {
+                  0%, 100% { transform: scale(0) rotate(0deg); opacity: 0; }
+                  20% { transform: scale(1.1) rotate(45deg); opacity: 1; filter: drop-shadow(0 0 3px rgba(255,255,255,0.9)); }
+                  40% { transform: scale(0.6) rotate(90deg); opacity: 0.8; }
+                  60% { transform: scale(0) rotate(135deg); opacity: 0; }
+                }
+              `}</style>
+              <div className="flex flex-col items-center justify-center max-w-2xl mx-auto min-h-[380px]">
                 {currentWinners.length === 0 ? (
                   <div className="py-16 text-center text-slate-400 font-semibold text-xs bg-slate-50 rounded-2xl border border-slate-200/60 w-full">
                     No winners have been announced yet.
                   </div>
                 ) : (
-                  <div className="w-full flex items-end justify-center gap-4 sm:gap-6 pt-4">
+                  <div className="w-full flex items-end justify-center gap-3 sm:gap-6 pt-6">
                     {[2, 1, 3].map((pos) => {
                       if (pos > (event.numberOfWinners || 1)) return null;
                       const winnerItem = currentWinners.find(
@@ -1632,6 +1650,37 @@ export default function FacultyCoordinatorEventPage() {
                           label: "2nd Place",
                         };
 
+                      const coinConfigs: Record<number, any> = {
+                        1: {
+                          edgeColor: "bg-[#b45309] border-[#92400e]",
+                          frontColor: "border-amber-500 ring-amber-200/90 bg-gradient-to-tr from-[#f59e0b] via-[#fef08a] to-[#d97706] shadow-[0_0_18px_rgba(245,158,11,0.6)]",
+                          backColor: "border-amber-500 ring-amber-200/90 bg-gradient-to-bl from-[#f59e0b] via-[#fef08a] to-[#d97706] shadow-[0_0_18px_rgba(245,158,11,0.6)]",
+                          textColor: "text-amber-950",
+                          icon: <Trophy className="text-amber-950 w-5 h-5 sm:w-6 sm:h-6 relative z-10" />,
+                          label: "Winner",
+                          delay: 0.4,
+                        },
+                        2: {
+                          edgeColor: "bg-[#475569] border-[#334155]",
+                          frontColor: "border-slate-300 ring-white/90 bg-gradient-to-tr from-[#94a3b8] via-[#ffffff] to-[#64748b] shadow-[0_0_18px_rgba(203,213,225,0.7)]",
+                          backColor: "border-slate-300 ring-white/90 bg-gradient-to-bl from-[#94a3b8] via-[#ffffff] to-[#64748b] shadow-[0_0_18px_rgba(203,213,225,0.7)]",
+                          textColor: "text-slate-900",
+                          icon: <Award className="text-slate-900 w-5 h-5 sm:w-6 sm:h-6 relative z-10" />,
+                          label: (event.numberOfWinners || 1) === 2 ? "Runner-up" : "2nd Place",
+                          delay: 0.8,
+                        },
+                        3: {
+                          edgeColor: "bg-[#9a3412] border-[#7c2d12]",
+                          frontColor: "border-orange-500 ring-orange-200/90 bg-gradient-to-tr from-[#ea580c] via-[#fed7aa] to-[#c2410c] shadow-[0_0_18px_rgba(234,88,12,0.6)]",
+                          backColor: "border-orange-500 ring-orange-200/90 bg-gradient-to-bl from-[#ea580c] via-[#fed7aa] to-[#c2410c] shadow-[0_0_18px_rgba(234,88,12,0.6)]",
+                          textColor: "text-orange-950",
+                          icon: <Award className="text-orange-950 w-5 h-5 sm:w-6 sm:h-6 relative z-10" />,
+                          label: "3rd Place",
+                          delay: 1.2,
+                        },
+                      };
+                      const coin = coinConfigs[pos] || coinConfigs[1];
+
                       const height =
                         pos === 1
                           ? "h-[160px]"
@@ -1642,8 +1691,95 @@ export default function FacultyCoordinatorEventPage() {
                       return (
                         <div
                           key={pos}
-                          className="flex flex-col items-center justify-end flex-1 max-w-[180px]"
+                          className="flex flex-col items-center justify-end flex-1 max-w-[200px] relative pt-6 sm:pt-8"
                         >
+                          {/* 3D Rotating Coin Badge Above Winner Slot */}
+                          <div className="flex flex-col items-center justify-center [perspective:600px] mb-4 sm:mb-6 z-10">
+                            <div
+                              className="relative w-14 h-14 sm:w-16 sm:h-16 [transform-style:preserve-3d] animate-[spinBadge_4s_linear_infinite]"
+                              style={{ animationDelay: `${coin.delay}s` }}
+                            >
+                              {/* Coin Thickness layers */}
+                              {[-2, -1.2, -0.4, 0.4, 1.2, 2].map((zOffset, i) => (
+                                <div
+                                  key={i}
+                                  className={`absolute inset-0 rounded-full border-2 ${coin.edgeColor}`}
+                                  style={{ transform: `translateZ(${zOffset}px)` }}
+                                />
+                              ))}
+
+                              {/* Front Face */}
+                              <div
+                                className={`absolute inset-0 rounded-full border-2 ring-1 ring-inset flex flex-col items-center justify-center p-1 sm:p-1.5 shadow-xl [backface-visibility:hidden] overflow-hidden ${coin.frontColor}`}
+                                style={{ transform: "translateZ(2.5px)" }}
+                              >
+                                {coin.icon}
+                                <span
+                                  className={`text-[6.5px] sm:text-[7.5px] font-black uppercase tracking-tight text-center leading-none mt-0.5 relative z-10 ${coin.textColor}`}
+                                >
+                                  {coin.label}
+                                </span>
+                                <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-full">
+                                  <div
+                                    className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/70 to-transparent blur-[1px] animate-[badgeShine_2.5s_ease-in-out_infinite]"
+                                    style={{ animationDelay: `${coin.delay}s` }}
+                                  />
+                                  {/* Sparkle Stars */}
+                                  <div
+                                    className="absolute top-1 right-1.5 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                                    style={{ animationDelay: `${coin.delay + 0.15}s` }}
+                                  >
+                                    <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                                      <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                                    </svg>
+                                  </div>
+                                  <div
+                                    className="absolute bottom-1 left-1.5 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                                    style={{ animationDelay: `${coin.delay + 0.45}s` }}
+                                  >
+                                    <svg viewBox="0 0 24 24" className="w-2 h-2 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                                      <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Back Face */}
+                              <div
+                                className={`absolute inset-0 rounded-full border-2 ring-1 ring-inset flex flex-col items-center justify-center p-1 sm:p-1.5 shadow-xl [backface-visibility:hidden] overflow-hidden ${coin.backColor}`}
+                                style={{ transform: "translateZ(-2.5px) rotateY(180deg)" }}
+                              >
+                                <span
+                                  className={`font-black uppercase text-[6.5px] sm:text-[7.5px] tracking-tight text-center line-clamp-2 leading-tight relative z-10 px-1 ${coin.textColor}`}
+                                >
+                                  {event.name || "Winner"}
+                                </span>
+                                <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-full">
+                                  <div
+                                    className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/70 to-transparent blur-[1px] animate-[badgeShine_2.5s_ease-in-out_infinite]"
+                                    style={{ animationDelay: `${coin.delay + 1.25}s` }}
+                                  />
+                                  <div
+                                    className="absolute top-1 left-1.5 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                                    style={{ animationDelay: `${coin.delay + 1.4}s` }}
+                                  >
+                                    <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                                      <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                                    </svg>
+                                  </div>
+                                  <div
+                                    className="absolute bottom-1 right-1.5 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                                    style={{ animationDelay: `${coin.delay + 1.7}s` }}
+                                  >
+                                    <svg viewBox="0 0 24 24" className="w-2 h-2 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                                      <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
                           <div className="mb-4 w-full">
                             {winnerItem ? (
                               <div
@@ -1713,69 +1849,258 @@ export default function FacultyCoordinatorEventPage() {
             </div>
           )}
 
-          {/* TAB 5: CERTIFICATES (Read-Only) */}
-          {activeTab === "certificates" && (
-            <div className="p-6 sm:p-8 space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {[
-                  {
-                    title: "Participant Certificate",
-                    cert:
-                      event.certificatesByPosition?.participation ||
-                      event.certificate,
-                    label: "Awarded to Attendees",
-                  },
-                  {
-                    title: "Winner (1st) Certificate",
-                    cert: event.certificatesByPosition?.first,
-                    label: "Awarded to Champion",
-                  },
-                  {
-                    title: "2nd Place Certificate",
-                    cert: event.certificatesByPosition?.second,
-                    label: "Awarded to 2nd Place",
-                  },
-                  {
-                    title: "3rd Place Certificate",
-                    cert: event.certificatesByPosition?.third,
-                    label: "Awarded to 3rd Place",
-                  },
-                ].map((item, i) => (
-                  <div
-                    key={i}
-                    className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs flex flex-col justify-between gap-3"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <Award size={16} className="text-[#7CB342]" />
-                        <h4 className="text-xs font-bold text-slate-800">
-                          {item.title}
-                        </h4>
-                      </div>
-                      <p className="text-[10px] text-slate-400">{item.label}</p>
-                    </div>
+          {/* TAB 5: CERTIFICATES (Read-Only with 3D Rotating Badges) */}
+          {activeTab === "certificates" && (() => {
+            const numWinners = event.numberOfWinners || 1;
+            const tiers = [
+              {
+                key: "participation",
+                coinDelay: 0,
+                coin: {
+                  edgeColor: "bg-[#4d7c0f] border-[#365314]",
+                  frontColor: "border-[#84cc16] ring-[#d9f99d]/90 bg-gradient-to-tr from-[#65a30d] via-[#ecfccb] to-[#4d7c0f] shadow-[0_0_14px_rgba(132,204,22,0.45)]",
+                  backColor: "border-[#84cc16] ring-[#d9f99d]/90 bg-gradient-to-bl from-[#65a30d] via-[#ecfccb] to-[#4d7c0f] shadow-[0_0_14px_rgba(132,204,22,0.45)]",
+                  textColor: "text-[#14532d]",
+                  icon: <Award className="text-[#14532d] w-4 h-4 relative z-10" />,
+                  label: "Participant",
+                },
+                title: "Participant Certificate",
+                subtitle: "Awarded to all participants who attend",
+                cert:
+                  event.certificatesByPosition?.participation ||
+                  event.certificate,
+                isBase: true,
+              },
+              {
+                key: "first",
+                coinDelay: 0.4,
+                coin: {
+                  edgeColor: "bg-[#b45309] border-[#92400e]",
+                  frontColor: "border-amber-500 ring-amber-200/90 bg-gradient-to-tr from-[#f59e0b] via-[#fef08a] to-[#d97706] shadow-[0_0_14px_rgba(245,158,11,0.55)]",
+                  backColor: "border-amber-500 ring-amber-200/90 bg-gradient-to-bl from-[#f59e0b] via-[#fef08a] to-[#d97706] shadow-[0_0_14px_rgba(245,158,11,0.55)]",
+                  textColor: "text-amber-950",
+                  icon: <Trophy className="text-amber-950 w-4 h-4 relative z-10" />,
+                  label: "Winner",
+                },
+                title: "Winner Certificate",
+                subtitle: "Awarded to event champion",
+                cert: event.certificatesByPosition?.first,
+                inheritedCert: event.certificatesByPosition?.participation || event.certificate,
+                isBase: false,
+              },
+              ...(numWinners >= 2
+                ? [
+                    {
+                      key: "second",
+                      coinDelay: 0.8,
+                      coin: {
+                        edgeColor: "bg-[#475569] border-[#334155]",
+                        frontColor: "border-slate-300 ring-white/90 bg-gradient-to-tr from-[#94a3b8] via-[#ffffff] to-[#64748b] shadow-[0_0_14px_rgba(203,213,225,0.65)]",
+                        backColor: "border-slate-300 ring-white/90 bg-gradient-to-bl from-[#94a3b8] via-[#ffffff] to-[#64748b] shadow-[0_0_14px_rgba(203,213,225,0.65)]",
+                        textColor: "text-slate-900",
+                        icon: <Award className="text-slate-900 w-4 h-4 relative z-10" />,
+                        label: numWinners === 2 ? "Runner-up" : "2nd Place",
+                      },
+                      title: numWinners === 2 ? "Runner Up Certificate" : "2nd Place Certificate",
+                      subtitle: "Awarded to 2nd position winner",
+                      cert: event.certificatesByPosition?.second,
+                      inheritedCert: event.certificatesByPosition?.participation || event.certificate,
+                      isBase: false,
+                    },
+                  ]
+                : []),
+              ...(numWinners >= 3
+                ? [
+                    {
+                      key: "third",
+                      coinDelay: 1.2,
+                      coin: {
+                        edgeColor: "bg-[#9a3412] border-[#7c2d12]",
+                        frontColor: "border-orange-500 ring-orange-200/90 bg-gradient-to-tr from-[#ea580c] via-[#fed7aa] to-[#c2410c] shadow-[0_0_14px_rgba(234,88,12,0.55)]",
+                        backColor: "border-orange-500 ring-orange-200/90 bg-gradient-to-bl from-[#ea580c] via-[#fed7aa] to-[#c2410c] shadow-[0_0_14px_rgba(234,88,12,0.55)]",
+                        textColor: "text-orange-950",
+                        icon: <Award className="text-orange-950 w-4 h-4 relative z-10" />,
+                        label: "3rd Place",
+                      },
+                      title: "3rd Place Certificate",
+                      subtitle: "Awarded to 3rd position winner",
+                      cert: event.certificatesByPosition?.third,
+                      inheritedCert: event.certificatesByPosition?.participation || event.certificate,
+                      isBase: false,
+                    },
+                  ]
+                : []),
+            ];
 
-                    <div className="h-32 rounded-xl bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center">
-                      {item.cert?.url ? (
-                        <img
-                          src={item.cert.url}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="text-center p-3">
-                          <Award size={20} className="text-slate-300 mx-auto mb-1" />
-                          <span className="text-[10px] font-bold text-slate-400">
-                            {item.cert?.name || "Standard Template"}
-                          </span>
+            const gridClass =
+              tiers.length === 2
+                ? "grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto"
+                : tiers.length === 3
+                ? "grid-cols-1 md:grid-cols-3"
+                : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
+
+            return (
+              <div className="p-6 sm:p-8 space-y-6">
+                <style>{`
+                  @keyframes spinBadge {
+                    0% { transform: rotateY(0deg); }
+                    100% { transform: rotateY(360deg); }
+                  }
+                  @keyframes badgeShine {
+                    0% { transform: translateX(-150%) rotate(25deg); opacity: 0; }
+                    15% { opacity: 0.85; }
+                    35% { transform: translateX(150%) rotate(25deg); opacity: 0; }
+                    100% { transform: translateX(150%) rotate(25deg); opacity: 0; }
+                  }
+                  @keyframes sparkleStar {
+                    0%, 100% { transform: scale(0) rotate(0deg); opacity: 0; }
+                    20% { transform: scale(1.1) rotate(45deg); opacity: 1; filter: drop-shadow(0 0 3px rgba(255,255,255,0.9)); }
+                    40% { transform: scale(0.6) rotate(90deg); opacity: 0.8; }
+                    60% { transform: scale(0) rotate(135deg); opacity: 0; }
+                  }
+                `}</style>
+
+                <div className={`grid ${gridClass} gap-6 items-start`}>
+                  {tiers.map((tier) => {
+                    const displayCert = tier.cert || (!tier.isBase ? tier.inheritedCert : null);
+                    const isInherited = !tier.cert && !tier.isBase && !!tier.inheritedCert;
+
+                    return (
+                      <div key={tier.key} className="flex flex-col items-center w-full">
+                        {/* 1. Rotating 3D Coin Badge on Top */}
+                        <div className="flex flex-col items-center justify-center [perspective:600px] mb-3 z-10">
+                          <div
+                            className="relative w-14 h-14 sm:w-16 sm:h-16 [transform-style:preserve-3d] animate-[spinBadge_4s_linear_infinite]"
+                            style={{ animationDelay: `${tier.coinDelay}s` }}
+                          >
+                            {/* Coin Thickness layers */}
+                            {[-2, -1.2, -0.4, 0.4, 1.2, 2].map((zOffset, i) => (
+                              <div
+                                key={i}
+                                className={`absolute inset-0 rounded-full border-2 ${tier.coin.edgeColor}`}
+                                style={{ transform: `translateZ(${zOffset}px)` }}
+                              />
+                            ))}
+
+                            {/* Front Face */}
+                            <div
+                              className={`absolute inset-0 rounded-full border-2 ring-1 ring-inset flex flex-col items-center justify-center p-1 shadow-lg [backface-visibility:hidden] overflow-hidden ${tier.coin.frontColor}`}
+                              style={{ transform: "translateZ(2.5px)" }}
+                            >
+                              {tier.coin.icon}
+                              <span
+                                className={`text-[6.5px] sm:text-[7.5px] font-black uppercase tracking-tight text-center leading-tight mt-0.5 relative z-10 ${tier.coin.textColor}`}
+                              >
+                                {tier.coin.label}
+                              </span>
+                              {!tier.isBase && (
+                                <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-full">
+                                  <div
+                                    className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/70 to-transparent blur-[1px] animate-[badgeShine_2.5s_ease-in-out_infinite]"
+                                    style={{ animationDelay: `${tier.coinDelay}s` }}
+                                  />
+                                  <div
+                                    className="absolute top-1 right-1.5 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                                    style={{ animationDelay: `${tier.coinDelay + 0.15}s` }}
+                                  >
+                                    <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                                      <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                                    </svg>
+                                  </div>
+                                  <div
+                                    className="absolute bottom-1 left-1.5 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                                    style={{ animationDelay: `${tier.coinDelay + 0.45}s` }}
+                                  >
+                                    <svg viewBox="0 0 24 24" className="w-2 h-2 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                                      <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Back Face */}
+                            <div
+                              className={`absolute inset-0 rounded-full border-2 ring-1 ring-inset flex flex-col items-center justify-center p-1 shadow-lg [backface-visibility:hidden] overflow-hidden ${tier.coin.backColor}`}
+                              style={{ transform: "translateZ(-2.5px) rotateY(180deg)" }}
+                            >
+                              <span
+                                className={`font-black uppercase text-[6.5px] sm:text-[7.5px] tracking-tight text-center line-clamp-2 leading-tight relative z-10 px-1 ${tier.coin.textColor}`}
+                              >
+                                {event.name || "Event"}
+                              </span>
+                              {!tier.isBase && (
+                                <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-full">
+                                  <div
+                                    className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/70 to-transparent blur-[1px] animate-[badgeShine_2.5s_ease-in-out_infinite]"
+                                    style={{ animationDelay: `${tier.coinDelay + 1.25}s` }}
+                                  />
+                                  <div
+                                    className="absolute top-1.5 left-1.5 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                                    style={{ animationDelay: `${tier.coinDelay + 1.4}s` }}
+                                  >
+                                    <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                                      <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                                    </svg>
+                                  </div>
+                                  <div
+                                    className="absolute bottom-1 right-1.5 animate-[sparkleStar_2.5s_ease-in-out_infinite]"
+                                    style={{ animationDelay: `${tier.coinDelay + 1.7}s` }}
+                                  >
+                                    <svg viewBox="0 0 24 24" className="w-2 h-2 text-white fill-white drop-shadow-[0_0_2px_rgba(255,255,255,0.9)]">
+                                      <path d="M12 0L14.59 9.41L24 12L14.59 14.59L12 24L9.41 14.59L0 12L9.41 9.41L12 0Z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+
+                        {/* 2. Card Container below Coin */}
+                        <div className="w-full bg-white rounded-3xl border border-slate-200/80 shadow-xs p-5 flex flex-col justify-between space-y-3 hover:shadow-md transition-shadow relative">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="text-sm font-bold text-slate-800">
+                                {tier.title}
+                              </h4>
+                              {isInherited && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-400 font-medium leading-tight">
+                              {tier.subtitle}
+                            </p>
+                          </div>
+
+                          <div className="aspect-[16/11] rounded-2xl overflow-hidden bg-slate-50 border border-slate-200 relative flex items-center justify-center shadow-2xs">
+                            {displayCert?.url ? (
+                              <img
+                                src={displayCert.url}
+                                alt={displayCert.name || "Certificate Template"}
+                                className={`w-full h-full object-cover ${
+                                  isInherited ? "opacity-75 grayscale-[15%]" : ""
+                                }`}
+                              />
+                            ) : (
+                              <div className="text-center p-3">
+                                <Award size={24} className="text-slate-300 mx-auto mb-1" />
+                                <span className="text-[11px] font-bold text-slate-400">
+                                  {displayCert?.name || "Standard Template"}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* TAB 6: COLLABORATING CLUBS (Read-Only) */}
           {activeTab === "collab" && (

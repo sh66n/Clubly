@@ -1,8 +1,10 @@
 import { Schema, model, models } from "mongoose";
 import { IHackathon } from "./hackathon.schema";
+import { tenantPlugin } from "@/lib/tenantPlugin";
 
 const hackathonSchema = new Schema<IHackathon>(
   {
+    tenantId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
     organizingClub: { type: Schema.Types.ObjectId, ref: "Club", required: true },
     collaboratingClubs: [{ type: Schema.Types.ObjectId, ref: "Club" }],
     name: { type: String, required: true },
@@ -69,5 +71,7 @@ const hackathonSchema = new Schema<IHackathon>(
 
 hackathonSchema.index({ organizingClub: 1 });
 hackathonSchema.index({ status: 1 });
+
+hackathonSchema.plugin(tenantPlugin);
 
 export const Hackathon = models?.Hackathon || model<IHackathon>("Hackathon", hackathonSchema);

@@ -1,7 +1,14 @@
 import { Schema, model, models } from "mongoose";
+import { tenantPlugin } from "@/lib/tenantPlugin";
 
 const groupSchema = new Schema(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: "Organization",
+      required: true,
+      index: true,
+    },
     name: { type: String },
     members: [
       {
@@ -20,6 +27,8 @@ const groupSchema = new Schema(
   },
   { timestamps: true },
 );
+
+groupSchema.plugin(tenantPlugin);
 
 // Use the safety check we discussed earlier
 export const Group = models.Group || model("Group", groupSchema);

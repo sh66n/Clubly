@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
     const certificateLayoutResult = parseCertificateLayoutFromFormData(formData);
 
     const newCertificate = await Certificate.create({
+      tenantId: session.user.tenantId,
       club: adminClubId,
       name,
       url: certUploadResult.secure_url,

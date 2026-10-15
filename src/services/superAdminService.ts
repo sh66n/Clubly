@@ -316,6 +316,7 @@ export async function assignClubRole({
 
   // Create lightweight audit log
   await AuditLog.create({
+    tenantId: club.tenantId || superAdmin?.tenantId,
     action: role === "club-admin" ? "ASSIGN_CLUB_ADMIN" : "ASSIGN_FACULTY",
     performedBy: new mongoose.Types.ObjectId(superAdminId),
     targetUser: user._id,
@@ -370,6 +371,7 @@ export async function revokeClubRole({
 
   // Audit Log
   await AuditLog.create({
+    tenantId: club.tenantId || superAdmin?.tenantId,
     action: previousRole === "faculty-coordinator" ? "REVOKE_FACULTY" : "REVOKE_CLUB_ADMIN",
     performedBy: new mongoose.Types.ObjectId(superAdminId),
     targetUser: user._id,

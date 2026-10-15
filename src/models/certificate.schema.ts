@@ -27,6 +27,7 @@ export const zCertificateNameConfig = z.object({
 });
 
 export const zCertificate = z.object({
+  tenantId: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
   club: z.string().regex(/^[0-9a-fA-F]{24}$/),
   folder: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
   name: z.string(),
@@ -40,6 +41,7 @@ export const zCertificate = z.object({
 
 export interface ICertificate {
   _id: Types.ObjectId;
+  tenantId: Types.ObjectId;
   club: Types.ObjectId;
   folder?: Types.ObjectId;
   name: string;

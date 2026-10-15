@@ -272,6 +272,7 @@ export async function POST(request: Request) {
     });
 
     await Payment.create({
+      tenantId: session.user.tenantId,
       razorpayOrderId: order.id,
       userId: session.user.id,
       eventId: eventId || undefined,

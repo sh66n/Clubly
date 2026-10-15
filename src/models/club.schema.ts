@@ -2,6 +2,7 @@ import { Types } from "mongoose";
 import { z } from "zod";
 
 export const zClub = z.object({
+  tenantId: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
   fullName: z.string(),
   name: z.string(),
   department: z.string(),
@@ -25,6 +26,7 @@ export const zClub = z.object({
 
 export interface IClub {
   _id: Types.ObjectId;
+  tenantId: Types.ObjectId;
   fullName: string;
   name: string;
   department: string;

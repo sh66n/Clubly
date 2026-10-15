@@ -3,6 +3,7 @@ import { z } from "zod";
 import { ICustomQuestion } from "./event.schema";
 
 export const zHackathon = z.object({
+  tenantId: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
   organizingClub: z.string().regex(/^[0-9a-fA-F]{24}$/),
   name: z.string(),
   description: z.string().optional(),
@@ -39,6 +40,7 @@ export const zHackathon = z.object({
 
 export interface IHackathon {
   _id: Types.ObjectId;
+  tenantId: Types.ObjectId;
   organizingClub: Types.ObjectId;
   collaboratingClubs?: Types.ObjectId[];
   name: string;

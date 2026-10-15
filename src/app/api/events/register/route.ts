@@ -264,6 +264,7 @@ export async function POST(req: Request) {
 
       // Create registration
       await Registration.create({
+        tenantId: event.tenantId || session.user.tenantId,
         eventId,
         userId,
         status: "registered",
@@ -360,6 +361,7 @@ export async function POST(req: Request) {
 
       /* -------- Register Group -------- */
       await Registration.create({
+        tenantId: event.tenantId || session.user.tenantId,
         eventId,
         groupId,
         status: "registered",

@@ -1,7 +1,9 @@
 import { Schema, model, models, Types } from "mongoose";
+import { tenantPlugin } from "@/lib/tenantPlugin";
 
 export interface IRoundQualification {
   _id: Types.ObjectId;
+  tenantId: Types.ObjectId;
   hackathon: Types.ObjectId;
   round: Types.ObjectId;
   team: Types.ObjectId;
@@ -16,6 +18,7 @@ export interface IRoundQualification {
 
 const roundQualificationSchema = new Schema<IRoundQualification>(
   {
+    tenantId: { type: Schema.Types.ObjectId, ref: "Organization", required: true, index: true },
     hackathon: { type: Schema.Types.ObjectId, ref: "Hackathon", required: true },
     round: { type: Schema.Types.ObjectId, ref: "HackathonRound", required: true },
     team: { type: Schema.Types.ObjectId, ref: "HackathonTeam", required: true },
@@ -39,5 +42,7 @@ const roundQualificationSchema = new Schema<IRoundQualification>(
 
 roundQualificationSchema.index({ hackathon: 1, round: 1, team: 1 }, { unique: true });
 roundQualificationSchema.index({ hackathon: 1, team: 1 });
+
+roundQualificationSchema.plugin(tenantPlugin);
 
 export const RoundQualification = models?.RoundQualification || model<IRoundQualification>("RoundQualification", roundQualificationSchema);

@@ -1,6 +1,8 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
+import { tenantPlugin } from "@/lib/tenantPlugin";
 
 export interface IAuditLog extends Document {
+  tenantId: Types.ObjectId;
   action:
     | "ASSIGN_CLUB_ADMIN"
     | "REVOKE_CLUB_ADMIN"
@@ -20,6 +22,12 @@ export interface IAuditLog extends Document {
 
 const auditLogSchema = new Schema<IAuditLog>(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: "Organization",
+      required: true,
+      index: true,
+    },
     action: {
       type: String,
       required: true,
@@ -67,6 +75,8 @@ auditLogSchema.index({ action: 1, createdAt: -1 });
 
 // TTL index to automatically prune logs older than 90 days (keeps storage safely minimal on M0 free tier)
 auditLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
+
+auditLogSchema.plugin(tenantPlugin);
 
 export const AuditLog =
   (mongoose.models?.AuditLog as mongoose.Model<IAuditLog>) ||

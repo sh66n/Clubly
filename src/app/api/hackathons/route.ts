@@ -185,6 +185,7 @@ export const POST = async (req: NextRequest) => {
 
     /* ---------- Create Hackathon ---------- */
     const hackathon = await Hackathon.create({
+      tenantId: session.user.tenantId,
       organizingClub,
       name,
       description,

@@ -76,7 +76,7 @@ export default function ProfileOverviewTab({ user }: ProfileOverviewTabProps) {
             <div>
               <span className="text-xs text-slate-400 block">College / Institution</span>
               <span className="text-white font-medium">
-                {user.college || "PVPPCOE"}
+                {user.college || "Campus Member"}
               </span>
             </div>
           </div>

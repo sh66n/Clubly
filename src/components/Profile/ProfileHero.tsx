@@ -174,7 +174,7 @@ export default function ProfileHero({
               </span>
             )}
             <span className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-slate-400">
-              {user.college || "PVPPCOE"}
+              {user.college || "Campus Member"}
             </span>
 
             {/* Social Followers Counters */}

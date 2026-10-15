@@ -5,6 +5,10 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { Silkscreen } from "next/font/google";
 import { Toaster } from "sonner";
 import SplashScreen from "@/components/SplashScreen";
+import { headers } from "next/headers";
+import { connectToDb } from "@/lib/connectToDb";
+import { Organization } from "@/models/organization.model";
+import { TenantProvider, TenantContextValue } from "@/context/TenantContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -76,6 +80,37 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headerList = await headers();
+  const tenantSlug = headerList.get("x-tenant-slug");
+  const isPlatformAdmin = headerList.get("x-is-platform-admin") === "true";
+  const isRootDomain = headerList.get("x-is-root") === "true";
+
+  let tenantValue: TenantContextValue = {
+    isPlatformAdminPortal: isPlatformAdmin,
+    isRootDomain,
+  };
+
+  if (tenantSlug) {
+    try {
+      await connectToDb();
+      const org = await Organization.findOne({ slug: tenantSlug });
+      if (org) {
+        tenantValue = {
+          tenantId: org._id.toString(),
+          slug: org.slug,
+          name: org.name,
+          logo: org.logo,
+          allowedEmailDomains: org.allowedEmailDomains,
+          departments: org.departments,
+          isPlatformAdminPortal: false,
+          isRootDomain: false,
+        };
+      }
+    } catch (e) {
+      console.error("Error loading tenant in RootLayout:", e);
+    }
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -104,7 +139,9 @@ export default async function RootLayout({
           visibleToasts={8}
         />
         <SplashScreen />
-        {children}
+        <TenantProvider value={tenantValue}>
+          {children}
+        </TenantProvider>
       </body>
     </html>
   );

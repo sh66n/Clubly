@@ -88,6 +88,7 @@ export async function POST(
 
     //  create group
     const group = await Group.create({
+      tenantId: event.tenantId || session.user.tenantId,
       name: name || "Untitled Group",
       leader: userId,
       members: [userId],

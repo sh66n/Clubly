@@ -10,17 +10,63 @@ function redirectToLogin(req: Request, pathname: string) {
   return NextResponse.redirect(loginUrl);
 }
 
+function extractSubdomain(hostname: string): string | null {
+  // Strip port if present
+  const host = hostname.split(":")[0].toLowerCase();
+
+  // If deployed on Vercel's default domain (e.g. clubly-vppcoe.vercel.app),
+  // default to the PVPPCOE tenant so existing deployment works out-of-the-box
+  if (host.endsWith(".vercel.app")) {
+    return "pvppcoe";
+  }
+
+  // Handle standard localhost without subdomain (localhost:3000): default to pvppcoe tenant
+  if (host === "localhost" || host === "127.0.0.1") {
+    return "pvppcoe";
+  }
+
+  // Handle localhost subdomains: pvppcoe.localhost or admin.localhost
+  if (host.endsWith(".localhost") || host.includes("127.0.0.1")) {
+    const parts = host.split(".");
+    if (parts.length > 1 && parts[0] !== "localhost" && parts[0] !== "127") {
+      return parts[0];
+    }
+    return "pvppcoe";
+  }
+
+  // Handle custom production domains, e.g. pvppcoe.clubly.app
+  const parts = host.split(".");
+  if (parts.length >= 3) {
+    const sub = parts[0];
+    if (sub !== "www") {
+      return sub;
+    }
+  }
+
+  return "pvppcoe";
+}
+
 export default auth(async (req) => {
   const { pathname } = req.nextUrl;
   const user = req.auth?.user;
   const role = user?.role;
+  const host = req.headers.get("host") || "";
+
+  const subdomain = extractSubdomain(host);
 
   /* ------------------------------
-     Allow Next.js internals
+     Determine Request Context
+  ------------------------------ */
+  const isPlatformAdminPortal = subdomain === "admin" || subdomain === "platform";
+  const isRootDomain = !subdomain || subdomain === "www";
+  const tenantSlug = !isPlatformAdminPortal && !isRootDomain ? subdomain : null;
+
+  /* ------------------------------
+     Allow Next.js internals & static assets
   ------------------------------ */
   if (
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
+    pathname.startsWith("/api/auth") ||
     pathname.startsWith("/images") ||
     pathname.endsWith(".png") ||
     pathname.endsWith(".jpg") ||
@@ -30,6 +76,61 @@ export default auth(async (req) => {
     pathname === "/favicon.ico"
   ) {
     return NextResponse.next();
+  }
+
+  // Clone headers to inject tenant metadata into downstream request
+  const requestHeaders = new Headers(req.headers);
+  if (tenantSlug) {
+    requestHeaders.set("x-tenant-slug", tenantSlug);
+  }
+  if (isPlatformAdminPortal) {
+    requestHeaders.set("x-is-platform-admin", "true");
+  }
+  if (isRootDomain) {
+    requestHeaders.set("x-is-root", "true");
+  }
+
+  /* ------------------------------
+     Platform Admin Subdomain Guard
+  ------------------------------ */
+  if (isPlatformAdminPortal) {
+    if (pathname === "/") {
+      if (req.auth && role === "platform-admin") {
+        return NextResponse.redirect(new URL("/platform-admin", req.url));
+      }
+      return redirectToLogin(req, pathname);
+    }
+
+    // Allow public login to admin portal
+    if (pathname === "/login") {
+      if (req.auth && role === "platform-admin") {
+        return NextResponse.redirect(new URL("/platform-admin", req.url));
+      }
+      return NextResponse.next({ request: { headers: requestHeaders } });
+    }
+
+    if (!req.auth) {
+      return redirectToLogin(req, pathname);
+    }
+
+    if (role !== "platform-admin") {
+      return NextResponse.redirect(new URL("/forbidden", req.url));
+    }
+
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
+  /* ------------------------------
+     Root Page Handling
+  ------------------------------ */
+  if (pathname === "/") {
+    if (req.auth) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+    // Subdomains redirect unauthenticated visitors to login, while root localhost and vercel.app show the landing page
+    if (tenantSlug && !host.endsWith(".vercel.app") && host !== "localhost" && !host.includes("127.0.0.1")) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
   }
 
   /* ------------------------------
@@ -57,7 +158,7 @@ export default auth(async (req) => {
     /^\/profiles\/[^/]+$/.test(pathname);
 
   if (isPublic) {
-    return NextResponse.next();
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   /* ------------------------------
@@ -70,33 +171,24 @@ export default auth(async (req) => {
   /* ------------------------------
      Club-admin only routes
   ------------------------------ */
-
-  // /events/new
   if (pathname === "/events/new" && role !== "club-admin") {
     return NextResponse.redirect(new URL("/forbidden", req.url));
   }
 
-  // /superevents/new
   if (pathname === "/superevents/new" && role !== "club-admin") {
     return NextResponse.redirect(new URL("/forbidden", req.url));
   }
 
-  // /events/:id/edit
   if (/^\/events\/[^/]+\/edit$/.test(pathname)) {
     if (role !== "club-admin") {
       return NextResponse.redirect(new URL("/forbidden", req.url));
     }
   }
 
-  // /events/:id/(attendance|assign-winner)
   if (/^\/events\/[^/]+\/(attendance|assign-winner)$/.test(pathname)) {
     if (role !== "club-admin") {
       return NextResponse.redirect(new URL("/forbidden", req.url));
     }
-
-    // 🔒 Optional ownership check (recommended)
-    // const eventId = pathname.split("/")[2];
-    // verify event.organizingClub === user.adminClub
   }
 
   /* ------------------------------
@@ -126,7 +218,16 @@ export default auth(async (req) => {
     }
   }
 
-  return NextResponse.next();
+  /* ------------------------------
+     Platform-admin dashboard routes
+  ------------------------------ */
+  if (pathname.startsWith("/platform-admin")) {
+    if (role !== "platform-admin") {
+      return NextResponse.redirect(new URL("/forbidden", req.url));
+    }
+  }
+
+  return NextResponse.next({ request: { headers: requestHeaders } });
 });
 
 export const config = {

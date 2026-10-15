@@ -209,7 +209,7 @@ export default function FacultyCoordinatorManagementPage() {
             <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="email"
-                placeholder="faculty.name@pvppcoe.ac.in"
+                placeholder="faculty.name@college.edu"
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 required

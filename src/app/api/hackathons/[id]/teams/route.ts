@@ -43,6 +43,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const joinCode = crypto.randomBytes(3).toString('hex').toUpperCase();
     
     const team = await HackathonTeam.create({
+      tenantId: hackathon.tenantId || session.user.tenantId,
       hackathon: id,
       name,
       leader: userId,

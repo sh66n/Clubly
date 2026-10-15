@@ -1,4 +1,5 @@
 import mongoose, { Schema, Types } from "mongoose";
+import { tenantPlugin } from "@/lib/tenantPlugin";
 
 export interface IFeedbackQuestion {
   id: string;
@@ -8,6 +9,7 @@ export interface IFeedbackQuestion {
 
 export interface IFeedbackForm {
   _id: Types.ObjectId;
+  tenantId: Types.ObjectId;
   club: Types.ObjectId;
   name: string;
   questions: IFeedbackQuestion[];
@@ -26,6 +28,12 @@ const FeedbackQuestionSchema = new Schema<IFeedbackQuestion>(
 
 const FeedbackFormSchema = new Schema<IFeedbackForm>(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: "Organization",
+      required: true,
+      index: true,
+    },
     club: { type: Schema.Types.ObjectId, ref: "Club", required: true },
     name: { type: String, required: true },
     questions: [FeedbackQuestionSchema],
@@ -36,6 +44,8 @@ const FeedbackFormSchema = new Schema<IFeedbackForm>(
 );
 
 FeedbackFormSchema.index({ club: 1 });
+
+FeedbackFormSchema.plugin(tenantPlugin);
 
 export const FeedbackForm =
   mongoose.models.FeedbackForm ||
