@@ -35,6 +35,12 @@ const clubSchema = new Schema<IClub>(
       type: Schema.Types.ObjectId,
       ref: "User",
     },
+    admins: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     lastNaacSignatures: [
       {
         name: { type: String, required: true },

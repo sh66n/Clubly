@@ -27,7 +27,7 @@ export const zUser = z.object({
 
   email: z.string().email(),
 
-  role: z.enum(["user", "club-admin", "faculty-coordinator"]),
+  role: z.enum(["user", "club-admin", "faculty-coordinator", "super-admin"]),
 
   image: z.string().url(),
 
@@ -53,7 +53,7 @@ export interface IUser {
   _id?: Types.ObjectId;
   name: string;
   email: string;
-  role: "user" | "club-admin" | "faculty-coordinator";
+  role: "user" | "club-admin" | "faculty-coordinator" | "super-admin";
   image: string;
 
   adminClub?: Types.ObjectId;

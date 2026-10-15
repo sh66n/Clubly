@@ -11,6 +11,7 @@ export const zClub = z.object({
   followers: z.array(z.string().or(z.any())).optional(),
   bellFollowers: z.array(z.string().or(z.any())).optional(),
   facultyCoordinator: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
+  admins: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/)).optional(),
   lastNaacSignatures: z
     .array(
       z.object({
@@ -33,6 +34,7 @@ export interface IClub {
   followers?: Types.ObjectId[];
   bellFollowers?: Types.ObjectId[];
   facultyCoordinator?: Types.ObjectId;
+  admins?: Types.ObjectId[];
   lastNaacSignatures?: {
     name: string;
     position: string;

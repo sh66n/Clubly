@@ -117,6 +117,15 @@ export default auth(async (req) => {
     }
   }
 
+  /* ------------------------------
+     Super-admin dashboard routes
+  ------------------------------ */
+  if (pathname.startsWith("/super-admin")) {
+    if (role !== "super-admin") {
+      return NextResponse.redirect(new URL("/forbidden", req.url));
+    }
+  }
+
   return NextResponse.next();
 });
 

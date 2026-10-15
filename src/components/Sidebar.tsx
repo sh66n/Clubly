@@ -20,6 +20,7 @@ import {
   PanelLeft,
   ChevronLeft,
   ChevronRight,
+  ShieldCheck,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -29,6 +30,7 @@ interface SidebarProps {
     name?: string | null;
     email?: string | null;
     image?: string | null;
+    role?: string | null;
   };
 }
 
@@ -123,6 +125,9 @@ export default function Sidebar({ isLoggedIn, points, user }: SidebarProps) {
     { name: "Events", icon: <Calendar size={20} />, href: "/events", section: "nav" },
     { name: "Clubs", icon: <Users size={20} />, href: "/clubs", section: "nav" },
     { name: "Leaderboard", icon: <Goal size={20} />, href: "/leaderboard", section: "nav" },
+    ...(user?.role === "super-admin"
+      ? [{ name: "Super Admin", icon: <ShieldCheck size={20} className="text-fuchsia-400" />, href: "/super-admin", section: "nav" }]
+      : []),
     { name: "__separator__", icon: null, href: "", section: "separator" },
     { name: "Settings", icon: <Bolt size={20} />, href: "/me", section: "general" },
     { name: "Help", icon: <Info size={20} />, href: "/help", section: "general" },
