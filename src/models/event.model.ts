@@ -100,6 +100,11 @@ const eventSchema = new Schema<IEvent>(
       type: String,
       required: false,
     },
+    eventPhotos: [
+      {
+        type: String,
+      },
+    ],
     maxRegistrations: {
       type: Number,
     },
@@ -173,6 +178,13 @@ const eventSchema = new Schema<IEvent>(
       {
         type: Schema.Types.ObjectId,
         ref: "User",
+      },
+    ],
+    naacSignatures: [
+      {
+        name: { type: String, required: true },
+        position: { type: String, required: true },
+        signatureUrl: { type: String, default: "" },
       },
     ],
   },

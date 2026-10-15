@@ -10,7 +10,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     await connectToDb();
     const session = await auth();
 
-    if (!session || session.user.role !== "club-admin" || !session.user.adminClub) {
+    if (
+      !session ||
+      (session.user.role !== "club-admin" && session.user.role !== "faculty-coordinator") ||
+      !session.user.adminClub
+    ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -1,133 +1,96 @@
 import React from "react";
-import Image from "next/image";
-import Link from "next/link";
-import BorderedDiv from "@/components/BorderedDiv";
+import { notFound } from "next/navigation";
+import { auth } from "@/auth";
 import { getUserById } from "@/services/getUserById";
 import { getEventsAttendedByUser } from "@/services/getEventsAttendedByUser";
 import { getUserCertificates } from "@/services/getUserCertificates";
-import { Award, ShieldCheck, ArrowUpRight, Download } from "lucide-react";
-import { FaLinkedinIn } from "react-icons/fa6";
+import { getUserBadges } from "@/services/getUserBadges";
+import { getUserSocialNetwork } from "@/services/getUserSocialNetwork";
+import { getUserActivityData } from "@/services/getUserActivity";
+import { getUserProfileStreakCard } from "@/services/getUserProfileStreakCard";
+import { calculateGamificationStats } from "@/lib/gamification";
+import { UserPoints } from "@/models";
+import "@/models";
+import ProfileClient from "@/components/Profile/ProfileClient";
+import mongoose from "mongoose";
 
 export default async function ProfilePage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await auth();
+  const currentUserId = session?.user?.id;
+
   const { id } = await params;
   const user = await getUserById(id);
 
-  // Compute total points
-  const totalPoints =
-    user.points?.reduce((sum, p) => sum + (p.points || 0), 0) ?? 0;
+  if (!user) {
+    notFound();
+  }
 
-  const eventsAttended = await getEventsAttendedByUser(user._id);
+  // Compute total points across all clubs
+  const totalPoints =
+    user.points?.reduce((sum: number, p: any) => sum + (p.points || 0), 0) ?? 0;
+
+  // Calculate global rank among all students with points
+  let globalRank: number | string = "—";
+  try {
+    if (totalPoints > 0) {
+      const higherScoreCount = await UserPoints.aggregate([
+        { $group: { _id: "$userId", total: { $sum: "$points" } } },
+        { $match: { total: { $gt: totalPoints } } },
+        { $count: "count" },
+      ]);
+      globalRank = (higherScoreCount[0]?.count || 0) + 1;
+    } else {
+      globalRank = "Unranked";
+    }
+  } catch (err) {
+    globalRank = totalPoints > 0 ? 1 : "Unranked";
+  }
+
+  // Concurrently fetch event badges, certificates, social stats, activity, and streak card popup
+  const [eventsAttended, certificates, badges, socialStats, activityData, profileStreakCard] = await Promise.all([
+    getEventsAttendedByUser(user._id.toString()),
+    getUserCertificates(user._id.toString()),
+    getUserBadges(user._id.toString()),
+    getUserSocialNetwork(user._id.toString(), currentUserId),
+    getUserActivityData(user._id.toString()),
+    getUserProfileStreakCard(user._id.toString()),
+  ]);
+
+  const gamification = calculateGamificationStats(totalPoints);
+
+  // Clean serializable user object for client component
+  const serializableUser = {
+    _id: user._id?.toString(),
+    name: user.name || "Student",
+    email: user.email || "",
+    image: user.image || "/images/default.png",
+    role: user.role || "user",
+    college: user.college || "PVPPCOE Mumbai",
+    department: user.department || "Computer Engineering",
+    year: user.year,
+    division: user.division,
+    phone: user.phone || user.phoneNumber,
+    personalMail: user.personalMail,
+    address: user.address,
+    bio: user.bio,
+  };
 
   return (
-    <div className="min-h-screen text-white">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">Profile</h1>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* LEFT: Profile card */}
-          <div>
-            <BorderedDiv className="bg-black/30 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
-              <div className="flex flex-col items-center">
-                <div className="w-28 h-28 rounded-full overflow-hidden mb-4">
-                  <Image
-                    src={user.image}
-                    alt={user.name}
-                    width={112}
-                    height={112}
-                    className="object-cover"
-                  />
-                </div>
-
-                <h2 className="text-xl font-semibold text-white">
-                  {user.name}
-                </h2>
-                <p className="text-sm text-blue-400 mb-1">
-                  Computer Engineering
-                </p>
-                <p className="text-sm text-gray-300">idk • Student</p>
-
-                <div className="mt-4 text-center">
-                  <p className="text-yellow-400 font-bold">
-                    {totalPoints ?? 0} Points
-                  </p>
-                </div>
-              </div>
-            </BorderedDiv>
-
-            {/* quick stats */}
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <div className="bg-black/30 p-3 rounded-lg text-center border border-gray-700">
-                <div className="text-lg font-semibold">{totalPoints ?? 0}</div>
-                <div className="text-xs text-gray-300">Points</div>
-              </div>
-              <div className="bg-black/30 p-3 rounded-lg text-center border border-gray-700">
-                <div className="text-lg font-semibold">{eventsAttended}</div>
-                <div className="text-xs text-gray-300">Events</div>
-              </div>
-            </div>
-          </div>
-
-          {/* RIGHT: Overview */}
-          <div className="lg:col-span-2 space-y-8">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex space-x-6">
-                  <button className="font-semibold text-white">Overview</button>
-                </div>
-              </div>
-
-              <div className="bg-black/30 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
-                <h3 className="text-xl font-semibold mb-3">About</h3>
-                <p className="text-gray-300 leading-relaxed text-justify">
-                  {user.bio ?? ""}
-                </p>
-
-                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="text-sm text-gray-400">Email</h4>
-                    <p className="text-white">{user.email}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm text-gray-400">Role</h4>
-                    <p className="text-white">Student</p>
-                  </div>
-
-                  <div>
-                    <h4 className="text-sm text-gray-400">Branch</h4>
-                    <p className="text-white">{user.branch ?? "Not added"}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm text-gray-400">Division</h4>
-                    <p className="text-white">{user.division ?? "Not added"}</p>
-                  </div>
-
-                  <div>
-                    <h4 className="text-sm text-gray-400">Phone</h4>
-                    <p className="text-white">{user.phone ?? "Not added"}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm text-gray-400">Personal Mail</h4>
-                    <p className="text-white">
-                      {user.personalMail ?? "Not added"}
-                    </p>
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <h4 className="text-sm text-gray-400">Address</h4>
-                    <p className="text-white">{user.address ?? "Not added"}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <ProfileClient
+      user={serializableUser}
+      gamification={gamification}
+      badges={badges}
+      certificates={certificates}
+      socialStats={socialStats}
+      eventsAttended={eventsAttended}
+      activityData={activityData}
+      globalRank={globalRank}
+      currentUserId={currentUserId}
+      streakCardData={profileStreakCard}
+    />
   );
 }

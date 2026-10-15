@@ -10,6 +10,16 @@ export const zClub = z.object({
   updatedAt: z.date().optional(),
   followers: z.array(z.string().or(z.any())).optional(),
   bellFollowers: z.array(z.string().or(z.any())).optional(),
+  facultyCoordinator: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
+  lastNaacSignatures: z
+    .array(
+      z.object({
+        name: z.string(),
+        position: z.string(),
+        signatureUrl: z.string().optional(),
+      })
+    )
+    .optional(),
 });
 
 export interface IClub {
@@ -22,4 +32,10 @@ export interface IClub {
   updatedAt: Date;
   followers?: Types.ObjectId[];
   bellFollowers?: Types.ObjectId[];
+  facultyCoordinator?: Types.ObjectId;
+  lastNaacSignatures?: {
+    name: string;
+    position: string;
+    signatureUrl?: string;
+  }[];
 }

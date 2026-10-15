@@ -31,9 +31,21 @@ const clubSchema = new Schema<IClub>(
         ref: "User",
       },
     ],
+    facultyCoordinator: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    lastNaacSignatures: [
+      {
+        name: { type: String, required: true },
+        position: { type: String, required: true },
+        signatureUrl: { type: String, default: "" },
+      },
+    ],
   },
   { timestamps: true },
 );
 
 export const Club =
-  mongoose.models?.Club || mongoose.model<IClub>("Club", clubSchema);
+  (mongoose.models?.Club as mongoose.Model<IClub>) ||
+  mongoose.model<IClub>("Club", clubSchema);

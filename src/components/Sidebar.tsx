@@ -96,6 +96,22 @@ export default function Sidebar({ isLoggedIn, points, user }: SidebarProps) {
   });
 
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem("clubly_student_sidebar_collapsed");
+      if (saved !== null) {
+        setIsCompressed(saved === "true");
+      }
+    } catch {
+      // localStorage may fail in private mode
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("clubly_student_sidebar_collapsed", String(isCompressed));
+    } catch {
+      // ignore
+    }
     document.documentElement.style.setProperty(
       "--sidebar-width",
       isCompressed ? "5rem" : "16rem"

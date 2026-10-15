@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Handshake,
   Crown,
+  GraduationCap,
 } from "lucide-react";
 
 interface ClubAdminSidebarProps {
@@ -37,6 +38,22 @@ export default function ClubAdminSidebar({
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem("clubly_admin_sidebar_collapsed");
+      if (saved !== null) {
+        setIsCollapsed(saved === "true");
+      }
+    } catch {
+      // localStorage may fail in private mode
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("clubly_admin_sidebar_collapsed", String(isCollapsed));
+    } catch {
+      // ignore
+    }
     document.documentElement.style.setProperty(
       "--club-admin-sidebar-width",
       isCollapsed ? "5rem" : "17rem"
@@ -73,6 +90,11 @@ export default function ClubAdminSidebar({
       name: "My Club",
       icon: <UsersRound size={20} />,
       href: "/club-admin/club",
+    },
+    {
+      name: "Faculty Coordinator",
+      icon: <GraduationCap size={20} />,
+      href: "/club-admin/faculty-coordinator",
     },
     {
       name: "Feedback Forms",

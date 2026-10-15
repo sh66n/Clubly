@@ -29,7 +29,7 @@ const userSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ["user", "club-admin"],
+      enum: ["user", "club-admin", "faculty-coordinator"],
       required: true,
     },
     image: {
@@ -55,6 +55,24 @@ const userSchema = new Schema<IUser>(
       type: Number,
       required: false,
     },
+    followers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    following: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    followingClubs: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Club",
+      },
+    ],
   },
   { timestamps: true },
 );

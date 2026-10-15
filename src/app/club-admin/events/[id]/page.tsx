@@ -78,10 +78,11 @@ import ClublyLoader from "@/components/ClubAdmin/ClublyLoader";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { generateAttendancePDF } from "@/lib/generateAttendancePDF";
+import EventPhotosSection from "@/components/ClubAdmin/EventPhotosSection";
 
 type EventStatus = "draft" | "live" | "completed";
 type EventType = "team" | "individual";
-type TabKey = "participants" | "finance" | "feedback" | "likes" | "winners" | "certificates";
+type TabKey = "participants" | "finance" | "feedback" | "likes" | "winners" | "certificates" | "collab" | "photos";
 
 interface CustomQuestion {
   id: string;
@@ -1459,6 +1460,17 @@ export default function EventDetailsPage() {
             >
               <Handshake size={14} />
               Collab ({event?.collaboratingClubs?.length || 0})
+            </button>
+            <button
+              onClick={() => setActiveTab("photos")}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all outline-none shrink-0 flex items-center gap-2 cursor-pointer ${
+                activeTab === "photos"
+                  ? "text-[#689F38] bg-white shadow-sm border border-[#c5d6a8]"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-white/50 border border-transparent"
+              }`}
+            >
+              <Upload size={14} />
+              NAAC Photos ({event?.eventPhotos?.length || 0})
             </button>
           </div>
 
@@ -3248,6 +3260,12 @@ export default function EventDetailsPage() {
                 collaboratingClubs={event.collaboratingClubs}
                 onUpdate={fetchDetails}
               />
+            </div>
+          )}
+
+          {activeTab === "photos" && (
+            <div className="p-6">
+              <EventPhotosSection eventId={event._id} />
             </div>
           )}
         </div>

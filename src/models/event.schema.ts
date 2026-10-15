@@ -23,6 +23,7 @@ export const zEvent = z.object({
   winner: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
   numberOfWinners: z.number().min(1).max(3).default(1).optional(),
   image: z.optional(z.string()),
+  eventPhotos: z.array(z.string()).default([]).optional(),
   maxRegistrations: z.number(),
   isRegistrationOpen: z.boolean().default(true),
   status: z.enum(["draft", "live", "completed"]).default("live"),
@@ -48,6 +49,15 @@ export const zEvent = z.object({
   likes: z.number().default(0),
   views: z.number().default(0),
   likedBy: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/)).optional(),
+  naacSignatures: z
+    .array(
+      z.object({
+        name: z.string(),
+        position: z.string(),
+        signatureUrl: z.string().optional(),
+      })
+    )
+    .optional(),
 });
 
 export interface ICustomQuestion {
@@ -91,6 +101,7 @@ export interface IEvent {
     position: number;
   }[];
   image: string;
+  eventPhotos?: string[];
   maxRegistrations: number;
   superEvent: Types.ObjectId;
   whatsappGroupLink: string;
@@ -110,4 +121,9 @@ export interface IEvent {
   likes: number;
   views: number;
   likedBy: Types.ObjectId[];
+  naacSignatures?: {
+    name: string;
+    position: string;
+    signatureUrl?: string;
+  }[];
 }

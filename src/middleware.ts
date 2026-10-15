@@ -53,7 +53,8 @@ export default auth(async (req) => {
     pathname === "/leaderboard" ||
     /^\/superevents\/[^/]+$/.test(pathname) ||
     pathname === "/certificates" ||
-    /^\/certificates\/[^/]+$/.test(pathname);
+    /^\/certificates\/[^/]+$/.test(pathname) ||
+    /^\/profiles\/[^/]+$/.test(pathname);
 
   if (isPublic) {
     return NextResponse.next();
@@ -103,6 +104,15 @@ export default auth(async (req) => {
   ------------------------------ */
   if (pathname.startsWith("/club-admin")) {
     if (role !== "club-admin" || !user?.adminClub) {
+      return NextResponse.redirect(new URL("/forbidden", req.url));
+    }
+  }
+
+  /* ------------------------------
+     Faculty-coordinator dashboard routes
+  ------------------------------ */
+  if (pathname.startsWith("/faculty-coordinator")) {
+    if (role !== "faculty-coordinator" || !user?.adminClub) {
       return NextResponse.redirect(new URL("/forbidden", req.url));
     }
   }
