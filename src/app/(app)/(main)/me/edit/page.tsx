@@ -2,22 +2,13 @@ import { auth } from "@/auth";
 import BackButton from "@/components/BackButton";
 import BorderedDiv from "@/components/BorderedDiv";
 import ProfileEditForm from "@/components/User/ProfileEditForm";
+import { getUserById } from "@/services/getUserById";
 import { User } from "lucide-react";
 import React from "react";
 
-const getUser = async (userId: string) => {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/users/${userId}`,
-  );
-
-  if (!res.ok) return null;
-  const user = await res.json();
-  return user;
-};
-
 export default async function Settings() {
   const session = await auth();
-  const user = await getUser(session?.user?.id);
+  const user = session?.user?.id ? await getUserById(session.user.id) : null;
 
   return (
     <div className="min-h-full">

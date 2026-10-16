@@ -7,19 +7,10 @@ import { getEventsAttendedByUser } from "@/services/getEventsAttendedByUser";
 import { getEventsRegisteredByUser } from "@/services/getEventsRegisteredByUser";
 import { getLeaderboardRank } from "@/services/getLeaderboardRank";
 import { getWeeklyEventCounts } from "@/services/getWeeklyEventCounts";
+import { getUserById } from "@/services/getUserById";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import React from "react";
-
-const getUser = async (userId: string) => {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/users/${userId}`,
-    { cache: "no-store" }
-  );
-
-  if (!res.ok) return null;
-  return res.json();
-};
 
 const getInsights = async (userId: string) => {
   const [
@@ -74,7 +65,7 @@ export default async function Dashboard() {
 
   const [insights, dbUser] = await Promise.all([
     getInsights(userId),
-    getUser(userId)
+    getUserById(userId)
   ]);
 
   const {

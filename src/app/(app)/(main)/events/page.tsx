@@ -3,17 +3,8 @@ import EventGrid from "@/components/Events/EventGrid";
 import ScheduleDropdown from "@/components/Events/ScheduleDropdown";
 import SearchBar from "@/components/Events/SearchBar";
 import ProfileCompletenessBanner from "@/components/User/ProfileCompletenessBanner";
+import { getUserById } from "@/services/getUserById";
 import React from "react";
-
-const getUser = async (userId: string) => {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/users/${userId}`,
-    { cache: "no-store" }
-  );
-
-  if (!res.ok) return null;
-  return res.json();
-};
 
 const getAllEvents = async (query: string | string[], club) => {
   const queryString = new URLSearchParams({
@@ -72,7 +63,7 @@ export default async function Events({
     getAllSuperEvents(),
     getAllHackathons(query, club),
   ]);
-  const dbUser = session?.user?.id ? await getUser(session.user.id) : null;
+  const dbUser = session?.user?.id ? await getUserById(session.user.id) : null;
 
   return (
     <div className="flex flex-col min-h-full">
