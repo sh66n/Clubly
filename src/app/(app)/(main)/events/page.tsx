@@ -6,46 +6,78 @@ import ProfileCompletenessBanner from "@/components/User/ProfileCompletenessBann
 import { getUserById } from "@/services/getUserById";
 import React from "react";
 
-const getAllEvents = async (query: string | string[], club) => {
-  const queryString = new URLSearchParams({
-    q: String(query ?? ""),
-    club: String(club ?? ""),
-  });
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/events?${queryString.toString()}`,
-    { cache: "no-store" }
-  );
+const safeJson = async (res: Response) => {
   if (!res.ok) return null;
-  return res.json();
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("Failed to parse JSON response:", text.slice(0, 100));
+    return null;
+  }
+};
+
+const getAllEvents = async (query: string | string[], club: string | string[]) => {
+  try {
+    const queryString = new URLSearchParams({
+      q: String(query ?? ""),
+      club: String(club ?? ""),
+    });
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/events?${queryString.toString()}`,
+      { cache: "no-store" }
+    );
+    const data = await safeJson(res);
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error("Error fetching events:", err);
+    return [];
+  }
 };
 
 const getAllSuperEvents = async () => {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/superevents`,
-  );
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data;
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/superevents`,
+      { cache: "no-store" }
+    );
+    const data = await safeJson(res);
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error("Error fetching super events:", err);
+    return [];
+  }
 };
 
 const getAllHackathons = async (query: string | string[], club: string | string[]) => {
-  const queryString = new URLSearchParams({
-    q: String(query ?? ""),
-    club: String(club ?? ""),
-  });
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/hackathons?${queryString.toString()}`,
-    { cache: "no-store" }
-  );
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data;
+  try {
+    const queryString = new URLSearchParams({
+      q: String(query ?? ""),
+      club: String(club ?? ""),
+    });
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/hackathons?${queryString.toString()}`,
+      { cache: "no-store" }
+    );
+    const data = await safeJson(res);
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error("Error fetching hackathons:", err);
+    return [];
+  }
 };
 
 const getAllClubs = async () => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/clubs`);
-  if (!res.ok) return null;
-  return res.json();
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/clubs`, {
+      cache: "no-store",
+    });
+    const data = await safeJson(res);
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error("Error fetching clubs:", err);
+    return [];
+  }
 };
 
 export default async function Events({
