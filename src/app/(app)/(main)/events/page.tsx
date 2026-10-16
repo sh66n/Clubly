@@ -4,81 +4,13 @@ import ScheduleDropdown from "@/components/Events/ScheduleDropdown";
 import SearchBar from "@/components/Events/SearchBar";
 import ProfileCompletenessBanner from "@/components/User/ProfileCompletenessBanner";
 import { getUserById } from "@/services/getUserById";
+import {
+  getEventsData,
+  getSuperEventsData,
+  getHackathonsData,
+  getAllClubsData,
+} from "@/services/getEventsData";
 import React from "react";
-
-const safeJson = async (res: Response) => {
-  if (!res.ok) return null;
-  const text = await res.text();
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    console.error("Failed to parse JSON response:", text.slice(0, 100));
-    return null;
-  }
-};
-
-const getAllEvents = async (query: string | string[], club: string | string[]) => {
-  try {
-    const queryString = new URLSearchParams({
-      q: String(query ?? ""),
-      club: String(club ?? ""),
-    });
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/events?${queryString.toString()}`,
-      { cache: "no-store" }
-    );
-    const data = await safeJson(res);
-    return Array.isArray(data) ? data : [];
-  } catch (err) {
-    console.error("Error fetching events:", err);
-    return [];
-  }
-};
-
-const getAllSuperEvents = async () => {
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/superevents`,
-      { cache: "no-store" }
-    );
-    const data = await safeJson(res);
-    return Array.isArray(data) ? data : [];
-  } catch (err) {
-    console.error("Error fetching super events:", err);
-    return [];
-  }
-};
-
-const getAllHackathons = async (query: string | string[], club: string | string[]) => {
-  try {
-    const queryString = new URLSearchParams({
-      q: String(query ?? ""),
-      club: String(club ?? ""),
-    });
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/hackathons?${queryString.toString()}`,
-      { cache: "no-store" }
-    );
-    const data = await safeJson(res);
-    return Array.isArray(data) ? data : [];
-  } catch (err) {
-    console.error("Error fetching hackathons:", err);
-    return [];
-  }
-};
-
-const getAllClubs = async () => {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/clubs`, {
-      cache: "no-store",
-    });
-    const data = await safeJson(res);
-    return Array.isArray(data) ? data : [];
-  } catch (err) {
-    console.error("Error fetching clubs:", err);
-    return [];
-  }
-};
 
 export default async function Events({
   searchParams,
@@ -87,15 +19,17 @@ export default async function Events({
 }) {
   const session = await auth();
   const params = await searchParams;
-  const query = params.q || "";
-  const club = params.club || "";
-  const [allEvents, allClubs, allSuperEvents, allHackathons] = await Promise.all([
-    getAllEvents(query, club),
-    getAllClubs(),
-    getAllSuperEvents(),
-    getAllHackathons(query, club),
-  ]);
-  const dbUser = session?.user?.id ? await getUserById(session.user.id) : null;
+  const query = typeof params.q === "string" ? params.q : "";
+  const club = typeof params.club === "string" ? params.club : "";
+
+  const [allEvents, allClubs, allSuperEvents, allHackathons, dbUser] =
+    await Promise.all([
+      getEventsData(query, club),
+      getAllClubsData(),
+      getSuperEventsData(club),
+      getHackathonsData(query, club),
+      session?.user?.id ? getUserById(session.user.id) : null,
+    ]);
 
   return (
     <div className="flex flex-col min-h-full">

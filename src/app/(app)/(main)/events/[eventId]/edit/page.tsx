@@ -1,24 +1,16 @@
 import { auth } from "@/auth";
 import EditEventForm from "@/components/Events/EditEventForm";
-import { headers } from "next/headers";
+import { getEvent } from "@/services/getEvent";
 import { notFound, redirect } from "next/navigation";
 import React from "react";
 
-const getEventDetails = async (eventId) => {
-  const nextHeaders = await headers();
-  const cookieHeader = nextHeaders.get("cookie") ?? "";
-
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/events/${eventId}`, {
-    method: "GET",
-    headers: {
-      cookie: cookieHeader,
-    },
-    cache: "no-store",
-  });
-  if (!res.ok) return null;
-
-  const { event } = await res.json();
-  return { event };
+const getEventDetails = async (eventId: string) => {
+  try {
+    const event = await getEvent(eventId);
+    return { event: JSON.parse(JSON.stringify(event)) };
+  } catch (error) {
+    return null;
+  }
 };
 
 export default async function EditEvent({

@@ -1,45 +1,36 @@
-import { headers } from "next/headers";
+import { auth } from "@/auth";
 import { notFound, redirect } from "next/navigation";
 import EventInsightsDashboard from "@/components/Events/EventInsightsDashboard";
-
-const getEventInsights = async (eventId: string) => {
-  const nextHeaders = await headers();
-  const cookieHeader = nextHeaders.get("cookie") ?? "";
-
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/events/${eventId}/insights`,
-    {
-      method: "GET",
-      headers: {
-        cookie: cookieHeader,
-      },
-      cache: "no-store",
-    },
-  );
-
-  if (res.status === 401) {
-    redirect(`/login?callbackUrl=/events/${eventId}/insights`);
-  }
-
-  if (res.status === 403) {
-    redirect("/forbidden");
-  }
-
-  if (!res.ok) return null;
-
-  return res.json();
-};
+import { getEventInsightsData } from "@/services/getEventInsightsData";
 
 export default async function EventInsightsPage({
   params,
 }: {
   params: Promise<{ eventId: string }>;
 }) {
+  const session = await auth();
   const { eventId } = await params;
-  const insights = await getEventInsights(eventId);
+
+  if (!session?.user) {
+    redirect(`/login?callbackUrl=/events/${eventId}/insights`);
+  }
+
+  if (session.user.role !== "club-admin" && session.user.role !== "admin") {
+    redirect("/forbidden");
+  }
+
+  const insights = await getEventInsightsData(eventId);
 
   if (!insights?.event) {
     notFound();
+  }
+
+  if (
+    session.user.role === "club-admin" &&
+    insights.event.organizingClub?._id?.toString() !==
+      session.user.adminClub?.toString()
+  ) {
+    redirect("/forbidden");
   }
 
   return <EventInsightsDashboard data={insights} />;
