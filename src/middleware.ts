@@ -14,6 +14,26 @@ function extractSubdomain(hostname: string): string | null {
   // Strip port if present
   const host = hostname.split(":")[0].toLowerCase();
 
+  // Root domains that should show the marketing landing page (no tenant)
+  if (
+    host === "clubly.tech" ||
+    host === "www.clubly.tech"
+  ) {
+    return null;
+  }
+
+  // Handle custom domain subdomains (e.g. pvppcoe.clubly.tech or admin.clubly.tech)
+  if (host.endsWith(".clubly.tech")) {
+    const parts = host.split(".");
+    // e.g. pvppcoe.clubly.tech -> ['pvppcoe', 'clubly', 'tech']
+    if (parts.length >= 3) {
+      const sub = parts[0];
+      if (sub === "www") return null;
+      return sub;
+    }
+    return null;
+  }
+
   // If deployed on Vercel's default domain (e.g. clubly-vppcoe.vercel.app),
   // default to the PVPPCOE tenant so existing deployment works out-of-the-box
   if (host.endsWith(".vercel.app")) {
@@ -34,16 +54,17 @@ function extractSubdomain(hostname: string): string | null {
     return "pvppcoe";
   }
 
-  // Handle custom production domains, e.g. pvppcoe.clubly.app
+  // Generic fallback for any other 3-part hostname (e.g. sub.domain.com)
   const parts = host.split(".");
   if (parts.length >= 3) {
     const sub = parts[0];
     if (sub !== "www") {
       return sub;
     }
+    return null;
   }
 
-  return "pvppcoe";
+  return null;
 }
 
 export default auth(async (req) => {
@@ -121,22 +142,37 @@ export default auth(async (req) => {
   }
 
   /* ------------------------------
-     Root Page Handling
+     Root Page & Portal Navigation
   ------------------------------ */
   if (pathname === "/") {
+    // If logged in
     if (req.auth) {
+      const targetSlug = user?.tenantSlug || "pvppcoe";
+      // If on root domain (clubly.tech or www.clubly.tech), redirect to their tenant's dashboard subdomain in production
+      if (isRootDomain && (host === "clubly.tech" || host === "www.clubly.tech")) {
+        return NextResponse.redirect(`https://${targetSlug}.clubly.tech/dashboard`);
+      }
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
-    // Subdomains redirect unauthenticated visitors to login, while root localhost and vercel.app show the landing page
-    if (tenantSlug && !host.endsWith(".vercel.app") && host !== "localhost" && !host.includes("127.0.0.1")) {
+
+    // If unauthenticated:
+    // Subdomains (e.g. pvppcoe.clubly.tech or pvppcoe.localhost) redirect directly to login
+    if (tenantSlug) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
+
+    // Root domain (clubly.tech, www.clubly.tech) shows the marketing landing page
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
   /* ------------------------------
      Logged-in user visiting /login
   ------------------------------ */
   if (pathname === "/login" && req.auth) {
+    const targetSlug = user?.tenantSlug || "pvppcoe";
+    if (isRootDomain && (host === "clubly.tech" || host === "www.clubly.tech")) {
+      return NextResponse.redirect(`https://${targetSlug}.clubly.tech/dashboard`);
+    }
     const callbackUrl =
       req.nextUrl.searchParams.get("callbackUrl") ?? "/dashboard";
     return NextResponse.redirect(new URL(callbackUrl, req.url));

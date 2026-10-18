@@ -26,7 +26,11 @@ export default function Navbar() {
 
   const handleNavigate = (type: "login" | "signup") => {
     setLoading(type);
-    router.push("/login"); // change signup route if needed
+    if (typeof window !== "undefined" && (window.location.hostname === "clubly.tech" || window.location.hostname === "www.clubly.tech")) {
+      window.location.href = "https://pvppcoe.clubly.tech/login";
+      return;
+    }
+    router.push("/login");
   };
 
   return (

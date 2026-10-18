@@ -6,6 +6,23 @@ export const authConfig: NextAuthConfig = {
   session: {
     maxAge: 3 * 24 * 60 * 60, // 3 days in seconds
   },
+  cookies: {
+    sessionToken: {
+      name:
+        process.env.NODE_ENV === "production"
+          ? "__Secure-authjs.session-token"
+          : "authjs.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+        ...(process.env.NODE_ENV === "production"
+          ? { domain: ".clubly.tech" }
+          : {}),
+      },
+    },
+  },
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,

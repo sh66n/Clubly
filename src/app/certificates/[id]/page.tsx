@@ -162,7 +162,7 @@ export async function generateMetadata({
     openGraph: {
       title: `${recipientName}'s Certificate for ${eventName}`,
       description: `Verified Certificate awarded by ${clubName} on Clubly.`,
-      url: `https://clubly-vppcoe.vercel.app/certificates/${id}${userId ? `?user=${userId}` : ""}`,
+      url: `https://clubly.tech/certificates/${id}${userId ? `?user=${userId}` : ""}`,
       siteName: "Clubly",
       images: [
         {

@@ -38,12 +38,12 @@ export const metadata: Metadata = {
   },
   description:
     "Everything your club needs, in one platform. Plan, manage, and grow your club with Clubly.",
-  metadataBase: new URL("https://clubly-vppcoe.vercel.app"),
+  metadataBase: new URL("https://clubly.tech"),
   openGraph: {
     title: "Clubly",
     description:
       "Everything your club needs, in one platform. Plan, manage, and grow your club with Clubly.",
-    url: "https://clubly-vppcoe.vercel.app",
+    url: "https://clubly.tech",
     siteName: "Clubly",
     images: [
       {
