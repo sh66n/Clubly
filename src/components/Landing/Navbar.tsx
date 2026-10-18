@@ -5,10 +5,14 @@ import React, { useState, useEffect } from "react";
 import { Menu, X, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export default function Navbar() {
+interface NavbarProps {
+  session?: any;
+}
+
+export default function Navbar({ session }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState<"login" | "signup" | null>(null);
+  const [loading, setLoading] = useState<"login" | "signup" | "dashboard" | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -24,14 +28,35 @@ export default function Navbar() {
     { name: "Contact", href: "#contact" },
   ];
 
-  const handleNavigate = (type: "login" | "signup") => {
+  const handleNavigate = (type: "login" | "signup" | "dashboard") => {
     setLoading(type);
-    if (typeof window !== "undefined" && (window.location.hostname === "clubly.tech" || window.location.hostname === "www.clubly.tech")) {
-      window.location.href = "https://pvppcoe.clubly.tech/login";
+    const targetSlug = session?.user?.tenantSlug || "pvppcoe";
+
+    if (type === "dashboard") {
+      if (
+        typeof window !== "undefined" &&
+        (window.location.hostname === "clubly.tech" ||
+          window.location.hostname === "www.clubly.tech")
+      ) {
+        window.location.href = `https://${targetSlug}.clubly.tech/dashboard`;
+        return;
+      }
+      router.push("/dashboard");
+      return;
+    }
+
+    if (
+      typeof window !== "undefined" &&
+      (window.location.hostname === "clubly.tech" ||
+        window.location.hostname === "www.clubly.tech")
+    ) {
+      window.location.href = `https://${targetSlug}.clubly.tech/login`;
       return;
     }
     router.push("/login");
   };
+
+  const isLoggedIn = !!session?.user;
 
   return (
     <nav
@@ -62,29 +87,45 @@ export default function Navbar() {
 
         {/* Desktop Buttons */}
         <div className="hidden md:flex gap-4 items-center">
-          <button
-            onClick={() => handleNavigate("login")}
-            disabled={loading !== null}
-            className="border border-[#5E5E5E] rounded-full py-1.5 px-5 font-bold flex items-center justify-center gap-2 disabled:opacity-60"
-          >
-            {loading === "login" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <span>Login</span>
-            )}
-          </button>
+          {isLoggedIn ? (
+            <button
+              onClick={() => handleNavigate("dashboard")}
+              disabled={loading !== null}
+              className="bg-white text-black hover:bg-gray-100 rounded-full py-1.5 px-6 font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-colors"
+            >
+              {loading === "dashboard" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <span>Dashboard</span>
+              )}
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => handleNavigate("login")}
+                disabled={loading !== null}
+                className="border border-[#5E5E5E] hover:border-white rounded-full py-1.5 px-5 font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-colors"
+              >
+                {loading === "login" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <span>Login</span>
+                )}
+              </button>
 
-          <button
-            onClick={() => handleNavigate("signup")}
-            disabled={loading !== null}
-            className="bg-white text-black rounded-full py-1.5 px-5 font-bold flex items-center justify-center gap-2 disabled:opacity-60"
-          >
-            {loading === "signup" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <span>SignUp</span>
-            )}
-          </button>
+              <button
+                onClick={() => handleNavigate("signup")}
+                disabled={loading !== null}
+                className="bg-white text-black hover:bg-gray-100 rounded-full py-1.5 px-5 font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-colors"
+              >
+                {loading === "signup" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <span>SignUp</span>
+                )}
+              </button>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -115,29 +156,45 @@ export default function Navbar() {
           ))}
 
           <div className="flex flex-col w-full px-10 gap-4 mt-4">
-            <button
-              onClick={() => handleNavigate("login")}
-              disabled={loading !== null}
-              className="w-full border border-[#5E5E5E] rounded-full py-3 font-bold flex justify-center gap-2 disabled:opacity-60"
-            >
-              {loading === "login" ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <span>Login</span>
-              )}
-            </button>
+            {isLoggedIn ? (
+              <button
+                onClick={() => handleNavigate("dashboard")}
+                disabled={loading !== null}
+                className="w-full bg-white text-black rounded-full py-3 font-bold flex justify-center gap-2 disabled:opacity-60"
+              >
+                {loading === "dashboard" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <span>Dashboard</span>
+                )}
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => handleNavigate("login")}
+                  disabled={loading !== null}
+                  className="w-full border border-[#5E5E5E] rounded-full py-3 font-bold flex justify-center gap-2 disabled:opacity-60"
+                >
+                  {loading === "login" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <span>Login</span>
+                  )}
+                </button>
 
-            <button
-              onClick={() => handleNavigate("signup")}
-              disabled={loading !== null}
-              className="w-full bg-white text-black rounded-full py-3 font-bold flex justify-center gap-2 disabled:opacity-60"
-            >
-              {loading === "signup" ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <span>SignUp</span>
-              )}
-            </button>
+                <button
+                  onClick={() => handleNavigate("signup")}
+                  disabled={loading !== null}
+                  className="w-full bg-white text-black rounded-full py-3 font-bold flex justify-center gap-2 disabled:opacity-60"
+                >
+                  {loading === "signup" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <span>SignUp</span>
+                  )}
+                </button>
+              </>
+            )}
           </div>
         </ul>
       </div>

@@ -146,23 +146,21 @@ export default auth(async (req) => {
      Root Page & Portal Navigation
   ------------------------------ */
   if (pathname === "/") {
-    // If logged in
+    // Root domain (clubly.tech, www.clubly.tech) ALWAYS shows the marketing landing page
+    if (isRootDomain && (cleanHost === "clubly.tech" || cleanHost === "www.clubly.tech")) {
+      return NextResponse.next({ request: { headers: requestHeaders } });
+    }
+
+    // Subdomains (e.g. pvppcoe.clubly.tech or pvppcoe.localhost):
     if (req.auth) {
-      const targetSlug = user?.tenantSlug || "pvppcoe";
-      // If on root domain (clubly.tech or www.clubly.tech), redirect to their tenant's dashboard subdomain in production
-      if (isRootDomain && (cleanHost === "clubly.tech" || cleanHost === "www.clubly.tech")) {
-        return NextResponse.redirect(`https://${targetSlug}.clubly.tech/dashboard`);
-      }
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
-    // If unauthenticated:
-    // Subdomains (e.g. pvppcoe.clubly.tech or pvppcoe.localhost) redirect directly to login
+    // Subdomains redirect unauthenticated visitors directly to /login
     if (tenantSlug) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
 
-    // Root domain (clubly.tech, www.clubly.tech) shows the marketing landing page
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 

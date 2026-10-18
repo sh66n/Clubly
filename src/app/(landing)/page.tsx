@@ -4,12 +4,15 @@ import Footer from "@/components/Landing/Footer";
 import Hero from "@/components/Landing/Hero";
 import HowItWorks from "@/components/Landing/HowItWorks";
 import Navbar from "@/components/Landing/Navbar";
+import { auth } from "@/auth";
 import React from "react";
 
-export default function Home() {
+export default async function Home() {
+  const session = await auth();
+
   return (
     <div>
-      <Navbar />
+      <Navbar session={session} />
       <Hero />
       <Features />
       <Diversity />
