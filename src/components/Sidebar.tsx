@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { LogoutButton } from "./LogoutButton";
+import { signOut } from "next-auth/react";
 import {
   Bolt,
   Calendar,
@@ -12,6 +13,7 @@ import {
   Info,
   LayoutDashboard,
   LogIn,
+  LogOut,
   Power,
   Users,
   Trophy,
@@ -330,16 +332,18 @@ export default function Sidebar({ isLoggedIn, points, user }: SidebarProps) {
               {isLoggedIn ? (
                 <li>
                   <Tooltip label="Logout" show={isCompressed}>
-                    <div
-                      className={`relative z-[1] flex items-center gap-3 rounded-lg mb-1 transition-colors text-[#9F9F9F] hover:text-white cursor-pointer ${
+                    <button
+                      type="button"
+                      onClick={() => signOut({ callbackUrl: "/login" })}
+                      className={`w-full relative z-[1] flex items-center gap-3 rounded-lg mb-1 transition-colors text-[#9F9F9F] hover:text-red-400 hover:bg-white/5 cursor-pointer text-left ${
                         isCompressed
                           ? "justify-center py-3 px-2"
                           : "py-2.5 px-3"
                       }`}
                     >
-                      <LogIn size={20} />
-                      {!isCompressed && <LogoutButton />}
-                    </div>
+                      <LogOut size={20} className="shrink-0" />
+                      {!isCompressed && <span className="font-medium">Logout</span>}
+                    </button>
                   </Tooltip>
                 </li>
               ) : (
