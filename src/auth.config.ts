@@ -24,7 +24,7 @@ export const authConfig: NextAuthConfig = {
     // Controls redirects after sign-in and sign-out
     async redirect({ url, baseUrl }) {
       // Allows relative callback URLs
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      if (url.startsWith("/")) return url;
       // Allows callback URLs on any *.clubly.tech subdomain or localhost
       try {
         const parsedUrl = new URL(url);
@@ -37,12 +37,11 @@ export const authConfig: NextAuthConfig = {
           return url;
         }
       } catch {}
-      return baseUrl;
+      return url;
     },
-    // Middleware reads this to protect routes
-    authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user;
-      return isLoggedIn;
+    // Let middleware.ts handle all route protection & redirects
+    authorized() {
+      return true;
     },
     // Transfers data from JWT to the Session object
     async session({ session, token }) {

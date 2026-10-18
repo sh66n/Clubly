@@ -72,8 +72,9 @@ export default auth(async (req) => {
   const user = req.auth?.user;
   const role = user?.role;
   const host = req.headers.get("host") || "";
+  const cleanHost = host.split(":")[0].toLowerCase();
 
-  const subdomain = extractSubdomain(host);
+  const subdomain = extractSubdomain(cleanHost);
 
   /* ------------------------------
      Determine Request Context
@@ -149,7 +150,7 @@ export default auth(async (req) => {
     if (req.auth) {
       const targetSlug = user?.tenantSlug || "pvppcoe";
       // If on root domain (clubly.tech or www.clubly.tech), redirect to their tenant's dashboard subdomain in production
-      if (isRootDomain && (host === "clubly.tech" || host === "www.clubly.tech")) {
+      if (isRootDomain && (cleanHost === "clubly.tech" || cleanHost === "www.clubly.tech")) {
         return NextResponse.redirect(`https://${targetSlug}.clubly.tech/dashboard`);
       }
       return NextResponse.redirect(new URL("/dashboard", req.url));
@@ -166,13 +167,30 @@ export default auth(async (req) => {
   }
 
   /* ------------------------------
+     Root Domain Accessing App Routes
+  ------------------------------ */
+  if (isRootDomain && (cleanHost === "clubly.tech" || cleanHost === "www.clubly.tech")) {
+    if (pathname === "/login") {
+      return NextResponse.redirect("https://pvppcoe.clubly.tech/login");
+    }
+    if (
+      pathname === "/dashboard" ||
+      pathname.startsWith("/events") ||
+      pathname.startsWith("/clubs") ||
+      pathname.startsWith("/leaderboard") ||
+      pathname.startsWith("/me") ||
+      pathname.startsWith("/club-admin") ||
+      pathname.startsWith("/faculty-coordinator") ||
+      pathname.startsWith("/super-admin")
+    ) {
+      return NextResponse.redirect(`https://pvppcoe.clubly.tech${pathname}`);
+    }
+  }
+
+  /* ------------------------------
      Logged-in user visiting /login
   ------------------------------ */
   if (pathname === "/login" && req.auth) {
-    const targetSlug = user?.tenantSlug || "pvppcoe";
-    if (isRootDomain && (host === "clubly.tech" || host === "www.clubly.tech")) {
-      return NextResponse.redirect(`https://${targetSlug}.clubly.tech/dashboard`);
-    }
     const callbackUrl =
       req.nextUrl.searchParams.get("callbackUrl") ?? "/dashboard";
     return NextResponse.redirect(new URL(callbackUrl, req.url));
