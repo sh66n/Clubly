@@ -334,7 +334,10 @@ export default function Sidebar({ isLoggedIn, points, user }: SidebarProps) {
                   <Tooltip label="Logout" show={isCompressed}>
                     <button
                       type="button"
-                      onClick={() => signOut({ callbackUrl: "/login" })}
+                      onClick={async () => {
+                        await signOut({ redirect: false });
+                        window.location.href = "/login";
+                      }}
                       className={`w-full relative z-[1] flex items-center gap-3 rounded-lg mb-1 transition-colors text-[#9F9F9F] hover:text-red-400 hover:bg-white/5 cursor-pointer text-left ${
                         isCompressed
                           ? "justify-center py-3 px-2"

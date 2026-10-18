@@ -6,7 +6,10 @@ export function LogoutButton() {
     <div>
       <button
         className="hover:cursor-pointer hover:text-white"
-        onClick={() => signOut()}
+        onClick={async () => {
+          await signOut({ redirect: false });
+          window.location.href = "/login";
+        }}
       >
         Logout
       </button>
