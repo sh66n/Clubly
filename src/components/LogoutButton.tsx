@@ -8,7 +8,14 @@ export function LogoutButton() {
         className="hover:cursor-pointer hover:text-white"
         onClick={async () => {
           await signOut({ redirect: false });
-          window.location.href = "/login";
+          if (
+            typeof window !== "undefined" &&
+            window.location.hostname.endsWith("clubly.tech")
+          ) {
+            window.location.href = "https://clubly.tech/logout";
+            return;
+          }
+          window.location.href = "/logout";
         }}
       >
         Logout

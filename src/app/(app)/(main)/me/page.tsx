@@ -88,7 +88,8 @@ export default async function MePage() {
             <form
               action={async () => {
                 "use server";
-                await signOut({ redirectTo: "/login" });
+                const isProd = process.env.NODE_ENV === "production";
+                await signOut({ redirectTo: isProd ? "https://clubly.tech/logout" : "/logout" });
               }}
             >
               <button

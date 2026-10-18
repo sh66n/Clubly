@@ -91,7 +91,7 @@ export default function Navbar({ session }: NavbarProps) {
             <button
               onClick={() => handleNavigate("dashboard")}
               disabled={loading !== null}
-              className="bg-white text-black hover:bg-gray-100 rounded-full py-1.5 px-6 font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-colors"
+              className="bg-white text-black hover:bg-gray-100 rounded-full py-1.5 px-5 font-bold flex items-center justify-center gap-2 disabled:opacity-60 transition-colors"
             >
               {loading === "dashboard" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

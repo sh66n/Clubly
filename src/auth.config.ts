@@ -1,10 +1,46 @@
 import Google from "next-auth/providers/google";
 import type { NextAuthConfig } from "next-auth";
 
+const isProduction = process.env.NODE_ENV === "production";
+const useSecureCookies = isProduction;
+const cookiePrefix = useSecureCookies ? "__Secure-" : "";
+
+// Share session cookie across all *.clubly.tech subdomains in production
+const cookieDomain =
+  process.env.COOKIE_DOMAIN ||
+  (isProduction &&
+  (process.env.VERCEL === "1" ||
+    process.env.NEXT_PUBLIC_BASE_URL?.includes("clubly.tech") ||
+    process.env.AUTH_URL?.includes("clubly.tech"))
+    ? ".clubly.tech"
+    : undefined);
+
 export const authConfig: NextAuthConfig = {
   trustHost: true,
   session: {
     maxAge: 3 * 24 * 60 * 60, // 3 days in seconds
+  },
+  cookies: {
+    sessionToken: {
+      name: `${cookiePrefix}authjs.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+        domain: cookieDomain,
+      },
+    },
+    callbackUrl: {
+      name: `${cookiePrefix}authjs.callback-url`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+        domain: cookieDomain,
+      },
+    },
   },
   providers: [
     Google({

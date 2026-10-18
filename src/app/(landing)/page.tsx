@@ -7,12 +7,27 @@ import Navbar from "@/components/Landing/Navbar";
 import { auth } from "@/auth";
 import React from "react";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function Home() {
   const session = await auth();
 
+  const safeSession = session?.user
+    ? {
+        user: {
+          name: session.user.name || null,
+          email: session.user.email || null,
+          image: session.user.image || null,
+          role: session.user.role || null,
+          tenantSlug: session.user.tenantSlug || "pvppcoe",
+        },
+      }
+    : null;
+
   return (
     <div>
-      <Navbar session={session} />
+      <Navbar session={safeSession} />
       <Hero />
       <Features />
       <Diversity />

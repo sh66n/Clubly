@@ -74,6 +74,12 @@ export default auth(async (req) => {
   const host = req.headers.get("host") || "";
   const cleanHost = host.split(":")[0].toLowerCase();
 
+  // Canonical redirect www.clubly.tech -> clubly.tech
+  if (cleanHost === "www.clubly.tech") {
+    const targetUrl = new URL(pathname + req.nextUrl.search, "https://clubly.tech");
+    return NextResponse.redirect(targetUrl, 301);
+  }
+
   const subdomain = extractSubdomain(cleanHost);
 
   /* ------------------------------
@@ -200,6 +206,7 @@ export default auth(async (req) => {
   const isPublic =
     pathname === "/" ||
     pathname === "/login" ||
+    pathname === "/logout" ||
     pathname === "/events" ||
     pathname === "/clubs" ||
     /^\/clubs\/[^/]+$/.test(pathname) ||
