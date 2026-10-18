@@ -19,12 +19,26 @@ export default function SplashScreen() {
     const randomTip = TIPS[Math.floor(Math.random() * TIPS.length)];
     setTip(randomTip);
 
-    const alreadySeen = sessionStorage.getItem("hasSeenSplash");
+    const getCookieDomain = () => {
+      const host = window.location.hostname;
+      if (host.endsWith("clubly.tech")) return ".clubly.tech";
+      if (host.endsWith(".localhost")) return ".localhost";
+      return "";
+    };
+
+    const hasCookie =
+      typeof document !== "undefined" &&
+      document.cookie.split("; ").some((c) => c.trim().startsWith("hasSeenSplash="));
+    const alreadySeen = hasCookie || sessionStorage.getItem("hasSeenSplash");
+
     if (alreadySeen) {
       setShouldUnmount(true);
       return;
     }
 
+    const domain = getCookieDomain();
+    const domainAttr = domain ? `; domain=${domain}` : "";
+    document.cookie = `hasSeenSplash=true; path=/${domainAttr}; SameSite=Lax`;
     sessionStorage.setItem("hasSeenSplash", "true");
 
     // Trigger slide-up exit after 2 seconds

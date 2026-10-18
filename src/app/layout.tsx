@@ -5,7 +5,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { Silkscreen } from "next/font/google";
 import { Toaster } from "sonner";
 import SplashScreen from "@/components/SplashScreen";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { connectToDb } from "@/lib/connectToDb";
 import { Organization } from "@/models/organization.model";
 import { TenantProvider, TenantContextValue } from "@/context/TenantContext";
@@ -111,15 +111,24 @@ export default async function RootLayout({
     }
   }
 
+  const cookieStore = await cookies();
+  const hasSeenSplash = cookieStore.get("hasSeenSplash")?.value === "true";
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={hasSeenSplash ? "splash-seen" : undefined} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              if (sessionStorage.getItem('hasSeenSplash')) {
-                document.documentElement.classList.add('splash-seen');
-              }
+              try {
+                var hasCookie = document.cookie.split('; ').some(function(c) {
+                  return c.trim().startsWith('hasSeenSplash=');
+                });
+                var hasSession = sessionStorage.getItem('hasSeenSplash');
+                if (hasCookie || hasSession) {
+                  document.documentElement.classList.add('splash-seen');
+                }
+              } catch(e) {}
             `,
           }}
         />
