@@ -17,7 +17,28 @@ export const authConfig: NextAuthConfig = {
       },
     }),
   ],
+  pages: {
+    signIn: "/login",
+  },
   callbacks: {
+    // Controls redirects after sign-in and sign-out
+    async redirect({ url, baseUrl }) {
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Allows callback URLs on any *.clubly.tech subdomain or localhost
+      try {
+        const parsedUrl = new URL(url);
+        if (
+          parsedUrl.hostname === "localhost" ||
+          parsedUrl.hostname.endsWith(".localhost") ||
+          parsedUrl.hostname === "clubly.tech" ||
+          parsedUrl.hostname.endsWith(".clubly.tech")
+        ) {
+          return url;
+        }
+      } catch {}
+      return baseUrl;
+    },
     // Middleware reads this to protect routes
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
