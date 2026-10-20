@@ -30,6 +30,7 @@ import BorderedDiv from "@/components/BorderedDiv";
 
 interface EventFeedbackWidgetProps {
   eventId: string;
+  eventSlug?: string;
   eventName: string;
 }
 
@@ -164,6 +165,7 @@ const triggerConfetti = () => {
 
 export default function EventFeedbackWidget({
   eventId,
+  eventSlug,
   eventName,
 }: EventFeedbackWidgetProps) {
   const router = useRouter();
@@ -741,7 +743,7 @@ export default function EventFeedbackWidget({
                 </div>
 
                 <Link
-                  href={`/events/${eventId}/feedback`}
+                  href={`/events/${eventSlug || eventId}/feedback`}
                   className="w-full py-2.5 px-4 bg-[#b5b8bd] hover:bg-[#c4c7cc] active:bg-[#a6a9ae] text-gray-900 font-semibold rounded-full text-sm transition-colors duration-150 shadow-sm cursor-pointer mt-2 mb-2.5 relative z-10 block text-center"
                 >
                   Give feedback

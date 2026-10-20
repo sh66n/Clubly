@@ -2,6 +2,7 @@ import React from "react";
 import { auth } from "@/auth";
 import { notFound, redirect } from "next/navigation";
 import { connectToDb } from "@/lib/connectToDb";
+import { getEventLookupQuery, isValidObjectId } from "@/lib/findEvent";
 import { Event, Feedback, FeedbackForm, Group } from "@/models";
 import EventFeedbackFormClient from "@/components/Events/EventFeedbackFormClient";
 import { isUserEventParticipant } from "@/services/getParticipants";
@@ -23,16 +24,24 @@ export default async function EventFeedbackPage({
 
   const isClubAdmin = session.user.role === "club-admin" || session.user.role === "admin";
 
-  const [eventDoc, isParticipant] = await Promise.all([
-    Event.findById(eventId)
-      .populate("organizingClub", "name logo")
-      .lean(),
-    isClubAdmin ? Promise.resolve(true) : isUserEventParticipant(eventId, session.user.id),
-  ]);
+  const eventDoc = await Event.findOne(getEventLookupQuery(eventId))
+    .populate("organizingClub", "name logo")
+    .lean();
 
   if (!eventDoc) {
     notFound();
   }
+
+  // If accessed by MongoDB ObjectId but has a clean slug, 301 redirect to slug route
+  if (isValidObjectId(eventId) && eventDoc.slug && eventDoc.slug !== eventId) {
+    redirect(`/events/${eventDoc.slug}/feedback`);
+  }
+
+  const resolvedEventId = eventDoc._id.toString();
+
+  const isParticipant = isClubAdmin
+    ? true
+    : await isUserEventParticipant(resolvedEventId, session.user.id);
 
   const event: any = JSON.parse(JSON.stringify(eventDoc));
 
@@ -40,7 +49,8 @@ export default async function EventFeedbackPage({
   if (!isParticipant) {
     return (
       <EventFeedbackFormClient
-        eventId={eventId}
+        eventId={resolvedEventId}
+        eventSlug={event.slug}
         eventName={event.name}
         eventDate={event.date}
         organizingClubName={event.organizingClub?.name}
@@ -55,7 +65,7 @@ export default async function EventFeedbackPage({
 
   // Check if feedback is already submitted
   const feedbackDoc = await (Feedback as any).exists({
-    eventId: new Types.ObjectId(eventId),
+    eventId: eventDoc._id,
     userId: new Types.ObjectId(session.user.id),
   }).setOptions({ skipTenant: true });
   const hasFeedback = Boolean(feedbackDoc);
@@ -120,7 +130,8 @@ export default async function EventFeedbackPage({
 
   return (
     <EventFeedbackFormClient
-      eventId={eventId}
+      eventId={resolvedEventId}
+      eventSlug={event.slug}
       eventName={event.name}
       eventDate={event.date}
       organizingClubName={event.organizingClub?.name}

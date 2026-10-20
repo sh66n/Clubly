@@ -139,7 +139,7 @@ export default function EventDetails({
       toast.success("Registered successfully");
       setRegistrationStatus("registered");
 
-      router.replace(`/events/${event._id}/success`);
+      router.replace(`/events/${event.slug || event._id}/success`);
     } catch (err: any) {
       toast.error(err.message);
       setRegistrationStatus("idle");
@@ -541,7 +541,7 @@ export default function EventDetails({
                     onSuccess={() => {
                       toast.success("Payment successful! You are registered.");
                       setRegistrationStatus("registered");
-                      router.replace(`/events/${event._id}/success`);
+                      router.replace(`/events/${event.slug || event._id}/success`);
                     }}
                   />
                 )}
@@ -646,12 +646,12 @@ export default function EventDetails({
                     </>
                   ) : (
                     <div className="flex flex-col gap-2">
-                      <Link href={`/events/${event._id}/groups/new`}>
+                      <Link href={`/events/${event.slug || event._id}/groups/new`}>
                         <BorderedDiv className="rounded-full text-center">
                           Create group
                         </BorderedDiv>
                       </Link>
-                      <Link href={`/events/${event._id}/groups`}>
+                      <Link href={`/events/${event.slug || event._id}/groups`}>
                         <BorderedDiv className="rounded-full text-center">
                           Join group
                         </BorderedDiv>
@@ -806,7 +806,7 @@ export default function EventDetails({
 
       {/* Floating Feedback & Certificate Widget */}
       {(((hasEventPassed || Boolean(event.feedbackForm)) && isAlreadyRegistered) || (user?.role as any) === "club-admin" || (user?.role as any) === "admin") && (
-        <EventFeedbackWidget eventId={String(event._id)} eventName={event.name} />
+        <EventFeedbackWidget eventId={String(event._id)} eventSlug={event.slug} eventName={event.name} />
       )}
     </>
   );

@@ -50,7 +50,7 @@ export async function getUserActivityData(userId: string) {
   const registrations = await Registration.find(regFilter)
     .populate({
       path: "eventId",
-      select: "name date organizingClub eventType prize winners winner winnerGroup",
+      select: "name slug date organizingClub eventType prize winners winner winnerGroup",
       populate: { path: "organizingClub", select: "name logo department" },
     })
     .sort({ registeredAt: -1, createdAt: -1 })
@@ -128,7 +128,7 @@ export async function getUserActivityData(userId: string) {
     const rawDate = `${yearStr}-${monthStr}-${dayStr}`;
 
     recentActivities.push({
-      id: eventIdStr,
+      id: ev.slug || eventIdStr,
       name: ev.name || "Campus Competition",
       clubName,
       clubLogo: club?.logo,

@@ -152,7 +152,7 @@ export default function EventInsightsDashboard({ data }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Link
-            href={`/events/${data.event._id}`}
+            href={`/events/${data.event.slug || data.event._id}`}
             className="mb-2 inline-flex items-center gap-2 text-sm text-[#8D8D8D] hover:text-white"
           >
             <ArrowLeft size={14} />
@@ -168,21 +168,21 @@ export default function EventInsightsDashboard({ data }: Props) {
 
         <div className="flex flex-wrap gap-2">
           <Link
-            href={`/events/${data.event._id}/attendance`}
+            href={`/events/${data.event.slug || data.event._id}/attendance`}
             className="px-3 py-2 rounded-lg border border-[#515151] text-sm hover:border-gray-300 inline-flex items-center gap-2"
           >
             <CalendarCheck size={16} />
             Attendance
           </Link>
           <Link
-            href={`/events/${data.event._id}/assign-winner`}
+            href={`/events/${data.event.slug || data.event._id}/assign-winner`}
             className="px-3 py-2 rounded-lg border border-[#515151] text-sm hover:border-gray-300 inline-flex items-center gap-2"
           >
             <Crown size={16} />
             Assign Winner
           </Link>
           <Link
-            href={`/events/${data.event._id}/edit`}
+            href={`/events/${data.event.slug || data.event._id}/edit`}
             className="px-3 py-2 rounded-lg border border-[#515151] text-sm hover:border-gray-300 inline-flex items-center gap-2"
           >
             <ExternalLink size={16} />

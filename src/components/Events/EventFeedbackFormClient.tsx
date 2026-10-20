@@ -33,6 +33,7 @@ interface FeedbackFormData {
 
 interface EventFeedbackFormClientProps {
   eventId: string;
+  eventSlug?: string;
   eventName: string;
   eventDate?: string;
   organizingClubName?: string;
@@ -53,6 +54,7 @@ const RATING_LABELS: Record<number, string> = {
 
 export default function EventFeedbackFormClient({
   eventId,
+  eventSlug,
   eventName,
   eventDate,
   organizingClubName,
@@ -127,9 +129,9 @@ export default function EventFeedbackFormClient({
       toast.success("Feedback submitted successfully!");
 
       if (hasCertificate) {
-        router.push(`/events/${eventId}?openCertificate=true`);
+        router.push(`/events/${eventSlug || eventId}?openCertificate=true`);
       } else {
-        router.push(`/events/${eventId}`);
+        router.push(`/events/${eventSlug || eventId}`);
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to submit feedback");
@@ -142,7 +144,7 @@ export default function EventFeedbackFormClient({
     return (
       <div className="max-w-2xl mx-auto py-8 px-4 sm:px-6">
         <Link
-          href={`/events/${eventId}`}
+          href={`/events/${eventSlug || eventId}`}
           className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-6 transition-colors"
         >
           <ArrowLeft size={16} />
@@ -163,7 +165,7 @@ export default function EventFeedbackFormClient({
           </p>
 
           <Link
-            href={`/events/${eventId}`}
+            href={`/events/${eventSlug || eventId}`}
             className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-white text-black font-semibold text-sm hover:bg-gray-200 transition-colors"
           >
             View Event Details
@@ -178,7 +180,7 @@ export default function EventFeedbackFormClient({
     return (
       <div className="max-w-2xl mx-auto py-8 px-4 sm:px-6">
         <Link
-          href={`/events/${eventId}`}
+          href={`/events/${eventSlug || eventId}`}
           className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-6 transition-colors"
         >
           <ArrowLeft size={16} />
@@ -201,7 +203,7 @@ export default function EventFeedbackFormClient({
 
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
             <Link
-              href={`/events/${eventId}`}
+              href={`/events/${eventSlug || eventId}`}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-white text-black font-semibold text-sm hover:bg-gray-200 transition-colors"
             >
               {hasCertificate ? (
@@ -233,7 +235,7 @@ export default function EventFeedbackFormClient({
     return (
       <div className="max-w-2xl mx-auto py-8 px-4 sm:px-6">
         <Link
-          href={`/events/${eventId}`}
+          href={`/events/${eventSlug || eventId}`}
           className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-6 transition-colors"
         >
           <ArrowLeft size={16} />
@@ -254,7 +256,7 @@ export default function EventFeedbackFormClient({
           </p>
 
           <Link
-            href={`/events/${eventId}`}
+            href={`/events/${eventSlug || eventId}`}
             className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-white text-black font-semibold text-sm hover:bg-gray-200 transition-colors"
           >
             Back to Event
@@ -270,7 +272,7 @@ export default function EventFeedbackFormClient({
       {/* Top Header Navigation */}
       <div className="flex items-center justify-between mb-6">
         <Link
-          href={`/events/${eventId}`}
+          href={`/events/${eventSlug || eventId}`}
           className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
         >
           <ArrowLeft size={16} />
@@ -303,7 +305,7 @@ export default function EventFeedbackFormClient({
               {eventName}
             </h1>
             <p className="text-xs text-gray-400 mt-1">
-              Event Feedback Form {eventDate && `• ${new Date(eventDate).toLocaleDateString()}`}
+              Event Feedback Form {eventDate && `• ${new Date(eventDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
             </p>
           </div>
         </div>
@@ -411,7 +413,7 @@ export default function EventFeedbackFormClient({
           </button>
 
           <Link
-            href={`/events/${eventId}`}
+            href={`/events/${eventSlug || eventId}`}
             className="w-full sm:w-auto py-3 px-5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 hover:text-white text-sm font-semibold text-center transition-colors"
           >
             Cancel

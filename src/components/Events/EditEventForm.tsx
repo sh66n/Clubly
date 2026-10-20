@@ -212,7 +212,7 @@ export default function EditEventForm({ user, event }: EditEventFormProps) {
       }
 
       toast.success("Event updated successfully");
-      router.push(`/events/${event._id}`);
+      router.push(`/events/${event.slug || event._id}`);
       router.refresh();
     } catch (err) {
       toast.error("Failed to update event");

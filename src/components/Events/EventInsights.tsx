@@ -22,7 +22,7 @@ export default function EventInsights({ event }: EventInsightsProps) {
         <div className="flex md:flex-row flex-col gap-4">
           <Link
             className="flex items-center gap-2 mb-4 w-fit hover:opacity-80"
-            href={`/events/${event._id}/attendance`}
+            href={`/events/${event.slug || event._id}/attendance`}
           >
             <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
               <Calendar />
@@ -32,7 +32,7 @@ export default function EventInsights({ event }: EventInsightsProps) {
 
           <Link
             className="flex items-center gap-2 mb-4 w-fit hover:opacity-80"
-            href={`/events/${event._id}/assign-winner`}
+            href={`/events/${event.slug || event._id}/assign-winner`}
           >
             <div className="flex items-center justify-center p-2 bg-gray-900 rounded-lg">
               <Crown />
