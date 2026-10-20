@@ -6,6 +6,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import React from "react";
 import { connectToDb } from "@/lib/connectToDb";
+import { getEventLookupQuery, isValidObjectId } from "@/lib/findEvent";
 import { Event, Group, Registration, User } from "@/models";
 
 export default async function EventDetailsPage({
@@ -22,7 +23,9 @@ export default async function EventDetailsPage({
 
   await connectToDb();
 
-  const eventDoc = await Event.findById(eventId)
+  const query = getEventLookupQuery(eventId);
+
+  const eventDoc = await Event.findOne(query)
     .populate("contact")
     .populate("organizingClub")
     .populate("collaboratingClubs")
@@ -40,6 +43,14 @@ export default async function EventDetailsPage({
   if (!eventDoc) {
     notFound();
   }
+
+  // If accessed by MongoDB ObjectId but a clean slug exists, 301 redirect to slug URL
+  if (isValidObjectId(eventId) && eventDoc.slug && eventDoc.slug !== eventId) {
+    redirect(`/events/${eventDoc.slug}`);
+  }
+
+  const resolvedEventId = eventDoc._id.toString();
+  const canonicalEventKey = eventDoc.slug || resolvedEventId;
 
   let myGroup = null;
   if (eventDoc.eventType === "team" && session?.user?.id) {
@@ -60,14 +71,14 @@ export default async function EventDetailsPage({
   if (eventDoc.eventType === "team") {
     if (myGroup) {
       const groupReg = await Registration.exists({
-        eventId,
+        eventId: resolvedEventId,
         groupId: myGroup._id,
       });
       alreadyRegistered = !!groupReg;
     }
   } else {
     const userReg = await Registration.exists({
-      eventId,
+      eventId: resolvedEventId,
       userId: session.user.id,
     });
     alreadyRegistered = !!userReg;
@@ -76,12 +87,12 @@ export default async function EventDetailsPage({
   let registrationCount = 0;
   if (eventDoc.eventType === "team") {
     registrationCount = await Registration.countDocuments({
-      eventId,
+      eventId: resolvedEventId,
       groupId: { $exists: true },
     });
   } else {
     registrationCount = await Registration.countDocuments({
-      eventId,
+      eventId: resolvedEventId,
       userId: { $exists: true },
     });
   }
@@ -121,7 +132,7 @@ export default async function EventDetailsPage({
                   </p>
                 </div>
                 <Link
-                  href={`/events/${event._id.toString()}/insights`}
+                  href={`/events/${canonicalEventKey}/insights`}
                   className="inline-flex items-center gap-2 bg-[#5E77F5] text-white px-4 py-2 rounded-lg hover:opacity-90 w-fit"
                 >
                   <ChartNoAxesColumn size={16} />

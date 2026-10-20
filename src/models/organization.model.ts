@@ -28,8 +28,7 @@ const organizationSchema = new Schema<IOrganization>(
       unique: true,
       lowercase: true,
       trim: true,
-      index: true,
-    },
+          },
     logo: {
       type: String,
       default: "",

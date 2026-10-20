@@ -155,7 +155,7 @@ export default function SuperEventDetails({
                               </span>
                             </div>
 
-                            <Link href={`/events/${event._id}`} className="flex-1 w-full md:max-w-[75%] mt-1 sm:mt-0">
+                            <Link href={`/events/${event.slug || event._id}`} className="flex-1 w-full md:max-w-[75%] mt-1 sm:mt-0">
                               <div className="group p-2 sm:p-3 flex items-center gap-4 sm:gap-6 rounded-xl hover:bg-white/5 bg-white/5 md:bg-transparent border border-transparent transition-all duration-200">
                                 {/* Event Content */}
                                 <div className="flex gap-3 sm:gap-4 items-center flex-1 w-full">

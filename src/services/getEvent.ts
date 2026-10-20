@@ -1,12 +1,15 @@
 // /services/getEvent.ts
 import { connectToDb } from "@/lib/connectToDb";
+import { getEventLookupQuery } from "@/lib/findEvent";
 import { Event } from "@/models";
 
-export async function getEvent(eventId: string) {
+export async function getEvent(idOrSlug: string) {
   await connectToDb();
 
+  const query = getEventLookupQuery(idOrSlug);
+
   // Fetch the event
-  const event = await Event.findById(eventId)
+  const event = await Event.findOne(query)
     .populate({
       path: "organizingClub",
       select: "_id name",

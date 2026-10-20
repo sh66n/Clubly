@@ -1,9 +1,11 @@
 import { connectToDb } from "@/lib/connectToDb";
+import { getEventLookupQuery } from "@/lib/findEvent";
 import { Event } from "@/models";
 
-export const getEventType = async (eventId: string) => {
+export const getEventType = async (idOrSlug: string) => {
   await connectToDb();
-  const event = await Event.findById(eventId).select("eventType");
+  const query = getEventLookupQuery(idOrSlug);
+  const event = await Event.findOne(query).select("eventType");
   if (!event) throw new Error("Event not found");
 
   return event.eventType;

@@ -371,8 +371,11 @@ export const POST = async (req: NextRequest) => {
 
     const tenantId = session.user.tenantId;
 
+    const slug = await generateUniqueEventSlug(name);
+
     /* ---------- Create Event ---------- */
     const event = await Event.create({
+      slug,
       tenantId,
       organizingClub,
       name,

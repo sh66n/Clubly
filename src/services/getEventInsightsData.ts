@@ -31,7 +31,7 @@ const getPaymentKey = (payment: any) => {
 export async function getEventInsightsData(eventId: string) {
   await connectToDb();
 
-  const event = await Event.findById(eventId)
+  const event = await Event.findOne(getEventLookupQuery(eventId))
     .populate("organizingClub", "name")
     .populate("winner", "name email image")
     .populate({
@@ -48,7 +48,7 @@ export async function getEventInsightsData(eventId: string) {
     return null;
   }
 
-  const registrations = await Registration.find({ eventId })
+  const registrations = await Registration.find({ eventId: event._id })
     .populate("userId", "name email image")
     .populate({
       path: "groupId",

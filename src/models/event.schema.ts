@@ -6,6 +6,7 @@ export const zEvent = z.object({
   tenantId: z.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
   organizingClub: z.string().regex(/^[0-9a-fA-F]{24}$/),
   name: z.string(),
+  slug: z.string().optional(),
   description: z.string().optional(),
   date: z.date(),
   registrationDeadline: z.date().optional(),
@@ -75,6 +76,7 @@ export interface IEvent {
   organizingClub: Types.ObjectId;
   collaboratingClubs?: Types.ObjectId[];
   name: string;
+  slug?: string;
   description?: string;
   date: Date;
   registrationDeadline?: Date;

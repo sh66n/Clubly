@@ -283,7 +283,10 @@ export async function POST(req: NextRequest) {
       };
     }
 
+    const slug = await generateUniqueEventSlug(name);
+
     const newEvent = await Event.create({
+      slug,
       organizingClub,
       name,
       description,

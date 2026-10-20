@@ -81,7 +81,7 @@ export default function EventCard({ event, userId }: EventCardProps) {
 
   return (
     <Link
-      href={`/events/${event._id}`}
+      href={`/events/${event.slug || event._id}`}
       className="group relative flex flex-col bg-[#0A0A0A] border border-[#1A1A1A] rounded-2xl overflow-hidden transition-all duration-500 hover:border-gray-500 hover:shadow-[0_0_30px_rgba(0,0,0,0.5)]"
     >
       {/* Image Section with Gradient Overlay */}

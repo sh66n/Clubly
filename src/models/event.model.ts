@@ -25,6 +25,11 @@ const eventSchema = new Schema<IEvent>(
       type: String,
       required: true,
     },
+    slug: {
+      type: String,
+      sparse: true,
+      trim: true,
+    },
     description: {
       type: String,
       required: false,
@@ -199,6 +204,7 @@ const eventSchema = new Schema<IEvent>(
 );
 
 // Indexes
+eventSchema.index({ slug: 1 }, { unique: true, sparse: true });
 eventSchema.index({ organizingClub: 1 });
 eventSchema.index({ date: 1 });
 eventSchema.index({ superEvent: 1 });
