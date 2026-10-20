@@ -747,25 +747,10 @@ export default function EventFeedbackWidget({
                   Give feedback
                 </Link>
 
-                <div className="flex items-center justify-between w-full relative z-10 px-1">
-                  <p className="text-[11.5px] italic text-[#959aa3] leading-snug font-normal text-left">
-                    Provide us your valuable feedback and unlock your event
-                    certificate!
-                  </p>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const shareUrl = `${window.location.origin}/events/${eventId}/feedback`;
-                      navigator.clipboard.writeText(shareUrl);
-                      toast.success("Feedback form link copied!");
-                    }}
-                    title="Copy feedback link"
-                    className="p-1.5 text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors cursor-pointer shrink-0 ml-2"
-                  >
-                    <Copy size={13} />
-                  </button>
-                </div>
+                <p className="text-[11.5px] italic text-[#959aa3] leading-snug font-normal text-center w-full relative z-10 px-1">
+                  Provide us your valuable feedback and unlock your event
+                  certificate!
+                </p>
               </BorderedDiv>
             ) : certificate?.url ? (
               <button

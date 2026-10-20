@@ -81,6 +81,16 @@ export default function EventDetails({
     fetch(`/api/events/${eventIdStr}/view`, { method: "POST" }).catch(() => {});
   }, [eventIdStr]);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("error") === "feedback_not_participant") {
+        toast.error("Feedback is only open to event participants.");
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    }
+  }, []);
+
   const [registrationStatus, setRegistrationStatus] =
     useState<RegistrationStatus>("idle");
   const [isQuestionsModalOpen, setIsQuestionsModalOpen] = useState(false);

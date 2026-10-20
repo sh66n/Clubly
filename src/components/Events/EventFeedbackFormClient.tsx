@@ -16,7 +16,6 @@ import {
   MessageSquare,
   AlertCircle,
 } from "lucide-react";
-import { FaWhatsapp, FaXTwitter } from "react-icons/fa6";
 import { toast } from "sonner";
 import BorderedDiv from "@/components/BorderedDiv";
 
@@ -41,6 +40,7 @@ interface EventFeedbackFormClientProps {
   form: FeedbackFormData | null;
   hasFeedback: boolean;
   hasCertificate: boolean;
+  isNotParticipant?: boolean;
 }
 
 const RATING_LABELS: Record<number, string> = {
@@ -60,6 +60,7 @@ export default function EventFeedbackFormClient({
   form,
   hasFeedback,
   hasCertificate,
+  isNotParticipant,
 }: EventFeedbackFormClientProps) {
   const router = useRouter();
 
@@ -85,16 +86,6 @@ export default function EventFeedbackFormClient({
     } catch {
       toast.error("Failed to copy link");
     }
-  };
-
-  const handleShareWhatsApp = () => {
-    const text = `📝 Share your feedback for *${eventName}* on Clubly: ${getShareUrl()}`;
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank");
-  };
-
-  const handleShareTwitter = () => {
-    const text = `Feedback form for ${eventName} on @clubly_in: ${getShareUrl()}`;
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
   };
 
   const handleRating = (questionId: string, rating: number) => {
@@ -145,6 +136,42 @@ export default function EventFeedbackFormClient({
       setSubmitting(false);
     }
   };
+
+  // State 0: User is not a participant of this event
+  if (isNotParticipant) {
+    return (
+      <div className="max-w-2xl mx-auto py-8 px-4 sm:px-6">
+        <Link
+          href={`/events/${eventId}`}
+          className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-6 transition-colors"
+        >
+          <ArrowLeft size={16} />
+          Back to Event
+        </Link>
+
+        <BorderedDiv className="p-8 sm:p-10 text-center flex flex-col items-center">
+          <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mb-4">
+            <AlertCircle size={32} />
+          </div>
+
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
+            Participant Access Only
+          </h2>
+          <p className="text-sm text-gray-400 max-w-md mb-6 leading-relaxed">
+            Feedback submission for{" "}
+            <span className="text-white font-medium">{eventName}</span> is reserved for registered attendees and participants.
+          </p>
+
+          <Link
+            href={`/events/${eventId}`}
+            className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-white text-black font-semibold text-sm hover:bg-gray-200 transition-colors"
+          >
+            View Event Details
+          </Link>
+        </BorderedDiv>
+      </div>
+    );
+  }
 
   // State 1: Feedback already submitted
   if (hasFeedback) {
@@ -249,46 +276,6 @@ export default function EventFeedbackFormClient({
           <ArrowLeft size={16} />
           Back to Event
         </Link>
-
-        {/* Share Quick Actions */}
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={handleCopyLink}
-            title="Copy feedback link"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-xs text-gray-300 hover:text-white transition-colors cursor-pointer"
-          >
-            {copied ? (
-              <>
-                <Check size={13} className="text-emerald-400" />
-                <span className="text-emerald-400">Copied</span>
-              </>
-            ) : (
-              <>
-                <Copy size={13} />
-                <span>Copy Link</span>
-              </>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleShareWhatsApp}
-            title="Share via WhatsApp"
-            className="p-1.5 rounded-lg bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-colors cursor-pointer"
-          >
-            <FaWhatsapp size={14} />
-          </button>
-
-          <button
-            type="button"
-            onClick={handleShareTwitter}
-            title="Share via Twitter / X"
-            className="p-1.5 rounded-lg bg-white/5 text-gray-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
-          >
-            <FaXTwitter size={14} />
-          </button>
-        </div>
       </div>
 
       {/* Event Details Card */}

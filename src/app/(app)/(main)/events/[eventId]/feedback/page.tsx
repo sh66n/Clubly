@@ -4,6 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { connectToDb } from "@/lib/connectToDb";
 import { Event, Feedback, FeedbackForm, Group } from "@/models";
 import EventFeedbackFormClient from "@/components/Events/EventFeedbackFormClient";
+import { isUserEventParticipant } from "@/services/getParticipants";
+import { Types } from "mongoose";
 
 export default async function EventFeedbackPage({
   params,
@@ -19,21 +21,43 @@ export default async function EventFeedbackPage({
 
   await connectToDb();
 
-  const eventDoc = await Event.findById(eventId)
-    .populate("organizingClub", "name logo")
-    .lean();
+  const isClubAdmin = session.user.role === "club-admin" || session.user.role === "admin";
+
+  const [eventDoc, isParticipant] = await Promise.all([
+    Event.findById(eventId)
+      .populate("organizingClub", "name logo")
+      .lean(),
+    isClubAdmin ? Promise.resolve(true) : isUserEventParticipant(eventId, session.user.id),
+  ]);
 
   if (!eventDoc) {
     notFound();
   }
 
-  const event = JSON.parse(JSON.stringify(eventDoc));
+  const event: any = JSON.parse(JSON.stringify(eventDoc));
+
+  // If not a participant, show access restriction directly (no blank screen delay or redirect loop)
+  if (!isParticipant) {
+    return (
+      <EventFeedbackFormClient
+        eventId={eventId}
+        eventName={event.name}
+        eventDate={event.date}
+        organizingClubName={event.organizingClub?.name}
+        organizingClubLogo={event.organizingClub?.logo}
+        form={null}
+        hasFeedback={false}
+        hasCertificate={false}
+        isNotParticipant={true}
+      />
+    );
+  }
 
   // Check if feedback is already submitted
-  const feedbackDoc = await Feedback.exists({
-    eventId,
-    userId: session.user.id,
-  });
+  const feedbackDoc = await (Feedback as any).exists({
+    eventId: new Types.ObjectId(eventId),
+    userId: new Types.ObjectId(session.user.id),
+  }).setOptions({ skipTenant: true });
   const hasFeedback = Boolean(feedbackDoc);
 
   // Check if a certificate is configured for this attendee
@@ -81,7 +105,6 @@ export default async function EventFeedbackPage({
 
   const hasCertificate = Boolean(
     certObj &&
-    !certObj.isDraft &&
     certObj.url &&
     typeof certObj.url === "string" &&
     certObj.url.trim().length > 0

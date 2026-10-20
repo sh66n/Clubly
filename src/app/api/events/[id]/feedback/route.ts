@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { connectToDb } from "@/lib/connectToDb";
 import { Event, Feedback, FeedbackForm } from "@/models";
+import { isUserEventParticipant } from "@/services/getParticipants";
+import { Types } from "mongoose";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +17,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
     await connectToDb();
 
-    const event = await Event.findById(id)
+    const isClubAdmin = session.user.role === "club-admin" || session.user.role === "admin";
+    const isParticipant = isClubAdmin || (await isUserEventParticipant(id, session.user.id));
+
+    if (!isParticipant) {
+      return NextResponse.json(
+        { error: "You must be a participant of this event to access feedback" },
+        { status: 403 }
+      );
+    }
+
+    const event: any = await Event.findById(id)
       .select("feedbackForm certificate certificatesByPosition certificateTemplate name eventType winner winnerGroup winners")
       .lean();
 
@@ -49,7 +61,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     }
 
-    const posCerts: any = (event as any).certificatesByPosition;
+    const posCerts: any = event.certificatesByPosition;
     let targetCertId: any = null;
 
     if (position === 1 && posCerts?.first) {
@@ -59,7 +71,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     } else if (position === 3 && posCerts?.third) {
       targetCertId = posCerts.third;
     } else {
-      targetCertId = posCerts?.participation || (event as any).certificate;
+      targetCertId = posCerts?.participation || event.certificate || posCerts?.first;
     }
 
     let certObj: any = null;
@@ -68,8 +80,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       const { Certificate } = await import("@/models");
       certObj = await Certificate.findById(certIdStr).lean();
     }
-    if (!certObj && (event as any).certificateTemplate?.url) {
-      certObj = (event as any).certificateTemplate;
+    if (!certObj && event.certificateTemplate?.url) {
+      certObj = event.certificateTemplate;
     }
 
     let rankValue = "Participant";
@@ -79,7 +91,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const isCertReady = Boolean(
       certObj &&
-      !certObj.isDraft &&
       certObj.url &&
       typeof certObj.url === "string" &&
       certObj.url.trim().length > 0
@@ -93,28 +104,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       rankValue,
     } : null;
 
-
+    const hasFeedback = await (Feedback as any).exists({
+      eventId: new Types.ObjectId(id),
+      userId: new Types.ObjectId(session.user.id),
+    }).setOptions({ skipTenant: true });
 
     if (!event.feedbackForm) {
       return NextResponse.json({
         submitted: true,
         form: null,
         certificate: certificateInfo,
+        hasCertificate: !!certificateInfo,
+        eventName: event.name,
         userName: session.user.name || "Student",
         position,
         rankValue,
         userId: session.user.id,
       });
     }
-
-    const isClubAdmin = session.user.role === "club-admin" || session.user.role === "admin";
-
-    const hasFeedback = isClubAdmin
-      ? false
-      : await Feedback.exists({
-          eventId: id,
-          userId: session.user.id,
-        });
 
     const form = await FeedbackForm.findById(event.feedbackForm).select("name questions").lean();
 
@@ -149,12 +156,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     await connectToDb();
 
-    const event = await Event.findById(id).select("feedbackForm").lean();
+    const isClubAdmin = session.user.role === "club-admin" || session.user.role === "admin";
+    const isParticipant = isClubAdmin || (await isUserEventParticipant(id, session.user.id));
+
+    if (!isParticipant) {
+      return NextResponse.json(
+        { error: "Only participants of this event can submit feedback" },
+        { status: 403 }
+      );
+    }
+
+    const event: any = await Event.findById(id).select("feedbackForm tenantId").lean();
     if (!event || !event.feedbackForm) {
       return NextResponse.json({ error: "No feedback form required for this event" }, { status: 400 });
     }
-
-    const isClubAdmin = session.user.role === "club-admin" || session.user.role === "admin";
 
     // Validate answers format
     for (const ans of answers) {
@@ -163,21 +178,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
-    // For club admins: treat everything as same but don't save their entries in database
-    if (isClubAdmin) {
-      return NextResponse.json({ success: true, isAdminTest: true }, { status: 201 });
-    }
-
-    const hasFeedback = await Feedback.exists({
-      eventId: id,
-      userId: session.user.id,
-    });
+    const hasFeedback = await (Feedback as any).exists({
+      eventId: new Types.ObjectId(id),
+      userId: new Types.ObjectId(session.user.id),
+    }).setOptions({ skipTenant: true });
 
     if (hasFeedback) {
       return NextResponse.json({ error: "Feedback already submitted" }, { status: 400 });
     }
 
+    const tenantId = event.tenantId || (session.user as any).tenantId;
+
     await Feedback.create({
+      tenantId,
       eventId: id,
       userId: session.user.id,
       feedbackFormId: event.feedbackForm,

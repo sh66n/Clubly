@@ -1,5 +1,55 @@
-import { Event, Registration } from "@/models";
+import { Event, Registration, Group } from "@/models";
 import { connectToDb } from "@/lib/connectToDb";
+import { Types } from "mongoose";
+
+/**
+ * Check if a user is a participant of an event
+ * Returns true if:
+ * 1. User has an individual registration (status is not 'absent')
+ * 2. User belongs to a group registered for this event (status is not 'absent')
+ */
+export async function isUserEventParticipant(
+  eventId: string | Types.ObjectId,
+  userId: string | Types.ObjectId
+): Promise<boolean> {
+  if (!eventId || !userId) return false;
+  const eventIdStr = eventId.toString();
+  const userIdStr = userId.toString();
+
+  if (!Types.ObjectId.isValid(eventIdStr) || !Types.ObjectId.isValid(userIdStr)) {
+    return false;
+  }
+
+  await connectToDb();
+  const eventObjectId = new Types.ObjectId(eventIdStr);
+  const userObjectId = new Types.ObjectId(userIdStr);
+
+  // Run direct check and team group check in parallel
+  const [directReg, userGroup] = await Promise.all([
+    Registration.exists({
+      eventId: eventObjectId,
+      userId: userObjectId,
+      status: { $ne: "absent" },
+    }),
+    Group.findOne(
+      { event: eventObjectId, members: userObjectId },
+      { _id: 1 }
+    ).lean(),
+  ]);
+
+  if (directReg) return true;
+
+  if (userGroup) {
+    const teamReg = await Registration.exists({
+      eventId: eventObjectId,
+      groupId: (userGroup as any)._id,
+      status: { $ne: "absent" },
+    });
+    if (teamReg) return true;
+  }
+
+  return false;
+}
 
 /**
  * Get participants of an event (users for individual events, groups for team events)
