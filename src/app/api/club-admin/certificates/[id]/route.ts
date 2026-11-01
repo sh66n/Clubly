@@ -90,7 +90,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     const certificateLayoutResult = parseCertificateLayoutFromFormData(formData);
-    if (certificateLayoutResult.layout) {
+    if ("layout" in certificateLayoutResult && certificateLayoutResult.layout) {
       updateData.layout = certificateLayoutResult.layout;
     }
 

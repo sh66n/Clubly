@@ -6,6 +6,8 @@ import {
   inferYearFromEmail,
 } from "@/lib/certificate";
 import { connectToDb } from "@/lib/connectToDb";
+import mongoose from "mongoose";
+import { runWithoutTenantFilter } from "@/lib/tenantPlugin";
 import { Event, Group, Registration, User, Certificate, Feedback } from "@/models";
 import { PDFDocument, StandardFonts, rgb, PDFImage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
@@ -177,10 +179,44 @@ export async function GET(
     const { id } = await params;
     await connectToDb();
 
-    const event = await Event.findById(id)
-      .select("name eventType providesCertificate certificate winner winnerGroup startDate organizingClub feedbackForm certificatesByPosition winners certificateTemplate")
-      .populate("certificate")
-      .populate("organizingClub", "name");
+    let event: any = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      event = await runWithoutTenantFilter(() =>
+        Event.findById(id)
+          .select("name eventType providesCertificate certificate winner winnerGroup startDate organizingClub feedbackForm certificatesByPosition winners certificateTemplate")
+          .populate("certificate")
+          .populate("organizingClub", "name")
+      );
+
+      if (!event) {
+        const cert = await runWithoutTenantFilter(() => Certificate.findById(id).lean());
+        if (cert) {
+          event = await runWithoutTenantFilter(() =>
+            Event.findOne({
+              $or: [
+                { certificate: cert._id },
+                { "certificatesByPosition.participation": cert._id },
+                { "certificatesByPosition.first": cert._id },
+                { "certificatesByPosition.second": cert._id },
+                { "certificatesByPosition.third": cert._id },
+              ],
+            })
+              .select("name eventType providesCertificate certificate winner winnerGroup startDate organizingClub feedbackForm certificatesByPosition winners certificateTemplate")
+              .populate("certificate")
+              .populate("organizingClub", "name")
+          );
+        }
+      }
+    }
+
+    if (!event && typeof id === "string") {
+      event = await runWithoutTenantFilter(() =>
+        Event.findOne({ slug: id })
+          .select("name eventType providesCertificate certificate winner winnerGroup startDate organizingClub feedbackForm certificatesByPosition winners certificateTemplate")
+          .populate("certificate")
+          .populate("organizingClub", "name")
+      );
+    }
 
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });

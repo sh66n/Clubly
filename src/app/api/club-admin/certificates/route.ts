@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       publicId: certUploadResult.public_id,
       uploadedAt: new Date(),
       isDraft,
-      layout: certificateLayoutResult.layout ?? getDefaultCertificateLayout(),
+      layout: ("layout" in certificateLayoutResult ? certificateLayoutResult.layout : undefined) ?? getDefaultCertificateLayout(),
     });
 
     return NextResponse.json(newCertificate, { status: 201 });

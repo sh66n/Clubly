@@ -1,10 +1,14 @@
 import React from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
 import { Metadata } from "next";
 import { connectToDb } from "@/lib/connectToDb";
 import mongoose from "mongoose";
-import { Event, User, Certificate, Registration, Group, Feedback } from "@/models";
+import { Event, User, Certificate, Registration, Group, Feedback, Club, CertificateFolder } from "@/models";
 import { auth } from "@/auth";
+import { runWithoutTenantFilter } from "@/lib/tenantPlugin";
+import { getDefaultCertificateLayout } from "@/lib/certificate";
+import { Award } from "lucide-react";
 import PublicCertificateViewer from "./PublicCertificateViewer";
 
 interface CertificatePageProps {
@@ -12,11 +16,128 @@ interface CertificatePageProps {
   searchParams: Promise<{ user?: string }>;
 }
 
-async function checkCertificateEligibility(event: any, user: any): Promise<boolean> {
-  if (!user || !event) return false;
+async function resolveEventAndCertificate(id: string) {
+  let event: any = null;
+  let directCertificate: any = null;
+
+  if (mongoose.Types.ObjectId.isValid(id)) {
+    // 1. Try finding Event by ID
+    event = await runWithoutTenantFilter(() =>
+      Event.findById(id)
+        .populate("organizingClub", "name logo")
+        .populate("certificate")
+        .populate("certificatesByPosition.participation")
+        .populate("certificatesByPosition.first")
+        .populate("certificatesByPosition.second")
+        .populate("certificatesByPosition.third")
+        .lean()
+    );
+
+    // 2. If not found, check if `id` is a Certificate ID
+    if (!event) {
+      directCertificate = await runWithoutTenantFilter(() =>
+        Certificate.findById(id).lean()
+      );
+
+      if (directCertificate) {
+        event = await runWithoutTenantFilter(() =>
+          Event.findOne({
+            $or: [
+              { certificate: directCertificate._id },
+              { "certificatesByPosition.participation": directCertificate._id },
+              { "certificatesByPosition.first": directCertificate._id },
+              { "certificatesByPosition.second": directCertificate._id },
+              { "certificatesByPosition.third": directCertificate._id },
+            ],
+          })
+            .populate("organizingClub", "name logo")
+            .populate("certificate")
+            .populate("certificatesByPosition.participation")
+            .populate("certificatesByPosition.first")
+            .populate("certificatesByPosition.second")
+            .populate("certificatesByPosition.third")
+            .lean()
+        );
+
+        if (!event && directCertificate.folder) {
+          const folder: any = await runWithoutTenantFilter(() =>
+            CertificateFolder.findById(directCertificate.folder).lean()
+          );
+          if (folder?.event) {
+            event = await runWithoutTenantFilter(() =>
+              Event.findById(folder.event)
+                .populate("organizingClub", "name logo")
+                .populate("certificate")
+                .populate("certificatesByPosition.participation")
+                .populate("certificatesByPosition.first")
+                .populate("certificatesByPosition.second")
+                .populate("certificatesByPosition.third")
+                .lean()
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Try finding Event by slug if still not found
+  if (!event && typeof id === "string") {
+    event = await runWithoutTenantFilter(() =>
+      Event.findOne({ slug: id })
+        .populate("organizingClub", "name logo")
+        .populate("certificate")
+        .populate("certificatesByPosition.participation")
+        .populate("certificatesByPosition.first")
+        .populate("certificatesByPosition.second")
+        .populate("certificatesByPosition.third")
+        .lean()
+    );
+  }
+
+  // 4. If direct certificate found but not tied to event, build standalone wrapper
+  if (!event && directCertificate) {
+    const club = directCertificate.club
+      ? await runWithoutTenantFilter(() =>
+          Club.findById(directCertificate.club).select("name logo").lean()
+        )
+      : null;
+    event = {
+      _id: directCertificate._id,
+      name: directCertificate.name,
+      organizingClub: club,
+      providesCertificate: true,
+      certificate: directCertificate,
+      certificatesByPosition: { participation: directCertificate },
+    };
+  }
+
+  return { event, directCertificate };
+}
+
+async function checkCertificateEligibility(
+  event: any,
+  user: any,
+  sessionUser?: any
+): Promise<boolean> {
+  // If user is organizer or admin, always eligible to view/preview
+  if (sessionUser) {
+    const role = sessionUser.role;
+    if (role === "platform-admin" || role === "super-admin") return true;
+    if (
+      role === "club-admin" &&
+      sessionUser.adminClub &&
+      (event.organizingClub?._id || event.organizingClub)?.toString() === sessionUser.adminClub?.toString()
+    ) {
+      return true;
+    }
+  }
+
+  // If no user specified, allow public view of the certificate
+  if (!user) return true;
+
   const userIdStr = user._id.toString();
 
-  // 1. Check if the user is a winner
+  // 1. Check if winner
   let isWinner = false;
   if (event.eventType === "individual") {
     const match = (event.winners || []).find(
@@ -26,10 +147,12 @@ async function checkCertificateEligibility(event: any, user: any): Promise<boole
       isWinner = true;
     }
   } else {
-    const group = await Group.findOne({
-      event: event._id,
-      members: user._id,
-    }).select("_id");
+    const group = await runWithoutTenantFilter(() =>
+      Group.findOne({
+        event: event._id,
+        members: user._id,
+      }).select("_id")
+    );
 
     if (group?._id) {
       const groupIdStr = group._id.toString();
@@ -44,23 +167,28 @@ async function checkCertificateEligibility(event: any, user: any): Promise<boole
 
   if (isWinner) return true;
 
-  // 2. Check if the user registered and attended the event
+  // 2. Check if registered (registered or attended)
   const groupIds: any[] = [];
   if (event.eventType !== "individual") {
-    const groups = await Group.find({ members: user._id }, { _id: 1 }).lean();
+    const groups = await runWithoutTenantFilter(() =>
+      Group.find({ members: user._id }, { _id: 1 }).lean()
+    );
     groupIds.push(...groups.map((g) => g._id));
   }
-  const regFilter =
+
+  const regFilter: any =
     groupIds.length > 0
       ? {
           eventId: event._id,
-          status: "attended",
           $or: [{ userId: user._id }, { groupId: { $in: groupIds } }],
         }
-      : { eventId: event._id, status: "attended", userId: user._id };
+      : { eventId: event._id, userId: user._id };
 
-  const hasAttended = await Registration.exists(regFilter);
-  return !!hasAttended;
+  const hasRegistered = await runWithoutTenantFilter(() =>
+    Registration.exists(regFilter)
+  );
+
+  return !!hasRegistered;
 }
 
 export async function generateMetadata({
@@ -68,50 +196,26 @@ export async function generateMetadata({
   searchParams,
 }: CertificatePageProps): Promise<Metadata> {
   const { id } = await params;
-  const { user: userId } = await searchParams;
-
-  if (!mongoose.Types.ObjectId.isValid(id) || (userId && !mongoose.Types.ObjectId.isValid(userId))) {
-    return {
-      title: "Certificate Verification | Clubly",
-      description: "Verify event credentials on Clubly.",
-    };
-  }
+  const { user: userIdQuery } = await searchParams;
 
   await connectToDb();
-  const event = await Event.findById(id)
-    .populate("organizingClub", "name logo")
-    .populate("certificate")
-    .populate("certificatesByPosition.participation")
-    .populate("certificatesByPosition.first")
-    .populate("certificatesByPosition.second")
-    .populate("certificatesByPosition.third")
-    .lean();
+  const { event, directCertificate } = await resolveEventAndCertificate(id);
 
-  const user = userId ? await User.findById(userId).select("name").lean() : null;
-
-  if (event?.feedbackForm && user) {
-    const hasFeedback = await Feedback.exists({
-      eventId: event._id,
-      userId: user._id,
-    });
-    if (!hasFeedback) {
-      return {
-        title: "Certificate Verification | Clubly",
-        description: "Verify event credentials on Clubly.",
-      };
-    }
-  }
-
-  const isEligible = await checkCertificateEligibility(event, user);
-  if (!isEligible) {
+  if (!event && !directCertificate) {
     return {
       title: "Certificate Verification | Clubly",
       description: "Verify event credentials on Clubly.",
     };
   }
 
-  const eventName = event?.name || "Event";
-  const recipientName = (user as any)?.name || "Recipient";
+  const session = await auth();
+  const activeUserId = userIdQuery || session?.user?.id;
+  const user = activeUserId && mongoose.Types.ObjectId.isValid(activeUserId)
+    ? await runWithoutTenantFilter(() => User.findById(activeUserId).select("name").lean())
+    : null;
+
+  const eventName = event?.name || directCertificate?.name || "Event";
+  const recipientName = (user as any)?.name || "Participant";
   const clubName = (event?.organizingClub as any)?.name || "Clubly";
   const clubLogo = (event?.organizingClub as any)?.logo;
 
@@ -125,10 +229,12 @@ export async function generateMetadata({
       if (match) position = match.position;
       else if ((event.winner?._id || event.winner)?.toString() === userIdStr) position = 1;
     } else {
-      const group = await Group.findOne({
-        event: event._id,
-        members: (user as any)._id,
-      }).select("_id");
+      const group = await runWithoutTenantFilter(() =>
+        Group.findOne({
+          event: event._id,
+          members: (user as any)._id,
+        }).select("_id")
+      );
 
       if (group?._id) {
         const groupIdStr = group._id.toString();
@@ -151,10 +257,10 @@ export async function generateMetadata({
   } else if (position === 3 && posCerts?.third) {
     certObj = posCerts.third;
   } else {
-    certObj = posCerts?.participation || event?.certificate;
+    certObj = posCerts?.participation || event?.certificate || directCertificate;
   }
 
-  const imageUrl = certObj?.url || clubLogo || "/images/logo.svg";
+  const imageUrl = certObj?.url || clubLogo || "/images/logo.png";
 
   return {
     title: `Certificate of Achievement - ${recipientName} | ${eventName}`,
@@ -162,7 +268,7 @@ export async function generateMetadata({
     openGraph: {
       title: `${recipientName}'s Certificate for ${eventName}`,
       description: `Verified Certificate awarded by ${clubName} on Clubly.`,
-      url: `https://clubly.tech/certificates/${id}${userId ? `?user=${userId}` : ""}`,
+      url: `https://clubly.tech/certificates/${id}${activeUserId ? `?user=${activeUserId}` : ""}`,
       siteName: "Clubly",
       images: [
         {
@@ -185,56 +291,84 @@ export default async function CertificateVerificationPage({
   params,
   searchParams,
 }: CertificatePageProps) {
-  const { id: eventId } = await params;
-  const { user: userId } = await searchParams;
+  const { id } = await params;
+  const { user: userIdQuery } = await searchParams;
   const session = await auth();
-
-  if (!mongoose.Types.ObjectId.isValid(eventId) || (userId && !mongoose.Types.ObjectId.isValid(userId))) {
-    notFound();
-  }
 
   await connectToDb();
 
-  const event = await Event.findById(eventId)
-    .populate("organizingClub", "name logo")
-    .populate("certificate")
-    .populate("certificatesByPosition.participation")
-    .populate("certificatesByPosition.first")
-    .populate("certificatesByPosition.second")
-    .populate("certificatesByPosition.third")
-    .lean();
+  // 1. Resolve User (query parameter or session)
+  const activeUserId = userIdQuery || session?.user?.id;
+  let user: any = null;
+  if (activeUserId && mongoose.Types.ObjectId.isValid(activeUserId)) {
+    user = await runWithoutTenantFilter(() =>
+      User.findById(activeUserId).select("name email year image").lean()
+    );
+  }
 
-  const hasCertificate = event && (
+  // 2. Resolve Event and Certificate
+  const { event, directCertificate } = await resolveEventAndCertificate(id);
+
+  if (!event) {
+    notFound();
+  }
+
+  const hasCertificate = Boolean(
     event.providesCertificate ||
     event.certificate ||
     (event.certificatesByPosition as any)?.participation ||
-    (event.certificatesByPosition as any)?.first
+    (event.certificatesByPosition as any)?.first ||
+    directCertificate
   );
 
-  if (!event || !hasCertificate) {
+  if (!hasCertificate) {
     notFound();
   }
 
-  let user = null;
-  if (userId) {
-    user = await User.findById(userId).select("name email year image").lean();
-  }
-
+  // 3. Feedback check (redirect to feedback form instead of 404)
   if (event.feedbackForm && user) {
-    const hasFeedback = await Feedback.exists({
-      eventId: event._id,
-      userId: user._id,
-    });
-    if (!hasFeedback) {
-      notFound();
+    const hasFeedback = await runWithoutTenantFilter(() =>
+      Feedback.exists({
+        eventId: event._id,
+        userId: user._id,
+      })
+    );
+    const isAdmin =
+      session?.user?.role === "platform-admin" ||
+      session?.user?.role === "super-admin" ||
+      (session?.user?.role === "club-admin" &&
+        session?.user?.adminClub?.toString() ===
+          (event.organizingClub?._id || event.organizingClub)?.toString());
+
+    if (!hasFeedback && !isAdmin) {
+      redirect(`/events/${event.slug || event._id}/feedback`);
     }
   }
 
-  const isEligible = await checkCertificateEligibility(event, user);
+  // 4. Eligibility check
+  const isEligible = await checkCertificateEligibility(event, user, session?.user);
   if (!isEligible) {
-    notFound();
+    return (
+      <main className="min-h-screen bg-[#0c0d12] text-white flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md w-full p-8 rounded-2xl border border-white/10 bg-white/[0.02] flex flex-col items-center">
+          <Award className="w-16 h-16 text-amber-400 mb-4 opacity-80" />
+          <h1 className="text-xl font-bold text-white mb-2">Certificate Not Found</h1>
+          <p className="text-sm text-zinc-400 mb-6">
+            We couldn't verify a certificate for this participant for{" "}
+            <span className="text-white font-medium">{event.name}</span>. Only registered participants and winners are eligible to receive certificates.
+          </p>
+          <Link
+            href={`/events/${event.slug || event._id}`}
+            className="px-5 py-2.5 rounded-xl bg-white text-black font-semibold text-sm hover:bg-zinc-200 transition-colors"
+          >
+            View Event Details
+          </Link>
+        </div>
+      </main>
+    );
   }
 
+  // 5. Determine position / rank
   let position = 0;
   if (user) {
     const userIdStr = (user as any)._id.toString();
@@ -245,10 +379,12 @@ export default async function CertificateVerificationPage({
       if (match) position = match.position;
       else if ((event.winner?._id || event.winner)?.toString() === userIdStr) position = 1;
     } else {
-      const group = await Group.findOne({
-        event: event._id,
-        members: (user as any)._id,
-      }).select("_id");
+      const group = await runWithoutTenantFilter(() =>
+        Group.findOne({
+          event: event._id,
+          members: (user as any)._id,
+        }).select("_id")
+      );
 
       if (group?._id) {
         const groupIdStr = group._id.toString();
@@ -276,16 +412,40 @@ export default async function CertificateVerificationPage({
   } else if (position === 3 && posCerts?.third) {
     certObj = posCerts.third;
   } else {
-    certObj = posCerts?.participation || event.certificate;
+    certObj = posCerts?.participation || event.certificate || directCertificate;
   }
 
+  // If certObj is just an ID (not populated), fetch it
+  if (certObj && (mongoose.Types.ObjectId.isValid(certObj) || typeof certObj === "string")) {
+    certObj = await runWithoutTenantFilter(() => Certificate.findById(certObj).lean());
+  }
+
+  const clubObj = event.organizingClub as { name?: string; logo?: string } | null;
+  const clubName = clubObj?.name || "Club";
+
+  // If certificate has not uploaded template image yet
   if (!certObj || !certObj.url) {
-    notFound();
+    return (
+      <main className="min-h-screen bg-[#0c0d12] text-white flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md w-full p-8 rounded-2xl border border-white/10 bg-white/[0.02] flex flex-col items-center">
+          <Award className="w-16 h-16 text-emerald-400 mb-4 opacity-80" />
+          <h1 className="text-xl font-bold text-white mb-2">{event.name || "Event"} Certificate</h1>
+          <p className="text-sm text-zinc-400 mb-6">
+            The certificate template for this event is currently being finalized by{" "}
+            <span className="text-white font-medium">{clubName}</span>. Please check back shortly!
+          </p>
+          <Link
+            href={`/events/${event.slug || event._id}`}
+            className="px-5 py-2.5 rounded-xl bg-white text-black font-semibold text-sm hover:bg-zinc-200 transition-colors"
+          >
+            Back to Event
+          </Link>
+        </div>
+      </main>
+    );
   }
 
   const recipientName = (user as any)?.name || "Participant";
-  const clubObj = event.organizingClub as { name?: string; logo?: string } | null;
-  const clubName = clubObj?.name || "Club";
   const issueDate = event.startDate
     ? new Date(event.startDate).toLocaleDateString("en-US", {
         year: "numeric",
@@ -303,7 +463,7 @@ export default async function CertificateVerificationPage({
   return (
     <main className="min-h-screen bg-[#0c0d12] text-white flex flex-col">
       <PublicCertificateViewer
-        eventId={eventId}
+        eventId={event._id?.toString() || id}
         eventName={event.name || "Event"}
         recipientName={recipientName}
         recipientImage={(user as any)?.image}
@@ -316,8 +476,8 @@ export default async function CertificateVerificationPage({
         issueMonth={eventDateObj.getMonth() + 1}
         rankValue={rankValue}
         certificateUrl={certObj.url}
-        layout={certObj.layout}
-        userId={userId || (user as any)?._id?.toString()}
+        layout={certObj.layout || getDefaultCertificateLayout()}
+        userId={userIdQuery || (user as any)?._id?.toString()}
         currentUserId={session?.user?.id}
       />
     </main>
