@@ -622,9 +622,11 @@ export const PATCH = async (
       });
 
       const clubId = event.organizingClub?._id || event.organizingClub;
+      const tenantId = event.tenantId || (session?.user as any)?.tenantId;
 
       if (!folder) {
         folder = await CertificateFolder.create({
+          tenantId,
           club: clubId,
           name: `Event: ${event.name}`,
           event: event._id,
@@ -639,6 +641,7 @@ export const PATCH = async (
 
       if (!event.certificatesByPosition?.participation) {
         const partCert = await Certificate.create({
+          tenantId,
           club: clubId,
           folder: folder._id,
           name: `${event.name} - Participant`,
@@ -655,6 +658,7 @@ export const PATCH = async (
         const currentVal = event.certificatesByPosition?.[posKey as "first" | "second" | "third"];
         if (!currentVal) {
           const cert = await Certificate.create({
+            tenantId,
             club: clubId,
             folder: folder._id,
             name: `${event.name} - ${i}${i === 1 ? 'st' : i === 2 ? 'nd' : 'rd'} Place`,

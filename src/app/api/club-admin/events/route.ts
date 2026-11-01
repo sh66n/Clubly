@@ -7,6 +7,9 @@ import {
   getDefaultCertificateLayout,
 } from "@/lib/certificate";
 import { sendMail } from "@/services/sendMail";
+import { generateUniqueEventSlug } from "@/lib/slugify";
+import { getTenantFromHeaders } from "@/lib/getTenant";
+import { runWithTenant } from "@/lib/tenantPlugin";
 
 export const dynamic = "force-dynamic";
 
@@ -163,178 +166,210 @@ export async function POST(req: NextRequest) {
     }
 
     const organizingClub = session.user.adminClub;
-    const formData = await req.formData();
 
-    const name = formData.get("name") as string;
-    const description = formData.get("description") as string;
-    const date = formData.get("date") as string;
-    const eventTime = (formData.get("eventTime") as string) || "00:00";
-    const status = (formData.get("status") as string) || "live";
-
-    const eventDate = new Date(`${date}T${eventTime}:00+05:30`);
-
-    const registrationDeadlineRaw = formData.get("registrationDeadline") as string | null;
-    const registrationDeadlineTime = (formData.get("registrationDeadlineTime") as string) || "23:59";
-    const registrationDeadline = registrationDeadlineRaw
-      ? new Date(`${registrationDeadlineRaw}T${registrationDeadlineTime}:00+05:30`)
-      : eventDate;
-
-    const eventType = formData.get("eventType") as string;
-    const teamSize = formData.get("teamSize") as string | null;
-    const teamSizeMin = formData.get("teamSizeRange[min]") as string | null;
-    const teamSizeMax = formData.get("teamSizeRange[max]") as string | null;
-    
-    let finalTeamSize: number | undefined = undefined;
-    let teamSizeRange: { min: number; max: number } | undefined = undefined;
-
-    if (eventType === "individual") {
-      finalTeamSize = 1;
+    let tenantId = session.user.tenantId;
+    if (!tenantId) {
+      const resolved = await getTenantFromHeaders();
+      tenantId = resolved.tenantId;
+    }
+    if (!tenantId && organizingClub) {
+      const club = await Club.findById(organizingClub).select("tenantId").lean();
+      tenantId = club?.tenantId?.toString();
     }
 
-    if (eventType === "team") {
-      if (teamSizeMin && teamSizeMax) {
-        teamSizeRange = { min: Number(teamSizeMin), max: Number(teamSizeMax) };
-      } else if (teamSize) {
-        finalTeamSize = Number(teamSize);
+    if (!tenantId) {
+      return NextResponse.json(
+        { error: "Tenant could not be resolved. Please log in again." },
+        { status: 400 }
+      );
+    }
+
+    return await runWithTenant(tenantId, async () => {
+      const formData = await req.formData();
+
+      const name = formData.get("name") as string;
+      const description = formData.get("description") as string;
+      const date = formData.get("date") as string;
+      const eventTime = (formData.get("eventTime") as string) || "00:00";
+      const status = (formData.get("status") as string) || "live";
+
+      const eventDate = new Date(`${date}T${eventTime}:00+05:30`);
+
+      const registrationDeadlineRaw = formData.get("registrationDeadline") as string | null;
+      const registrationDeadlineTime = (formData.get("registrationDeadlineTime") as string) || "23:59";
+      const registrationDeadline = registrationDeadlineRaw
+        ? new Date(`${registrationDeadlineRaw}T${registrationDeadlineTime}:00+05:30`)
+        : eventDate;
+
+      const eventType = formData.get("eventType") as string;
+      const teamSize = formData.get("teamSize") as string | null;
+      const teamSizeMin = formData.get("teamSizeRange[min]") as string | null;
+      const teamSizeMax = formData.get("teamSizeRange[max]") as string | null;
+      
+      let finalTeamSize: number | undefined = undefined;
+      let teamSizeRange: { min: number; max: number } | undefined = undefined;
+
+      if (eventType === "individual") {
+        finalTeamSize = 1;
       }
-    }
 
-    const prize = formData.get("prize") as string | null;
-    const providesCertificate = formData.get("providesCertificate") === "true";
-    const registrationFee = formData.get("registrationFee") as string | null;
-    const maxRegistrations = formData.get("maxRegistrations") as string | null;
-    const numberOfWinners = formData.get("numberOfWinners")
-      ? Number(formData.get("numberOfWinners"))
-      : 1;
-    const whatsappGroupLink = formData.get("whatsappGroupLink") as string | null;
-    const superEventRaw = formData.get("superEvent") as string | null;
-    const superEvent =
-      superEventRaw &&
-      superEventRaw.trim() !== "" &&
-      superEventRaw !== "undefined" &&
-      superEventRaw !== "null"
-        ? superEventRaw.trim()
-        : undefined;
-    const customQuestionsRaw = formData.get("customQuestions") as string | null;
-    if (customQuestionsRaw) {
-      try {
-        customQuestions = JSON.parse(customQuestionsRaw);
-      } catch (err) {
-        return NextResponse.json({ error: "Invalid custom questions" }, { status: 400 });
+      if (eventType === "team") {
+        if (teamSizeMin && teamSizeMax) {
+          teamSizeRange = { min: Number(teamSizeMin), max: Number(teamSizeMax) };
+        } else if (teamSize) {
+          finalTeamSize = Number(teamSize);
+        }
       }
-    }
 
-    const certificateId = formData.get("certificateId") as string | null;
+      const prize = formData.get("prize") as string | null;
+      const providesCertificate = formData.get("providesCertificate") === "true";
+      const registrationFee = formData.get("registrationFee") as string | null;
+      const maxRegistrations = formData.get("maxRegistrations") as string | null;
+      const numberOfWinners = formData.get("numberOfWinners")
+        ? Number(formData.get("numberOfWinners"))
+        : 1;
+      const whatsappGroupLink = formData.get("whatsappGroupLink") as string | null;
+      const superEventRaw = formData.get("superEvent") as string | null;
+      const superEvent =
+        superEventRaw &&
+        superEventRaw.trim() !== "" &&
+        superEventRaw !== "undefined" &&
+        superEventRaw !== "null"
+          ? superEventRaw.trim()
+          : undefined;
 
-    // Upload image
-    const file = formData.get("image") as unknown as File | null;
-    let imageUrl = "";
-    if (file && file.size > 0) {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const uploadResult: any = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream({ resource_type: "image" }, (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }).end(buffer);
-      });
-      imageUrl = uploadResult.secure_url;
-    }
+      let customQuestions: any = undefined;
+      const customQuestionsRaw = formData.get("customQuestions") as string | null;
+      if (customQuestionsRaw) {
+        try {
+          customQuestions = JSON.parse(customQuestionsRaw);
+        } catch (err) {
+          return NextResponse.json({ error: "Invalid custom questions" }, { status: 400 });
+        }
+      }
 
-    let certificatesByPosition: any = undefined;
-    let createdFolderId: any = undefined;
+      const certificateId = formData.get("certificateId") as string | null;
 
-    if (providesCertificate) {
-      const folder = await CertificateFolder.create({
-        club: organizingClub,
-        name: `Event: ${name}`,
-        event: undefined, // We will assign event later if needed, but the folder itself belongs to the club
-      });
-      createdFolderId = folder._id;
+      // Upload image
+      const file = formData.get("image") as unknown as File | null;
+      let imageUrl = "";
+      if (file && file.size > 0) {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const uploadResult: any = await new Promise((resolve, reject) => {
+          cloudinary.uploader.upload_stream({ resource_type: "image" }, (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }).end(buffer);
+        });
+        imageUrl = uploadResult.secure_url;
+      }
 
-      const layout = getDefaultCertificateLayout();
+      let certificatesByPosition: any = undefined;
+      let createdFolderId: any = undefined;
 
-      const partCert = await Certificate.create({
-        club: organizingClub,
-        folder: folder._id,
-        name: `${name} - Participant`,
-        url: "",
-        publicId: "",
-        isDraft: true,
-        layout,
-      });
+      if (providesCertificate) {
+        const folder = await CertificateFolder.create({
+          tenantId,
+          club: organizingClub,
+          name: `Event: ${name}`,
+          event: undefined, // We will assign event later if needed, but the folder itself belongs to the club
+        });
+        createdFolderId = folder._id;
 
-      const winnerCerts: any = {};
-      for (let i = 1; i <= numberOfWinners; i++) {
-        const cert = await Certificate.create({
+        const layout = getDefaultCertificateLayout();
+
+        const partCert = await Certificate.create({
+          tenantId,
           club: organizingClub,
           folder: folder._id,
-          name: `${name} - ${i}${i === 1 ? 'st' : i === 2 ? 'nd' : 'rd'} Place`,
+          name: `${name} - Participant`,
           url: "",
           publicId: "",
           isDraft: true,
           layout,
         });
-        winnerCerts[i === 1 ? 'first' : i === 2 ? 'second' : 'third'] = cert._id;
-      }
 
-      certificatesByPosition = {
-        participation: partCert._id,
-        ...winnerCerts,
-      };
-    }
-
-    const slug = await generateUniqueEventSlug(name);
-
-    const newEvent = await Event.create({
-      slug,
-      organizingClub,
-      name,
-      description,
-      date: eventDate,
-      registrationDeadline,
-      eventType,
-      teamSize: finalTeamSize,
-      teamSizeRange,
-      prize: prize ? Number(prize) : undefined,
-      providesCertificate,
-      numberOfWinners,
-      registrationFee: registrationFee ? Number(registrationFee) : 0,
-      image: imageUrl,
-      maxRegistrations: maxRegistrations ? Number(maxRegistrations) : undefined,
-      superEvent: superEvent || undefined,
-      whatsappGroupLink: whatsappGroupLink || undefined,
-      customQuestions,
-      certificatesByPosition,
-      status,
-      isRegistrationOpen: status === "live",
-    });
-
-    if (providesCertificate && createdFolderId) {
-      await CertificateFolder.updateOne(
-        { _id: createdFolderId },
-        { event: newEvent._id }
-      );
-    }
-
-    if (status === "live") {
-      try {
-        const club = await Club.findById(organizingClub).populate("bellFollowers");
-        if (club && club.bellFollowers && club.bellFollowers.length > 0) {
-          const emails = club.bellFollowers.map((u: any) => u.email).filter(Boolean);
-          if (emails.length > 0) {
-            await sendMail(
-              emails,
-              `New Event by ${club.name}: ${name}`,
-              `Hello!<br><br>${club.name} just added a new event: ${name} which is scheduled for ${eventDate.toDateString()}.<br><br>Check it out on Clubly!`
-            );
-          }
+        const winnerCerts: any = {};
+        for (let i = 1; i <= numberOfWinners; i++) {
+          const cert = await Certificate.create({
+            tenantId,
+            club: organizingClub,
+            folder: folder._id,
+            name: `${name} - ${i}${i === 1 ? 'st' : i === 2 ? 'nd' : 'rd'} Place`,
+            url: "",
+            publicId: "",
+            isDraft: true,
+            layout,
+          });
+          winnerCerts[i === 1 ? 'first' : i === 2 ? 'second' : 'third'] = cert._id;
         }
-      } catch (err) {
-        console.error("Failed to send email notification", err);
-      }
-    }
 
-    return NextResponse.json(newEvent, { status: 201 });
+        certificatesByPosition = {
+          participation: partCert._id,
+          ...winnerCerts,
+        };
+      }
+
+      const slug = await generateUniqueEventSlug(name);
+
+      const newEvent = await Event.create({
+        tenantId,
+        slug,
+        organizingClub,
+        name,
+        description,
+        date: eventDate,
+        registrationDeadline,
+        eventType,
+        teamSize: finalTeamSize,
+        teamSizeRange,
+        prize: prize ? Number(prize) : undefined,
+        providesCertificate,
+        numberOfWinners,
+        registrationFee: registrationFee ? Number(registrationFee) : 0,
+        image: imageUrl,
+        maxRegistrations: maxRegistrations ? Number(maxRegistrations) : undefined,
+        superEvent: superEvent || undefined,
+        whatsappGroupLink: whatsappGroupLink || undefined,
+        customQuestions,
+        certificatesByPosition,
+        status,
+        isRegistrationOpen: status === "live",
+        points: {
+          winner: 50,
+          second: 40,
+          third: 30,
+          participation: 10,
+        },
+      });
+
+      if (providesCertificate && createdFolderId) {
+        await CertificateFolder.updateOne(
+          { _id: createdFolderId },
+          { event: newEvent._id }
+        );
+      }
+
+      if (status === "live") {
+        try {
+          const club = await Club.findById(organizingClub).populate("bellFollowers");
+          if (club && club.bellFollowers && club.bellFollowers.length > 0) {
+            const emails = club.bellFollowers.map((u: any) => u.email).filter(Boolean);
+            if (emails.length > 0) {
+              await sendMail(
+                emails,
+                `New Event by ${club.name}: ${name}`,
+                `Hello!<br><br>${club.name} just added a new event: ${name} which is scheduled for ${eventDate.toDateString()}.<br><br>Check it out on Clubly!`
+              );
+            }
+          }
+        } catch (err) {
+          console.error("Failed to send email notification", err);
+        }
+      }
+
+      return NextResponse.json(newEvent, { status: 201 });
+    });
   } catch (error: any) {
     console.error("POST /api/club-admin/events error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

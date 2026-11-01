@@ -33,6 +33,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const tenantId = event.tenantId || session.user.tenantId;
+
     // Find or create CertificateFolder
     let folder = await CertificateFolder.findOne({
       $or: [{ event: event._id }, { name: `Event: ${event.name}`, club: clubId }],
@@ -40,6 +42,7 @@ export async function POST(req: NextRequest) {
 
     if (!folder) {
       folder = await CertificateFolder.create({
+        tenantId,
         club: clubId,
         name: `Event: ${event.name}`,
         event: event._id,
@@ -58,6 +61,7 @@ export async function POST(req: NextRequest) {
     // 1. Participant Slot
     if (!updatedCertsByPosition.participation) {
       const partCert = await Certificate.create({
+        tenantId,
         club: clubId,
         folder: folder._id,
         name: `${event.name} - Participant`,
@@ -74,6 +78,7 @@ export async function POST(req: NextRequest) {
       const posKey = i === 1 ? "first" : i === 2 ? "second" : "third";
       if (!updatedCertsByPosition[posKey]) {
         const cert = await Certificate.create({
+          tenantId,
           club: clubId,
           folder: folder._id,
           name: `${event.name} - ${i}${i === 1 ? 'st' : i === 2 ? 'nd' : 'rd'} Place`,
