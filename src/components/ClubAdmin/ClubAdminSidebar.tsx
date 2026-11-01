@@ -91,7 +91,7 @@ export default function ClubAdminSidebar({
     {
       name: "My Club",
       icon: <UsersRound size={20} />,
-      href: "/club-admin/club",
+      href: "/club-admin/clubs",
     },
     {
       name: "Faculty Coordinator",
@@ -114,6 +114,9 @@ export default function ClubAdminSidebar({
   ];
 
   const isItemActive = (href: string) => {
+    if (href === "/club-admin/clubs") {
+      return pathname.startsWith("/club-admin/club");
+    }
     return pathname === href || pathname.startsWith(href + "/");
   };
 
